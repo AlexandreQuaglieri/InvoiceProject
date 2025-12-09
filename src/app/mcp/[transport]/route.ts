@@ -17,19 +17,22 @@ const handler = createMcpHandler(
       },
       async ({ search, limit }, extra) => {
         const userId = extra.authInfo?.extra?.userId as string
+        console.log('[MCP list_clients] userId:', userId)
         if (!userId) {
           return { content: [{ type: 'text', text: 'Erreur: Non authentifié' }] }
         }
 
         const supabase = await createClient()
-        const { data: company } = await supabase
+        const { data: company, error: companyError } = await supabase
           .from('companies')
           .select('id')
           .eq('user_id', userId)
           .single()
 
+        console.log('[MCP list_clients] company:', company, 'error:', companyError?.message)
+
         if (!company) {
-          return { content: [{ type: 'text', text: 'Erreur: Entreprise non trouvée' }] }
+          return { content: [{ type: 'text', text: `Erreur: Entreprise non trouvée pour user_id=${userId}. Vérifiez que votre entreprise est bien configurée dans l'app.` }] }
         }
 
         let query = supabase
