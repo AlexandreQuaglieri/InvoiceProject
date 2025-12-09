@@ -21,10 +21,16 @@ function LoginContent() {
     setIsLoading(true)
     const supabase = createClient()
 
+    // Vérifier si c'est un redirect OAuth MCP
+    const oauthRedirect = searchParams.get('oauth_redirect')
+    const redirectTo = oauthRedirect
+      ? `${window.location.origin}/auth/callback?oauth_redirect=${encodeURIComponent(oauthRedirect)}`
+      : `${window.location.origin}/auth/callback`
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo,
       },
     })
 

@@ -46,6 +46,13 @@ export async function GET(request: Request) {
     console.log('[AUTH CALLBACK] Exchange result - session:', !!data?.session, 'error:', error?.message)
 
     if (!error && data.session) {
+      // Vérifier s'il y a un redirect OAuth MCP
+      const oauthRedirect = searchParams.get('oauth_redirect')
+      if (oauthRedirect) {
+        console.log('[AUTH CALLBACK] OAuth redirect to:', oauthRedirect)
+        return NextResponse.redirect(oauthRedirect)
+      }
+
       console.log('[AUTH CALLBACK] Success! Redirecting to:', next)
       return NextResponse.redirect(`${origin}${next}`)
     }
