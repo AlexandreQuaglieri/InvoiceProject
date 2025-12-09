@@ -1,5 +1,20 @@
 import { createHash, randomBytes } from 'crypto'
 
+// ============ TOKENS API LEGACY ============
+
+// Génère un nouveau token API MCP
+export function generateMCPToken(userId: string): string {
+  const secret = randomBytes(32).toString('base64url')
+  return `mcp_live_${userId}_${secret}`
+}
+
+// Hash le token pour stockage sécurisé
+export function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex')
+}
+
+// ============ OAUTH ============
+
 // Génère un client_id unique
 export function generateClientId(): string {
   return `mcp_${randomBytes(16).toString('hex')}`

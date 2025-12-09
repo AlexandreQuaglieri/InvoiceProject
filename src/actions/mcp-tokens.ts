@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { generateMCPToken, hashToken } from '@/lib/mcp/auth'
+import { generateMCPToken, hashToken } from '@/lib/mcp/oauth'
 
 export interface MCPToken {
   id: string
