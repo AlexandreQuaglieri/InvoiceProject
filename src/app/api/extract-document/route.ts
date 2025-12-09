@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
           console.log(`[EXTRACT] Après 2eme compression: ${(compressedBuffer.length / 1024 / 1024).toFixed(2)} MB`)
         }
 
-        buffer = compressedBuffer
+        buffer = Buffer.from(compressedBuffer)
         finalMediaType = 'image/jpeg'
         console.log(`[EXTRACT] Compression terminée: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`)
       } catch (compressError) {
