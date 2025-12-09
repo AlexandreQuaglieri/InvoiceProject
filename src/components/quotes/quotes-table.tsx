@@ -217,7 +217,7 @@ export function QuotesTable({ quotes }: QuotesTableProps) {
                         </>
                       )}
 
-                      {(quote.status === 'accepted' || quote.status === 'sent') && quote.status !== 'converted' && (
+                      {(quote.status === 'accepted' || quote.status === 'sent') && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem

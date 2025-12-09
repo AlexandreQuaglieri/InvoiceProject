@@ -30,6 +30,7 @@ interface ExecutedAction {
     number?: string
     client?: string
     total?: string
+    message?: string
   }
   error?: string
 }
