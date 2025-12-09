@@ -1,14 +1,21 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { createClient } from '@/lib/supabase/client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
+import { AlertCircle } from 'lucide-react'
 
-export default function LoginPage() {
+function LoginContent() {
   const t = useTranslations()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+
+  const error = searchParams.get('error')
+  const errorDesc = searchParams.get('desc')
 
   const handleGoogleLogin = async () => {
     setIsLoading(true)
@@ -35,6 +42,16 @@ export default function LoginPage() {
           <CardDescription className="text-lg">{t('auth.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="font-medium">Erreur d'authentification</div>
+                <div className="text-xs mt-1 break-all">{decodeURIComponent(error)}</div>
+                {errorDesc && <div className="text-xs opacity-70 mt-1">{decodeURIComponent(errorDesc)}</div>}
+              </AlertDescription>
+            </Alert>
+          )}
           <Button
             onClick={handleGoogleLogin}
             disabled={isLoading}
@@ -93,5 +110,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Chargement...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 }

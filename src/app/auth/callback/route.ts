@@ -9,10 +9,12 @@ export async function GET(request: Request) {
   const error_description = searchParams.get('error_description')
   const next = searchParams.get('next') ?? '/dashboard'
 
+  console.log('[AUTH CALLBACK] Starting - code:', !!code, 'error:', error_param)
+
   // Si Supabase renvoie une erreur directement
   if (error_param) {
-    console.error('Auth error from Supabase:', error_param, error_description)
-    return NextResponse.redirect(`${origin}/login?error=${error_param}`)
+    console.error('[AUTH CALLBACK] Error from Supabase:', error_param, error_description)
+    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error_param)}&desc=${encodeURIComponent(error_description || '')}`)
   }
 
   if (code) {
@@ -27,9 +29,13 @@ export async function GET(request: Request) {
             return cookieStore.getAll()
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options)
-            })
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options)
+              })
+            } catch (e) {
+              console.error('[AUTH CALLBACK] Error setting cookies:', e)
+            }
           },
         },
       }
@@ -37,13 +43,20 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
+    console.log('[AUTH CALLBACK] Exchange result - session:', !!data?.session, 'error:', error?.message)
+
     if (!error && data.session) {
+      console.log('[AUTH CALLBACK] Success! Redirecting to:', next)
       return NextResponse.redirect(`${origin}${next}`)
     }
 
-    console.error('Auth callback exchange error:', error?.message, error?.status)
+    console.error('[AUTH CALLBACK] Exchange error:', error?.message, error?.status)
+    // Passer l'erreur dans l'URL pour debug
+    const errorMsg = error?.message || 'exchange_failed'
+    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(errorMsg)}`)
   }
 
+  console.error('[AUTH CALLBACK] No code received')
   // Retour à la page login en cas d'erreur
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  return NextResponse.redirect(`${origin}/login?error=no_code`)
 }
