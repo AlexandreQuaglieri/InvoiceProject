@@ -1,7 +1,7 @@
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js'
 import { createMcpHandler, withMcpAuth } from 'mcp-handler'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // Créer le handler MCP avec tous les outils
 const handler = createMcpHandler(
@@ -22,7 +22,7 @@ const handler = createMcpHandler(
           return { content: [{ type: 'text', text: 'Erreur: Non authentifié' }] }
         }
 
-        const supabase = await createClient()
+        const supabase = createAdminClient()
         const { data: company, error: companyError } = await supabase
           .from('companies')
           .select('id')
@@ -83,7 +83,7 @@ const handler = createMcpHandler(
           return { content: [{ type: 'text', text: 'Erreur: Non authentifié' }] }
         }
 
-        const supabase = await createClient()
+        const supabase = createAdminClient()
         const { data: company } = await supabase
           .from('companies')
           .select('id')
@@ -129,7 +129,7 @@ const handler = createMcpHandler(
           return { content: [{ type: 'text', text: 'Erreur: Non authentifié' }] }
         }
 
-        const supabase = await createClient()
+        const supabase = createAdminClient()
         const { data: company } = await supabase
           .from('companies')
           .select('id')
@@ -200,7 +200,7 @@ const handler = createMcpHandler(
           return { content: [{ type: 'text', text: 'Erreur: Non authentifié' }] }
         }
 
-        const supabase = await createClient()
+        const supabase = createAdminClient()
         const { data: company } = await supabase
           .from('companies')
           .select('id')
@@ -267,7 +267,7 @@ const handler = createMcpHandler(
           return { content: [{ type: 'text', text: 'Erreur: Non authentifié' }] }
         }
 
-        const supabase = await createClient()
+        const supabase = createAdminClient()
         const { data: company } = await supabase
           .from('companies')
           .select('id')
@@ -371,7 +371,7 @@ ID: ${invoice.id}`
           return { content: [{ type: 'text', text: 'Erreur: Non authentifié' }] }
         }
 
-        const supabase = await createClient()
+        const supabase = createAdminClient()
         const { data: company, error } = await supabase
           .from('companies')
           .select('*')
@@ -414,7 +414,7 @@ const verifyToken = async (
 ): Promise<AuthInfo | undefined> => {
   if (!bearerToken) return undefined
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Token OAuth (généré par /oauth/token)
   if (bearerToken.startsWith('mcp_at_')) {
