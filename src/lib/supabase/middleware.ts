@@ -37,9 +37,10 @@ export async function updateSession(request: NextRequest) {
 
   // Routes publiques (pas de redirection)
   const publicRoutes = ['/', '/login', '/auth/callback']
-  const isPublicRoute = publicRoutes.some(
-    (route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith('/auth/')
-  )
+  const publicPrefixes = ['/auth/', '/mcp/', '/oauth/', '/.well-known/', '/api/']
+
+  const isPublicRoute = publicRoutes.some((route) => request.nextUrl.pathname === route) ||
+    publicPrefixes.some((prefix) => request.nextUrl.pathname.startsWith(prefix))
 
   if (!user && !isPublicRoute) {
     // Rediriger vers login si non authentifié
