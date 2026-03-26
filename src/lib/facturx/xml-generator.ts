@@ -172,13 +172,6 @@ export function generateFacturXXml(
 
     <ram:ApplicableHeaderTradeSettlement>
       <ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>
-      ${vatSummary}
-      <ram:SpecifiedTradePaymentTerms>
-        ${invoice.payment_terms ? `<ram:Description>${esc(invoice.payment_terms)}</ram:Description>` : ''}
-        <ram:DueDateDateTime>
-          <udt:DateTimeString format="102">${formatDate(invoice.due_date)}</udt:DateTimeString>
-        </ram:DueDateDateTime>
-      </ram:SpecifiedTradePaymentTerms>
       ${
         company.iban
           ? `<ram:SpecifiedTradeSettlementPaymentMeans>
@@ -190,6 +183,13 @@ export function generateFacturXXml(
       </ram:SpecifiedTradeSettlementPaymentMeans>`
           : ''
       }
+      ${vatSummary}
+      <ram:SpecifiedTradePaymentTerms>
+        ${invoice.payment_terms ? `<ram:Description>${esc(invoice.payment_terms)}</ram:Description>` : ''}
+        <ram:DueDateDateTime>
+          <udt:DateTimeString format="102">${formatDate(invoice.due_date)}</udt:DateTimeString>
+        </ram:DueDateDateTime>
+      </ram:SpecifiedTradePaymentTerms>
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
         <ram:LineTotalAmount>${fmt(invoice.total_ht)}</ram:LineTotalAmount>
         <ram:TaxBasisTotalAmount>${fmt(invoice.total_ht)}</ram:TaxBasisTotalAmount>
