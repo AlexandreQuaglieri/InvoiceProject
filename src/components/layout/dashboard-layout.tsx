@@ -3,7 +3,7 @@ import { getUser } from '@/actions/auth'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { AppHeader } from '@/components/layout/app-header'
-import { FloatingChatWidget } from '@/components/chat/floating-chat-widget'
+import { AICopilotPanel } from '@/components/chat/ai-copilot-panel'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -19,11 +19,13 @@ export async function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
-        <AppHeader user={user} />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+      <SidebarInset className="flex flex-row overflow-hidden">
+        <div className="flex flex-col flex-1 min-w-0">
+          <AppHeader user={user} />
+          <main className="flex-1 overflow-auto p-6">{children}</main>
+        </div>
+        <AICopilotPanel />
       </SidebarInset>
-      <FloatingChatWidget />
     </SidebarProvider>
   )
 }
