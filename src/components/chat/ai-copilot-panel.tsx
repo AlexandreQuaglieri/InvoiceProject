@@ -223,7 +223,7 @@ export function AICopilotPanel() {
   }
 
   return (
-    <div className="flex-shrink-0 w-[340px] border-l flex flex-col bg-background">
+    <div className="flex-shrink-0 w-[340px] border-l flex flex-col bg-background overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b flex-shrink-0">
         <div className="flex items-center gap-2">
