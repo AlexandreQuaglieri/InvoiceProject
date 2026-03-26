@@ -16,6 +16,7 @@ TU AS ACCÈS À DES OUTILS POUR AGIR DIRECTEMENT:
 - create_client: Créer un nouveau client dans la base de données
 - create_invoice: Créer une nouvelle facture
 - create_quote: Créer un nouveau devis
+- update_quote: Modifier le contenu d'un devis existant (lignes, prix, notes, conditions, date de validité)
 
 COMPORTEMENT ATTENDU:
 1. Quand l'utilisateur te demande de créer quelque chose, UTILISE L'OUTIL APPROPRIÉ
@@ -338,6 +339,47 @@ const tools: Anthropic.Tool[] = [
         quote_number: {
           type: 'string',
           description: 'Numéro du devis à supprimer',
+        },
+      },
+      required: ['quote_number'],
+    },
+  },
+  {
+    name: 'update_quote',
+    description:
+      "Modifie le contenu d'un devis existant en brouillon : lignes, prix, notes, conditions, date de validité. Utilise cet outil quand l'utilisateur veut modifier un devis existant.",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        quote_number: {
+          type: 'string',
+          description: 'Numéro du devis à modifier (ex: DEV-2026-001)',
+        },
+        items: {
+          type: 'array',
+          description: 'Nouvelles lignes du devis (remplace toutes les lignes existantes si fourni)',
+          items: {
+            type: 'object',
+            properties: {
+              description: { type: 'string', description: 'Description de la prestation' },
+              quantity: { type: 'number', description: 'Quantité' },
+              unit_price: { type: 'number', description: 'Prix unitaire HT en euros' },
+              tax_rate: { type: 'number', description: 'Taux de TVA (0, 5.5, 10, ou 20)' },
+            },
+            required: ['description', 'quantity', 'unit_price', 'tax_rate'],
+          },
+        },
+        notes: {
+          type: 'string',
+          description: 'Nouvelles notes (remplace les notes existantes si fourni)',
+        },
+        terms: {
+          type: 'string',
+          description: 'Nouvelles conditions particulières (remplace les conditions existantes si fourni)',
+        },
+        validity_date: {
+          type: 'string',
+          description: 'Nouvelle date de validité au format YYYY-MM-DD',
         },
       },
       required: ['quote_number'],
@@ -1075,6 +1117,98 @@ async function deleteQuoteTool(
   }
 }
 
+// Fonction pour modifier un devis
+async function updateQuoteTool(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  companyId: string,
+  data: {
+    quote_number: string
+    items?: Array<{ description: string; quantity: number; unit_price: number; tax_rate: number }>
+    notes?: string
+    terms?: string
+    validity_date?: string
+  }
+): Promise<string> {
+  try {
+    const { data: quotes } = await supabase
+      .from('quotes')
+      .select('id, quote_number, status, client_id, issue_date, validity_date, notes, terms')
+      .eq('company_id', companyId)
+      .eq('user_id', userId)
+      .ilike('quote_number', `%${data.quote_number}%`)
+      .limit(1)
+
+    if (!quotes || quotes.length === 0) {
+      return JSON.stringify({ success: false, error: `Devis "${data.quote_number}" non trouvé.` })
+    }
+
+    const quote = quotes[0]
+
+    if (quote.status !== 'draft') {
+      return JSON.stringify({
+        success: false,
+        error: `Le devis ${quote.quote_number} est en statut "${quote.status}" et ne peut plus être modifié. Seuls les brouillons sont modifiables.`,
+      })
+    }
+
+    // Recalculer les totaux si des lignes sont fournies
+    let updateData: Record<string, unknown> = {}
+
+    if (data.items && data.items.length > 0) {
+      let subtotal = 0
+      let taxAmount = 0
+      const itemsWithTotals = data.items.map((item, index) => {
+        const lineTotal = item.quantity * item.unit_price
+        const lineTax = lineTotal * (item.tax_rate / 100)
+        subtotal += lineTotal
+        taxAmount += lineTax
+        return { ...item, total: lineTotal, position: index }
+      })
+
+      // Supprimer les anciennes lignes et recréer
+      await supabase.from('quote_items').delete().eq('quote_id', quote.id)
+      await supabase.from('quote_items').insert(
+        itemsWithTotals.map((item) => ({
+          quote_id: quote.id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          tax_rate: item.tax_rate,
+          total: item.total,
+          position: item.position,
+        }))
+      )
+
+      updateData.subtotal = subtotal
+      updateData.tax_amount = taxAmount
+      updateData.total = subtotal + taxAmount
+    }
+
+    if (data.notes !== undefined) updateData.notes = data.notes
+    if (data.terms !== undefined) updateData.terms = data.terms
+    if (data.validity_date) updateData.validity_date = data.validity_date
+
+    if (Object.keys(updateData).length > 0) {
+      const { error } = await supabase.from('quotes').update(updateData).eq('id', quote.id)
+      if (error) return JSON.stringify({ success: false, error: error.message })
+    }
+
+    return JSON.stringify({
+      success: true,
+      quote: {
+        id: quote.id,
+        number: quote.quote_number,
+        total: updateData.total ? (updateData.total as number).toFixed(2) : undefined,
+        message: `Devis ${quote.quote_number} mis à jour avec succès.`,
+      },
+    })
+  } catch (error) {
+    console.error('Error updating quote:', error)
+    return JSON.stringify({ success: false, error: 'Erreur lors de la modification du devis' })
+  }
+}
+
 // Fonction pour convertir un devis en facture
 async function convertQuoteToInvoiceTool(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -1438,6 +1572,24 @@ export async function POST(request: NextRequest) {
               status: 'draft' | 'sent' | 'accepted' | 'rejected'
             }
             result = await updateQuoteStatusTool(supabase, company.id, input.quote_number, input.status)
+            const parsed = JSON.parse(result)
+            executedActions.push({
+              type: 'update_quote_status',
+              success: parsed.success,
+              data: parsed.quote,
+              error: parsed.error,
+            })
+            break
+          }
+          case 'update_quote': {
+            const input = toolUse.input as {
+              quote_number: string
+              items?: Array<{ description: string; quantity: number; unit_price: number; tax_rate: number }>
+              notes?: string
+              terms?: string
+              validity_date?: string
+            }
+            result = await updateQuoteTool(supabase, user.id, company.id, input)
             const parsed = JSON.parse(result)
             executedActions.push({
               type: 'update_quote_status',
