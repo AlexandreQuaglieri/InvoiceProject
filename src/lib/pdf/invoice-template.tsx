@@ -368,7 +368,7 @@ export function InvoiceTemplate({ invoice, company }: InvoiceTemplateProps) {
             <Text style={styles.totalLabel}>Total HT</Text>
             <Text style={styles.totalValue}>{formatCurrency(invoice.total_ht)}</Text>
           </View>
-          {invoice.discount_value && invoice.discount_value > 0 && (
+          {!!invoice.discount_value && invoice.discount_value > 0 && (
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>
                 Remise{' '}
