@@ -91,13 +91,10 @@ export async function POST(
       invoice.number
     )
 
-    console.log('[Chorus Pro] Réponse complète:', JSON.stringify(result, null, 2))
-
     return NextResponse.json({
       success: true,
       numeroFluxDepot: result.numeroFluxDepot,
       dateDepot: result.dateDepot,
-      _debug: result,
     })
   } catch (error) {
     console.error('Erreur transmission Chorus Pro:', error)
