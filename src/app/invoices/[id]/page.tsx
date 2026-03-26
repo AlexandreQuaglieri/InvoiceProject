@@ -220,6 +220,11 @@ function InvoiceContent({
                   <span className="font-semibold">Total TTC</span>
                   <span className="font-bold">{formatCurrency(invoice.total_ttc)}</span>
                 </div>
+                {company?.vat_regime === 'franchise' && (
+                  <p className="text-xs text-muted-foreground pt-2 italic">
+                    TVA non applicable, art. 293 B du CGI
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
