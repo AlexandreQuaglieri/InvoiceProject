@@ -41,7 +41,7 @@ export async function embedFacturX(
       <fx:DocumentFileName>factur-x.xml</fx:DocumentFileName>
       <fx:DocumentType>INVOICE</fx:DocumentType>
       <fx:Version>1.0</fx:Version>
-      <fx:ConformanceLevel>EN 16931</fx:ConformanceLevel>
+      <fx:ConformanceLevel>EN16931</fx:ConformanceLevel>
     </rdf:Description>
   </rdf:RDF>
 </x:xmpmeta>

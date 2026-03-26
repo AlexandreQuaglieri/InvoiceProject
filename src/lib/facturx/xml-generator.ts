@@ -110,11 +110,12 @@ export function generateFacturXXml(
   xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
   xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
   xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100"
+  xmlns:qdt="urn:un:unece:uncefact:data:qualified:UnqualifiedDataType:100"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <rsm:ExchangedDocumentContext>
     <ram:GuidelineSpecifiedDocumentContextParameter>
-      <ram:ID>urn:factur-x.eu:1p0:en16931</ram:ID>
+      <ram:ID>urn:cen.eu:en16931:2017</ram:ID>
     </ram:GuidelineSpecifiedDocumentContextParameter>
   </rsm:ExchangedDocumentContext>
 
