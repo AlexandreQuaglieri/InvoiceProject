@@ -180,7 +180,6 @@ export function generateFacturXXml(
         <ram:PayeePartyCreditorFinancialAccount>
           <ram:IBANID>${esc(company.iban)}</ram:IBANID>
         </ram:PayeePartyCreditorFinancialAccount>
-        ${company.bic ? `<ram:PayeeSpecifiedCreditorFinancialInstitution><ram:BICID>${esc(company.bic)}</ram:BICID></ram:PayeeSpecifiedCreditorFinancialInstitution>` : ''}
       </ram:SpecifiedTradeSettlementPaymentMeans>`
           : ''
       }

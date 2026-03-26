@@ -47,7 +47,7 @@ export function TransmitChorusProButton({ invoiceId }: TransmitChorusProButtonPr
       ) : (
         <Send className="mr-2 h-4 w-4" />
       )}
-      Transmettre via Chorus Pro
+      Transmettre à un client public (Chorus Pro)
     </Button>
   )
 }
