@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createClient } from '@/lib/supabase/server'
 import { InvoiceTemplate } from '@/lib/pdf/invoice-template'
+import { generateFacturXXml } from '@/lib/facturx/xml-generator'
+import { embedFacturX } from '@/lib/facturx/embed'
 import sharp from 'sharp'
 
 export async function GET(
@@ -74,19 +76,19 @@ export async function GET(
       }
     }
 
-    // Générer le PDF
+    // Générer le PDF visuel
     const pdfBuffer = await renderToBuffer(
       InvoiceTemplate({ invoice: invoice as any, company: companyWithLogo })
     )
 
+    // Générer le XML Factur-X et l'embarquer dans le PDF (PDF/A-3)
+    const xmlContent = generateFacturXXml(invoice as any, company)
+    const facturXBuffer = await embedFacturX(Buffer.from(pdfBuffer), xmlContent)
+
     // Nom du fichier
     const fileName = `${invoice.number.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
 
-    // Convertir en Uint8Array pour compatibilité
-    const uint8Array = new Uint8Array(pdfBuffer)
-
-    // Retourner le PDF
-    return new NextResponse(uint8Array, {
+    return new NextResponse(new Uint8Array(facturXBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${fileName}"`,
