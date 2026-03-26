@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
   Bot,
-  X,
   Send,
   Loader2,
   Plus,
@@ -230,7 +229,7 @@ export function FloatingChatWidget() {
 
       {/* Panel latéral */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-[420px] sm:w-[420px] p-0 flex flex-col">
+        <SheetContent side="right" className="w-[420px] sm:w-[420px] p-0 flex flex-col gap-0 overflow-hidden">
           {/* Header */}
           <SheetHeader className="px-4 py-3 border-b flex-shrink-0">
             <div className="flex items-center justify-between">
@@ -287,15 +286,12 @@ export function FloatingChatWidget() {
                   )}
                 </div>
 
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             </div>
           </SheetHeader>
 
           {/* Messages */}
-          <ScrollArea ref={scrollRef} className="flex-1 p-4">
+          <ScrollArea ref={scrollRef} className="flex-1 min-h-0 p-4">
             {messages.length === 0 ? (
               <div className="text-center py-10 text-muted-foreground">
                 <Bot className="h-10 w-10 mx-auto mb-3 opacity-40" />
