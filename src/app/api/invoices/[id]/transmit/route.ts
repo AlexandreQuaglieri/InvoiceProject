@@ -8,8 +8,22 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const supabase = await createClient()
 
+  // Credentials plateforme depuis les variables d'environnement
+  const clientId = process.env.CHORUS_PRO_CLIENT_ID
+  const clientSecret = process.env.CHORUS_PRO_CLIENT_SECRET
+  const login = process.env.CHORUS_PRO_LOGIN
+  const password = process.env.CHORUS_PRO_PASSWORD
+  const sandbox = process.env.CHORUS_PRO_SANDBOX !== 'false'
+
+  if (!clientId || !clientSecret || !login || !password) {
+    return NextResponse.json(
+      { error: 'Chorus Pro non configuré sur la plateforme.' },
+      { status: 503 }
+    )
+  }
+
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -17,26 +31,6 @@ export async function POST(
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
   }
 
-  // Récupérer les paramètres Chorus Pro
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('chorus_pro_client_id, chorus_pro_client_secret, chorus_pro_login, chorus_pro_password, chorus_pro_sandbox')
-    .eq('user_id', user.id)
-    .single()
-
-  if (
-    !settings?.chorus_pro_client_id ||
-    !settings?.chorus_pro_client_secret ||
-    !settings?.chorus_pro_login ||
-    !settings?.chorus_pro_password
-  ) {
-    return NextResponse.json(
-      { error: 'Paramètres Chorus Pro non configurés. Rendez-vous dans Paramètres → Chorus Pro.' },
-      { status: 400 }
-    )
-  }
-
-  // Récupérer l'entreprise
   const { data: company } = await supabase
     .from('companies')
     .select('*')
@@ -47,7 +41,6 @@ export async function POST(
     return NextResponse.json({ error: 'Entreprise non configurée' }, { status: 400 })
   }
 
-  // Récupérer la facture avec client et lignes
   const { data: invoice } = await supabase
     .from('invoices')
     .select('*, client:clients(*), items:invoice_items(*)')
@@ -61,7 +54,7 @@ export async function POST(
 
   if (invoice.status === 'draft') {
     return NextResponse.json(
-      { error: 'Impossible de transmettre un brouillon. Finalisez la facture d\'abord.' },
+      { error: "Impossible de transmettre un brouillon. Finalisez la facture d'abord." },
       { status: 400 }
     )
   }
@@ -70,13 +63,7 @@ export async function POST(
     const xmlContent = generateFacturXXml(invoice as any, company)
 
     const result = await deposerFluxFacturX(
-      {
-        clientId: settings.chorus_pro_client_id,
-        clientSecret: settings.chorus_pro_client_secret,
-        login: settings.chorus_pro_login,
-        password: settings.chorus_pro_password,
-        sandbox: settings.chorus_pro_sandbox ?? true,
-      },
+      { clientId, clientSecret, login, password, sandbox },
       xmlContent,
       invoice.number
     )
