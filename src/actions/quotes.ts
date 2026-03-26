@@ -233,6 +233,7 @@ export async function updateQuoteStatus(
   }
 
   revalidatePath('/quotes')
+  revalidatePath(`/quotes/${id}`)
   return { success: true }
 }
 
