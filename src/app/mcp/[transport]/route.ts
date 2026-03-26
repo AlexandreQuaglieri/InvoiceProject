@@ -17,7 +17,6 @@ const handler = createMcpHandler(
       },
       async ({ search, limit }, extra) => {
         const userId = extra.authInfo?.extra?.userId as string
-        console.log('[MCP list_clients] userId:', userId)
         if (!userId) {
           return { content: [{ type: 'text', text: 'Erreur: Non authentifié' }] }
         }
@@ -28,8 +27,6 @@ const handler = createMcpHandler(
           .select('id')
           .eq('user_id', userId)
           .single()
-
-        console.log('[MCP list_clients] company:', company, 'error:', companyError?.message)
 
         if (!company) {
           return { content: [{ type: 'text', text: `Erreur: Entreprise non trouvée pour user_id=${userId}. Vérifiez que votre entreprise est bien configurée dans l'app.` }] }
@@ -428,16 +425,12 @@ const verifyToken = async (
       .single()
 
     if (error || !oauthToken) {
-      console.log('[MCP Auth] OAuth token not found')
       return undefined
     }
 
     if (new Date(oauthToken.access_token_expires_at) < new Date()) {
-      console.log('[MCP Auth] OAuth token expired')
       return undefined
     }
-
-    console.log('[MCP Auth] OAuth token validated for user:', oauthToken.user_id)
     return {
       token: bearerToken,
       scopes: oauthToken.scope?.split(',') || ['mcp'],
@@ -458,12 +451,10 @@ const verifyToken = async (
       .single()
 
     if (error || !tokenRecord) {
-      console.log('[MCP Auth] Legacy token not found')
       return undefined
     }
 
     if (tokenRecord.expires_at && new Date(tokenRecord.expires_at) < new Date()) {
-      console.log('[MCP Auth] Legacy token expired')
       return undefined
     }
 
@@ -472,8 +463,6 @@ const verifyToken = async (
       .from('mcp_api_tokens')
       .update({ last_used_at: new Date().toISOString() })
       .eq('token_hash', tokenHash)
-
-    console.log('[MCP Auth] Legacy token validated for user:', tokenRecord.user_id)
     return {
       token: bearerToken,
       scopes: ['mcp'],

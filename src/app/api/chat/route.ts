@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 
+// Rate limiting: 20 requêtes par utilisateur par minute
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(userId)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + 60_000 })
+    return true
+  }
+  if (entry.count >= 20) return false
+  entry.count++
+  return true
+}
+
 const SYSTEM_PROMPT = `Tu es un assistant spécialisé dans la création de factures, devis et gestion de clients pour une application de facturation française.
 
 Tu aides l'utilisateur à:
@@ -1331,6 +1345,13 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    if (!checkRateLimit(user.id)) {
+      return NextResponse.json(
+        { error: 'Trop de requêtes. Veuillez patienter une minute.' },
+        { status: 429 }
+      )
     }
 
     // Récupérer la clé API Claude
