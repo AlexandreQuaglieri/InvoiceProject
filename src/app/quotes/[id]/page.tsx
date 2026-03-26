@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
   ArrowLeft,
+  Pencil,
   Send,
   CheckCircle,
   Clock,
@@ -108,6 +109,14 @@ function QuoteContent({
           </div>
         </div>
         <div className="flex gap-2">
+          {quote.status === 'draft' && (
+            <Link href={`/quotes/${quote.id}/edit`}>
+              <Button variant="outline">
+                <Pencil className="mr-2 h-4 w-4" />
+                Modifier
+              </Button>
+            </Link>
+          )}
           <QuoteStatusActions quote={quote} />
         </div>
       </div>

@@ -207,6 +207,97 @@ export async function createQuote(
   return { success: true, quote }
 }
 
+export async function updateQuote(
+  id: string,
+  data: CreateQuoteData
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Non authentifié' }
+  }
+
+  // Vérifier que le devis existe et appartient à l'utilisateur
+  const { data: existing } = await supabase
+    .from('quotes')
+    .select('id, status')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!existing) {
+    return { success: false, error: 'Devis non trouvé' }
+  }
+
+  if (existing.status !== 'draft') {
+    return { success: false, error: 'Seuls les devis brouillons peuvent être modifiés' }
+  }
+
+  // Recalculer les totaux
+  let subtotal = 0
+  let taxAmount = 0
+  const itemsWithTotals = data.items.map((item, index) => {
+    const itemTotal = item.quantity * item.unit_price
+    const itemTax = itemTotal * (item.tax_rate / 100)
+    subtotal += itemTotal
+    taxAmount += itemTax
+    return { ...item, total: itemTotal, position: index }
+  })
+
+  const total = subtotal + taxAmount
+
+  // Mettre à jour le devis
+  const { error: quoteError } = await supabase
+    .from('quotes')
+    .update({
+      client_id: data.client_id,
+      issue_date: data.issue_date,
+      validity_date: data.validity_date,
+      notes: data.notes || null,
+      terms: data.terms || null,
+      subtotal,
+      tax_amount: taxAmount,
+      total,
+    })
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  if (quoteError) {
+    console.error('Error updating quote:', quoteError)
+    return { success: false, error: 'Erreur lors de la mise à jour du devis' }
+  }
+
+  // Supprimer les anciennes lignes et recréer
+  await supabase.from('quote_items').delete().eq('quote_id', id)
+
+  const { error: itemsError } = await supabase
+    .from('quote_items')
+    .insert(
+      itemsWithTotals.map((item) => ({
+        quote_id: id,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        tax_rate: item.tax_rate,
+        total: item.total,
+        position: item.position,
+      }))
+    )
+
+  if (itemsError) {
+    console.error('Error updating quote items:', itemsError)
+    return { success: false, error: 'Erreur lors de la mise à jour des lignes' }
+  }
+
+  revalidatePath('/quotes')
+  revalidatePath(`/quotes/${id}`)
+  return { success: true }
+}
+
 export async function updateQuoteStatus(
   id: string,
   status: QuoteStatus
