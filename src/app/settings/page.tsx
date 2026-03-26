@@ -3,11 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { MCPTokens } from '@/components/settings/mcp-tokens'
+import { ChorusProSettings } from '@/components/settings/chorus-pro-settings'
 import { getMCPTokens } from '@/actions/mcp-tokens'
+import { getUserSettings } from '@/actions/settings'
 
 export default async function SettingsPage() {
   const t = await getTranslations()
   const mcpTokens = await getMCPTokens()
+  const userSettings = await getUserSettings()
 
   return (
     <DashboardLayout>
@@ -23,6 +26,7 @@ export default async function SettingsPage() {
             <TabsTrigger value="invoicing">{t('settings.invoicing')}</TabsTrigger>
             <TabsTrigger value="api">{t('settings.api')}</TabsTrigger>
             <TabsTrigger value="mcp">Claude MCP</TabsTrigger>
+            <TabsTrigger value="chorus">Chorus Pro</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
@@ -86,6 +90,18 @@ export default async function SettingsPage() {
 
           <TabsContent value="mcp" className="space-y-4">
             <MCPTokens tokens={mcpTokens} />
+          </TabsContent>
+
+          <TabsContent value="chorus" className="space-y-4">
+            <ChorusProSettings
+              initialValues={{
+                chorus_pro_client_id: userSettings?.chorus_pro_client_id,
+                chorus_pro_client_secret: userSettings?.chorus_pro_client_secret,
+                chorus_pro_login: userSettings?.chorus_pro_login,
+                chorus_pro_password: userSettings?.chorus_pro_password,
+                chorus_pro_sandbox: userSettings?.chorus_pro_sandbox,
+              }}
+            />
           </TabsContent>
         </Tabs>
       </div>

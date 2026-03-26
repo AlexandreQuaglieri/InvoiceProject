@@ -38,6 +38,11 @@ export interface Database {
           invoice_next_number: number
           locale: string
           theme: string
+          chorus_pro_client_id: string | null
+          chorus_pro_client_secret: string | null
+          chorus_pro_login: string | null
+          chorus_pro_password: string | null
+          chorus_pro_sandbox: boolean
           created_at: string
           updated_at: string
         }
@@ -49,6 +54,11 @@ export interface Database {
           invoice_next_number?: number
           locale?: string
           theme?: string
+          chorus_pro_client_id?: string | null
+          chorus_pro_client_secret?: string | null
+          chorus_pro_login?: string | null
+          chorus_pro_password?: string | null
+          chorus_pro_sandbox?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -60,6 +70,11 @@ export interface Database {
           invoice_next_number?: number
           locale?: string
           theme?: string
+          chorus_pro_client_id?: string | null
+          chorus_pro_client_secret?: string | null
+          chorus_pro_login?: string | null
+          chorus_pro_password?: string | null
+          chorus_pro_sandbox?: boolean
           created_at?: string
           updated_at?: string
         }
