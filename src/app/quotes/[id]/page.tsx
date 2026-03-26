@@ -22,6 +22,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { getQuote } from '@/actions/quotes'
 import { getCompany } from '@/actions/company'
 import { QuoteStatusActions } from '@/components/quotes/quote-status-actions'
+import { DownloadQuotePdfButton } from '@/components/quotes/download-quote-pdf-button'
 import type { QuoteStatus } from '@/types/database'
 
 interface QuotePageProps {
@@ -263,6 +264,15 @@ function QuoteContent({
                 <p className="text-sm text-muted-foreground">Date de validité</p>
                 <p className="font-medium">{formatDate(quote.validity_date)}</p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <DownloadQuotePdfButton quoteId={quote.id} />
             </CardContent>
           </Card>
         </div>
