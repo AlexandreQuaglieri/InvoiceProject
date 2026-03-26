@@ -47,15 +47,15 @@ async function getToken(credentials: ChorusProCredentials): Promise<string> {
  */
 export async function deposerFluxFacturX(
   credentials: ChorusProCredentials,
-  xmlContent: string,
+  pdfBuffer: Buffer,
   invoiceNumber: string
 ): Promise<DepotFluxResult> {
   const token = await getToken(credentials)
   const apiBase = credentials.sandbox ? SANDBOX_API_URL : PROD_API_URL
 
   const cpAccount = Buffer.from(`${credentials.login}:${credentials.password}`).toString('base64')
-  const xmlBase64 = Buffer.from(xmlContent, 'utf-8').toString('base64')
-  const fileName = `${invoiceNumber.replace(/[^a-zA-Z0-9]/g, '_')}.xml`
+  const pdfBase64 = pdfBuffer.toString('base64')
+  const fileName = `${invoiceNumber.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
 
   const response = await fetch(`${apiBase}/factures/v1/deposer/flux`, {
     method: 'POST',
@@ -66,7 +66,7 @@ export async function deposerFluxFacturX(
     },
     body: JSON.stringify({
       idUtilisateurCourant: 0,
-      fichierFlux: xmlBase64,
+      fichierFlux: pdfBase64,
       nomFichier: fileName,
       syntaxeFlux: 'IN_DP_E2_CII_FACTURX',
       avecSignature: false,

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { renderToBuffer } from '@react-pdf/renderer'
 import { createClient } from '@/lib/supabase/server'
+import { InvoiceTemplate } from '@/lib/pdf/invoice-template'
 import { generateFacturXXml } from '@/lib/facturx/xml-generator'
+import { embedFacturX } from '@/lib/facturx/embed'
 import { deposerFluxFacturX } from '@/lib/chorus-pro/client'
+import sharp from 'sharp'
 
 export async function POST(
   _request: NextRequest,
@@ -60,11 +64,30 @@ export async function POST(
   }
 
   try {
+    // Générer le logo en base64 si présent
+    let companyWithLogo = { ...company }
+    if (company.logo_url) {
+      try {
+        const logoResponse = await fetch(company.logo_url)
+        if (logoResponse.ok) {
+          const pngBuffer = await sharp(Buffer.from(await logoResponse.arrayBuffer())).png().toBuffer()
+          companyWithLogo.logo_url = `data:image/png;base64,${pngBuffer.toString('base64')}`
+        }
+      } catch {
+        companyWithLogo.logo_url = null
+      }
+    }
+
+    // Générer le PDF Factur-X complet (PDF + XML embarqué)
+    const pdfBuffer = await renderToBuffer(
+      InvoiceTemplate({ invoice: invoice as any, company: companyWithLogo })
+    )
     const xmlContent = generateFacturXXml(invoice as any, company)
+    const facturXBuffer = await embedFacturX(Buffer.from(pdfBuffer), xmlContent)
 
     const result = await deposerFluxFacturX(
       { clientId, clientSecret, login, password, sandbox },
-      xmlContent,
+      facturXBuffer,
       invoice.number
     )
 
