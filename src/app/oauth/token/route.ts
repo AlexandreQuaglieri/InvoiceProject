@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { hashToken, generateAccessToken, generateRefreshToken } from '@/lib/mcp/oauth'
 import crypto from 'crypto'
 
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const grantType = body.grant_type
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     if (grantType === 'authorization_code') {
       return handleAuthorizationCode(supabase, body)
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleAuthorizationCode(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createAdminClient>,
   body: Record<string, string>
 ) {
   const { code, client_id, redirect_uri, code_verifier } = body
@@ -121,7 +121,7 @@ async function handleAuthorizationCode(
 }
 
 async function handleRefreshToken(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createAdminClient>,
   body: Record<string, string>
 ) {
   const { refresh_token, client_id } = body

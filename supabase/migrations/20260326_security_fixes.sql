@@ -60,4 +60,10 @@ ALTER FUNCTION public.recalculate_invoice_totals() SET search_path = public;
 ALTER FUNCTION public.create_user_settings() SET search_path = public;
 ALTER FUNCTION public.check_token_limit() SET search_path = public;
 ALTER FUNCTION public.update_updated_at_column() SET search_path = public;
-ALTER FUNCTION public.cleanup_expired_oauth_data() SET search_path = public;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+             WHERE n.nspname = 'public' AND p.proname = 'cleanup_expired_oauth_data') THEN
+    EXECUTE 'ALTER FUNCTION public.cleanup_expired_oauth_data() SET search_path = public';
+  END IF;
+END $$;

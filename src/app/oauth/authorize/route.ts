@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { hashToken } from '@/lib/mcp/oauth'
 import crypto from 'crypto'
 
@@ -32,9 +33,10 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createClient()
+  const admin = createAdminClient()
 
   // Vérifier que le client existe
-  const { data: client } = await supabase
+  const { data: client } = await admin
     .from('mcp_oauth_clients')
     .select('*')
     .eq('client_id', clientId)
@@ -77,7 +79,7 @@ export async function GET(request: NextRequest) {
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
   // Sauvegarder le code
-  const { error } = await supabase.from('mcp_oauth_codes').insert({
+  const { error } = await admin.from('mcp_oauth_codes').insert({
     code_hash: codeHash,
     client_id: clientId,
     user_id: user.id,
