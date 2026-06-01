@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hashToken } from '@/lib/mcp/oauth'
+import { getBaseUrl } from '@/lib/base-url'
 import crypto from 'crypto'
 
 // OAuth 2.1 Authorization Endpoint
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   const codeChallengeMethod = searchParams.get('code_challenge_method')
   const resource = searchParams.get('resource')
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://invoice-project-lime.vercel.app'
+  const baseUrl = getBaseUrl()
 
   // Validations
   if (!clientId) {

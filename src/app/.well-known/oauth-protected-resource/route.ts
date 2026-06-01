@@ -2,8 +2,9 @@ import {
   protectedResourceHandler,
   metadataCorsOptionsRequestHandler,
 } from 'mcp-handler'
+import { getBaseUrl } from '@/lib/base-url'
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://invoice-project-lime.vercel.app'
+const baseUrl = getBaseUrl()
 
 // OAuth 2.0 Protected Resource Metadata (RFC 9728)
 const handler = protectedResourceHandler({

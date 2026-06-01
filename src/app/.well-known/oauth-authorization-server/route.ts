@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
+import { getBaseUrl } from '@/lib/base-url'
 
 // OAuth 2.1 Authorization Server Metadata (RFC8414)
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://invoice-project-lime.vercel.app'
+  const baseUrl = getBaseUrl()
 
   return NextResponse.json(
     {
