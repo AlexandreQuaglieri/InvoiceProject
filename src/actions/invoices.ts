@@ -12,6 +12,7 @@ import {
 import { getCompany } from './company'
 import { getUserSettings, updateUserSettings } from './settings'
 import type { Invoice, InvoiceItem, InvoiceWithRelations, InvoiceStatus, Client } from '@/types/database'
+import { walletSync, walletRemove } from '@/lib/wallet-sync'
 
 export async function getInvoices(filters?: {
   status?: InvoiceStatus
@@ -169,6 +170,7 @@ export async function createInvoiceAction(
     invoice_next_number: (settings?.invoice_next_number || 1) + 1,
   })
 
+  await walletSync('invoices', invoice, company.user_id)
   revalidatePath('/invoices')
   return { success: true, data: invoice }
 }
@@ -262,6 +264,7 @@ export async function updateInvoiceAction(
     return { success: false, error: 'Erreur lors de la mise à jour des lignes de facture' }
   }
 
+  await walletSync('invoices', invoice, company.user_id)
   revalidatePath('/invoices')
   revalidatePath(`/invoices/${id}`)
   return { success: true, data: invoice }
@@ -287,17 +290,20 @@ export async function updateInvoiceStatusAction(
     updateData.paid_at = null
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('invoices')
     .update(updateData)
     .eq('id', id)
     .eq('company_id', company.id)
+    .select()
+    .single()
 
   if (error) {
     console.error('Error updating invoice status:', error)
     return { success: false, error: 'Erreur lors de la mise à jour du statut' }
   }
 
+  if (updated) await walletSync('invoices', updated, company.user_id)
   revalidatePath('/invoices')
   revalidatePath(`/invoices/${id}`)
   return { success: true }
@@ -339,6 +345,7 @@ export async function deleteInvoiceAction(
     return { success: false, error: 'Erreur lors de la suppression de la facture' }
   }
 
+  await walletRemove('invoices', id, company.user_id)
   revalidatePath('/invoices')
   return { success: true }
 }

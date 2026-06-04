@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { clientSchema, type ClientFormData } from '@/lib/validations/client'
 import { getCompany } from './company'
 import type { Client } from '@/types/database'
+import { walletSync, walletRemove } from '@/lib/wallet-sync'
 
 export async function getClients(search?: string): Promise<Client[]> {
   const supabase = await createClient()
@@ -83,6 +84,7 @@ export async function createClientAction(
     return { success: false, error: 'Erreur lors de la création du client' }
   }
 
+  if (data) await walletSync('clients', data, company.user_id)
   revalidatePath('/clients')
   return { success: true, data }
 }
@@ -119,6 +121,7 @@ export async function updateClientAction(
     return { success: false, error: 'Erreur lors de la mise à jour du client' }
   }
 
+  if (data) await walletSync('clients', data, company.user_id)
   revalidatePath('/clients')
   return { success: true, data }
 }
@@ -144,6 +147,7 @@ export async function deleteClientAction(
     return { success: false, error: 'Erreur lors de la suppression du client' }
   }
 
+  await walletRemove('clients', id, company.user_id)
   revalidatePath('/clients')
   return { success: true }
 }
