@@ -4,10 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { MCPTokens } from '@/components/settings/mcp-tokens'
 import { getMCPTokens } from '@/actions/mcp-tokens'
+import { WalletConnect } from '@/components/settings/wallet-connect'
+import { createClient } from '@/lib/supabase/server'
 
 export default async function SettingsPage() {
   const t = await getTranslations()
   const mcpTokens = await getMCPTokens()
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   return (
     <DashboardLayout>
@@ -23,6 +27,7 @@ export default async function SettingsPage() {
             <TabsTrigger value="invoicing">{t('settings.invoicing')}</TabsTrigger>
             <TabsTrigger value="api">{t('settings.api')}</TabsTrigger>
             <TabsTrigger value="mcp">Claude MCP</TabsTrigger>
+            <TabsTrigger value="wallet">Data Wallet</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
@@ -86,6 +91,10 @@ export default async function SettingsPage() {
 
           <TabsContent value="mcp" className="space-y-4">
             <MCPTokens tokens={mcpTokens} />
+          </TabsContent>
+
+          <TabsContent value="wallet" className="space-y-4">
+            <WalletConnect userId={user?.id ?? ''} />
           </TabsContent>
         </Tabs>
       </div>
