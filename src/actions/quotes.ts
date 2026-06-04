@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { Quote, QuoteItem, QuoteWithRelations, QuoteStatus } from '@/types/database'
+import { walletSync, walletRemove } from '@/lib/wallet-sync'
 
 export async function getQuotes(): Promise<QuoteWithRelations[]> {
   const supabase = await createClient()
@@ -203,6 +204,7 @@ export async function createQuote(
     return { success: false, error: 'Erreur lors de la création des lignes du devis' }
   }
 
+  await walletSync('quotes', quote, user.id)
   revalidatePath('/quotes')
   return { success: true, quote }
 }
@@ -251,7 +253,7 @@ export async function updateQuote(
   const total = subtotal + taxAmount
 
   // Mettre à jour le devis
-  const { error: quoteError } = await supabase
+  const { data: updatedQuote, error: quoteError } = await supabase
     .from('quotes')
     .update({
       client_id: data.client_id,
@@ -265,6 +267,8 @@ export async function updateQuote(
     })
     .eq('id', id)
     .eq('user_id', user.id)
+    .select()
+    .single()
 
   if (quoteError) {
     console.error('Error updating quote:', quoteError)
@@ -293,6 +297,7 @@ export async function updateQuote(
     return { success: false, error: 'Erreur lors de la mise à jour des lignes' }
   }
 
+  if (updatedQuote) await walletSync('quotes', updatedQuote, user.id)
   revalidatePath('/quotes')
   revalidatePath(`/quotes/${id}`)
   return { success: true }
@@ -312,17 +317,20 @@ export async function updateQuoteStatus(
     return { success: false, error: 'Non authentifié' }
   }
 
-  const { error } = await supabase
+  const { data: updatedQuote, error } = await supabase
     .from('quotes')
     .update({ status })
     .eq('id', id)
     .eq('user_id', user.id)
+    .select()
+    .single()
 
   if (error) {
     console.error('Error updating quote status:', error)
     return { success: false, error: 'Erreur lors de la mise à jour du statut' }
   }
 
+  if (updatedQuote) await walletSync('quotes', updatedQuote, user.id)
   revalidatePath('/quotes')
   revalidatePath(`/quotes/${id}`)
   return { success: true }
@@ -362,6 +370,7 @@ export async function deleteQuote(id: string): Promise<{ success: boolean; error
     return { success: false, error: 'Erreur lors de la suppression du devis' }
   }
 
+  await walletRemove('quotes', id, user.id)
   revalidatePath('/quotes')
   return { success: true }
 }
@@ -474,6 +483,8 @@ export async function convertQuoteToInvoice(
     .update({ invoice_next_number: nextNumber + 1 })
     .eq('user_id', user.id)
 
+  await walletSync('invoices', invoice, user.id)
+  await walletSync('quotes', { ...quote, status: 'converted', converted_invoice_id: invoice.id }, user.id)
   revalidatePath('/quotes')
   revalidatePath('/invoices')
 
