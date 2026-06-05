@@ -25,6 +25,7 @@ import { getCompany } from '@/actions/company'
 import { InvoiceStatusActions } from '@/components/invoices/invoice-status-actions'
 import { DownloadPdfButton } from '@/components/invoices/download-pdf-button'
 import { TransmitChorusProButton } from '@/components/invoices/transmit-chorus-pro-button'
+import { TransmitPdpButton } from '@/components/invoices/transmit-pdp-button'
 import type { InvoiceStatus } from '@/types/database'
 
 interface InvoicePageProps {
@@ -281,6 +282,7 @@ function InvoiceContent({
             </CardHeader>
             <CardContent className="space-y-2">
               <DownloadPdfButton invoiceId={invoice.id} />
+              <TransmitPdpButton invoiceId={invoice.id} canTransmit={invoice.status !== 'draft'} />
               {invoice.status !== 'draft' && (
                 <TransmitChorusProButton invoiceId={invoice.id} />
               )}
