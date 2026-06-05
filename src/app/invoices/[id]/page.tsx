@@ -26,6 +26,7 @@ import { InvoiceStatusActions } from '@/components/invoices/invoice-status-actio
 import { DownloadPdfButton } from '@/components/invoices/download-pdf-button'
 import { TransmitChorusProButton } from '@/components/invoices/transmit-chorus-pro-button'
 import { TransmitPdpButton } from '@/components/invoices/transmit-pdp-button'
+import { PdpLifecycle } from '@/components/invoices/pdp-lifecycle'
 import type { InvoiceStatus } from '@/types/database'
 
 interface InvoicePageProps {
@@ -288,6 +289,8 @@ function InvoiceContent({
               )}
             </CardContent>
           </Card>
+
+          {invoice.pdp_deposit_id && <PdpLifecycle invoiceId={invoice.id} />}
         </div>
       </div>
     </div>

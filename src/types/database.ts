@@ -230,6 +230,8 @@ export interface Database {
           total_vat: number
           total_ttc: number
           pdf_url: string | null
+          pdp_deposit_id: string | null
+          pdp_transmitted_at: string | null
           created_at: string
           updated_at: string
         }
@@ -250,6 +252,8 @@ export interface Database {
           total_vat?: number
           total_ttc?: number
           pdf_url?: string | null
+          pdp_deposit_id?: string | null
+          pdp_transmitted_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -270,6 +274,8 @@ export interface Database {
           total_vat?: number
           total_ttc?: number
           pdf_url?: string | null
+          pdp_deposit_id?: string | null
+          pdp_transmitted_at?: string | null
           created_at?: string
           updated_at?: string
         }

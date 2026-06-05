@@ -44,6 +44,16 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   try {
     const facturX = await buildInvoiceFacturX(invoice, company)
     const result = await pdp.transmitInvoice({ facturX, invoiceNumber: invoice.number })
+
+    // Persiste la référence de dépôt PDP. Best-effort : si les colonnes pdp_* ne sont
+    // pas encore créées (migration non appliquée), l'erreur est ignorée et la
+    // transmission reste un succès.
+    await supabase
+      .from('invoices')
+      .update({ pdp_deposit_id: result.depositId, pdp_transmitted_at: result.transmittedAt })
+      .eq('id', invoice.id)
+      .eq('company_id', company.id)
+
     return NextResponse.json({
       success: true,
       depositId: result.depositId,
