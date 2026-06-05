@@ -2,7 +2,8 @@ import type {
   PdpTransmissionResult,
   PdpLifecycleEvent,
   PdpInboundInvoice,
-  PdpEReportingPayload,
+  PdpB2cTransaction,
+  PdpEReporting,
   PdpValidationResult,
 } from './types'
 
@@ -32,6 +33,9 @@ export interface PdpProvider {
   // Réception : lister les factures entrantes (métadonnées ; contenu via downloadInvoice).
   listInbound(): Promise<PdpInboundInvoice[]>
 
-  // E-reporting : transmettre un flux e-reporting (B2C / international).
-  sendEReporting(payload: PdpEReportingPayload): Promise<{ id: string }>
+  // E-reporting : déclarer une transaction B2C (vente à un particulier).
+  reportB2cTransaction(tx: PdpB2cTransaction): Promise<{ id: number }>
+
+  // E-reporting : lister les périodes d'e-reporting.
+  listEReportings(): Promise<PdpEReporting[]>
 }

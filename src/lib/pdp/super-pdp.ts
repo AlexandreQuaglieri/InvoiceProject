@@ -3,7 +3,8 @@ import type {
   PdpTransmissionResult,
   PdpLifecycleEvent,
   PdpInboundInvoice,
-  PdpEReportingPayload,
+  PdpB2cTransaction,
+  PdpEReporting,
   PdpValidationResult,
 } from './types'
 
@@ -170,15 +171,30 @@ export function createSuperPdpProvider(config: SuperPdpConfig): PdpProvider {
       })
     },
 
-    // E-reporting B2C : POST /v1.beta/b2c_transactions. Structure du payload à affiner.
-    async sendEReporting(payload: PdpEReportingPayload): Promise<{ id: string }> {
+    // E-reporting B2C : POST /v1.beta/b2c_transactions (corps { data: [tx] }).
+    async reportB2cTransaction(tx: PdpB2cTransaction): Promise<{ id: number }> {
       const res = await call(`${API}/b2c_transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ data: [tx] }),
       })
       const data = await res.json()
-      return { id: String(data.id) }
+      // L'API renvoie "Data" (D majuscule) ; on accepte les deux casses.
+      const created = ((data.data ?? data.Data ?? []) as Array<{ id?: number }>)[0]
+      return { id: Number(created?.id) }
+    },
+
+    // GET /v1.beta/ereportings — périodes d'e-reporting.
+    async listEReportings(): Promise<PdpEReporting[]> {
+      const res = await call(`${API}/ereportings`)
+      const data = await res.json()
+      return ((data.data ?? []) as Array<Record<string, unknown>>).map((e) => ({
+        id: Number(e.id),
+        kind: e.kind as 'transaction' | 'payment',
+        roleCode: e.role_code as 'SE' | 'BY',
+        startPeriod: e.start_period as string,
+        endPeriod: e.end_period as string,
+      }))
     },
   }
 }

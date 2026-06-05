@@ -54,8 +54,31 @@ export type PdpInboundInvoice = {
   issueDate?: string
 }
 
-// Données e-reporting (B2C, international, statuts de paiement) — structure à affiner.
-export type PdpEReportingPayload = Record<string, unknown>
+// E-reporting B2C (déclaration des ventes aux particuliers à l'administration).
+export type PdpB2cTaxSubtotal = {
+  tax_percent: string
+  taxable_amount: string
+  tax_total: string
+}
+
+export type PdpB2cTransaction = {
+  category_code: 'TLB1' | 'TPS1' | 'TNT1' | 'TMA1' // catégorie AFNOR Z12-012 (TPS1 = prestation de services)
+  currency: string
+  date: string
+  role_code: 'SE' | 'BY' // SE = vendeur, BY = acheteur
+  tax_exclusive_amount: string
+  tax_total: string
+  tax_subtotals: PdpB2cTaxSubtotal[]
+}
+
+// Période d'e-reporting agrégée par la PDP.
+export type PdpEReporting = {
+  id: number
+  kind: 'transaction' | 'payment'
+  roleCode: 'SE' | 'BY'
+  startPeriod: string
+  endPeriod: string
+}
 
 // Résultat de validation de conformité d'une facture (schematrons EN16931 / FR-CTC).
 export type PdpValidationResult = {

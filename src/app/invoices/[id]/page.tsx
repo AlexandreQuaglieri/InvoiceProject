@@ -26,6 +26,7 @@ import { InvoiceStatusActions } from '@/components/invoices/invoice-status-actio
 import { DownloadPdfButton } from '@/components/invoices/download-pdf-button'
 import { TransmitChorusProButton } from '@/components/invoices/transmit-chorus-pro-button'
 import { TransmitPdpButton } from '@/components/invoices/transmit-pdp-button'
+import { EreportB2cButton } from '@/components/invoices/ereport-b2c-button'
 import { PdpLifecycle } from '@/components/invoices/pdp-lifecycle'
 import type { InvoiceStatus } from '@/types/database'
 
@@ -283,7 +284,13 @@ function InvoiceContent({
             </CardHeader>
             <CardContent className="space-y-2">
               <DownloadPdfButton invoiceId={invoice.id} />
-              <TransmitPdpButton invoiceId={invoice.id} canTransmit={invoice.status !== 'draft'} />
+              <TransmitPdpButton
+                invoiceId={invoice.id}
+                canTransmit={invoice.status !== 'draft' && invoice.client?.type === 'professional'}
+              />
+              {invoice.status !== 'draft' && invoice.client?.type === 'individual' && (
+                <EreportB2cButton invoiceId={invoice.id} />
+              )}
               {invoice.status !== 'draft' && (
                 <TransmitChorusProButton invoiceId={invoice.id} />
               )}

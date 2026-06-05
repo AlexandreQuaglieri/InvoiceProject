@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Sparkles,
   Inbox,
+  BarChart3,
 } from 'lucide-react'
 
 import {
@@ -53,6 +54,11 @@ export function AppSidebar() {
       title: 'Factures reçues',
       url: '/inbox',
       icon: Inbox,
+    },
+    {
+      title: 'E-reporting',
+      url: '/e-reporting',
+      icon: BarChart3,
     },
     {
       title: t('quotes'),
