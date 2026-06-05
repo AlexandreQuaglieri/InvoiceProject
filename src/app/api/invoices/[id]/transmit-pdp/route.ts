@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { buildInvoiceFacturX } from '@/lib/facturx/build'
-import { superPdpForRequest } from '@/lib/pdp'
+import { superPdpForRequest, friendlyPdpError } from '@/lib/pdp'
 
 // Transmet une facture (Factur-X) en B2B via la PDP (Super PDP). Le secret OAuth
 // reste côté serveur. Réservé aux factures finalisées (pas les brouillons).
@@ -60,9 +60,6 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       transmittedAt: result.transmittedAt,
     })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Erreur lors de la transmission' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: friendlyPdpError(error) }, { status: 500 })
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { superPdpForRequest, type PdpB2cTransaction } from '@/lib/pdp'
+import { superPdpForRequest, friendlyPdpError, type PdpB2cTransaction } from '@/lib/pdp'
 
 // Déclare une facture B2C (vente à un particulier) en e-reporting via la PDP
 // (POST /v1.beta/b2c_transactions).
@@ -73,9 +73,6 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     const result = await pdp.reportB2cTransaction(tx)
     return NextResponse.json({ success: true, id: result.id })
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Erreur lors de la déclaration e-reporting' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: friendlyPdpError(error) }, { status: 500 })
   }
 }

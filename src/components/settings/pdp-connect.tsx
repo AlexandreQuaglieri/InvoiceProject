@@ -1,11 +1,28 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle2, Plug } from 'lucide-react'
+import { CheckCircle2, Plug, Loader2 } from 'lucide-react'
 import type { PdpConnection } from '@/lib/pdp'
 
 export function PdpConnect({ connection }: { connection: PdpConnection }) {
+  const [disconnecting, setDisconnecting] = useState(false)
+
+  const handleDisconnect = async () => {
+    setDisconnecting(true)
+    try {
+      const res = await fetch('/api/pdp/disconnect', { method: 'POST' })
+      if (res.ok) {
+        window.location.reload()
+        return
+      }
+    } catch {
+      // ignore
+    }
+    setDisconnecting(false)
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -32,9 +49,14 @@ export function PdpConnect({ connection }: { connection: PdpConnection }) {
                 </p>
               </div>
             </div>
-            <Button asChild variant="outline" size="sm">
-              <a href="/api/pdp/connect">Reconnecter</a>
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="outline" size="sm">
+                <a href="/api/pdp/connect">Reconnecter</a>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleDisconnect} disabled={disconnecting}>
+                {disconnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Déconnecter'}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">

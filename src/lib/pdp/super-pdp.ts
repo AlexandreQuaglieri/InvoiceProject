@@ -275,3 +275,14 @@ export async function refreshAccessToken(params: {
   })
   return { ...set, refreshToken: set.refreshToken ?? params.refreshToken }
 }
+
+// Transforme une erreur brute de la PDP en message lisible pour l'utilisateur.
+export function friendlyPdpError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error)
+  if (raw.includes('ne correspond pas au vendeur') || raw.includes('does not match')) {
+    return "Le vendeur de la facture ne correspond pas à la société raccordée à la PDP. En test (sandbox), la société raccordée est fictive ; en production, raccordez votre société réelle (même SIRET que sur vos factures)."
+  }
+  // Récupère le message lisible renvoyé par la PDP ("message":"...").
+  const m = raw.match(/"message":"([^"]+)"/)
+  return m ? m[1] : error instanceof Error ? error.message : 'Erreur PDP'
+}
