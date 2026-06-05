@@ -3,6 +3,88 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import * as svc from '@/lib/services'
 import type { InvoiceStatus, QuoteStatus } from '@/types/database'
+import sharp from 'sharp'
+
+// Construit un chemin de navigation sûr à partir d'une destination connue.
+// L'assistant ne fournit jamais d'URL libre : on mappe une destination contrôlée.
+function navPath(destination: string, id?: string): string | null {
+  switch (destination) {
+    case 'dashboard':
+      return '/dashboard'
+    case 'invoices':
+      return '/invoices'
+    case 'invoices_overdue':
+      return '/invoices?status=overdue'
+    case 'quotes':
+      return '/quotes'
+    case 'clients':
+      return '/clients'
+    case 'company':
+      return '/company'
+    case 'settings':
+      return '/settings'
+    case 'invoice_detail':
+      return id ? `/invoices/${id}` : null
+    case 'quote_detail':
+      return id ? `/quotes/${id}` : null
+    default:
+      return null
+  }
+}
+
+// Pièce jointe reçue du frontend (base64 sans préfixe data:).
+type IncomingAttachment = { name?: string; media_type: string; data: string }
+
+// Transforme les pièces jointes (PDF/images) en blocs de contenu multimodal pour Claude.
+// Les images trop lourdes sont compressées avec sharp (limite Claude ~5 Mo en base64).
+// Les formats non supportés par la vision (Word, Excel...) sont ignorés.
+async function buildAttachmentBlocks(
+  attachments: IncomingAttachment[]
+): Promise<Anthropic.ContentBlockParam[]> {
+  const blocks: Anthropic.ContentBlockParam[] = []
+  const MAX_IMAGE = 3.5 * 1024 * 1024 // ~4.7 Mo en base64
+
+  for (const att of attachments) {
+    if (att.media_type === 'application/pdf') {
+      blocks.push({
+        type: 'document',
+        source: { type: 'base64', media_type: 'application/pdf', data: att.data },
+      })
+    } else if (att.media_type.startsWith('image/')) {
+      let buffer = Buffer.from(att.data, 'base64')
+      let mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' =
+        att.media_type === 'image/png'
+          ? 'image/png'
+          : att.media_type === 'image/webp'
+            ? 'image/webp'
+            : att.media_type === 'image/gif'
+              ? 'image/gif'
+              : 'image/jpeg'
+
+      if (buffer.length > MAX_IMAGE) {
+        let compressed = await sharp(buffer)
+          .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 75 })
+          .toBuffer()
+        if (compressed.length > MAX_IMAGE) {
+          compressed = await sharp(buffer)
+            .resize(1100, 1100, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 55 })
+            .toBuffer()
+        }
+        buffer = Buffer.from(compressed)
+        mediaType = 'image/jpeg'
+      }
+
+      blocks.push({
+        type: 'image',
+        source: { type: 'base64', media_type: mediaType, data: buffer.toString('base64') },
+      })
+    }
+  }
+
+  return blocks
+}
 
 // Rate limiting: 20 requêtes par utilisateur par minute
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -30,6 +112,7 @@ TES OUTILS
 - Actions : search_company, create_client, update_client, delete_client, create_invoice, update_invoice_status, delete_invoice, create_quote, update_quote, update_quote_status, delete_quote, convert_quote_to_invoice.
 - Consultation (lecture seule) : get_invoice_stats, list_invoices, get_invoice, list_quotes, get_quote, list_clients, get_company.
 - Connaissance : get_guide(topic) — fiches de référence fiables sur le métier et l'app. Sujets : mentions_obligatoires, tva, delais_paiement, facturation_electronique_2026, chorus_pro, app_demarrage, app_fonctionnalites.
+- Navigation : navigate(destination, label) — propose un bouton pour ouvrir un écran (facture, devis, liste, tableau de bord, paramètres). L'utilisateur garde la main sur le clic.
 
 COMMENT TE COMPORTER
 1. Question sur SES données (CA, factures en retard, détail d'un devis, top client...) → utilise d'abord les outils de CONSULTATION, puis réponds clairement (montants en euros).
@@ -37,6 +120,8 @@ COMMENT TE COMPORTER
 3. Demande de création / modification → si tu as toutes les infos, AGIS avec l'outil ; sinon pose les questions manquantes.
 4. CONFIRME TOUJOURS avant une action destructive ou externe : suppression (client, facture, devis) et transmission à Chorus Pro. Récapitule ce que tu vas faire et attends l'accord explicite.
 5. Après une action réussie, confirme avec un récap clair (numéro, client, montant TTC, échéance) et propose la suite logique si c'est pertinent.
+6. Quand c'est utile, propose d'ouvrir le bon écran avec navigate (ex. après avoir créé une facture pour la voir, ou si l'utilisateur demande « montre-moi mes impayés »). C'est une simple suggestion cliquable ; ne l'utilise jamais pour une action sensible.
+7. Si l'utilisateur joint un document (PDF ou image, ex. une plaquette), LIS-le pour en extraire les informations utiles (prestations, prix, coordonnées du client...). Si des informations nécessaires manquent (client, adresse, taux de TVA...), demande-les avant de créer le devis ou la facture.
 
 STYLE
 - Toujours en français, ton chaleureux et professionnel, concis mais pédagogue.
@@ -510,6 +595,42 @@ const tools: Anthropic.Tool[] = [
       required: ['topic'],
     },
   },
+  {
+    name: 'navigate',
+    description:
+      "Propose à l'utilisateur d'ouvrir un écran de l'application : un bouton cliquable s'affiche, l'utilisateur reste maître du clic (aucune navigation automatique). Utilise-le pour aider à atteindre la bonne page (détail d'une facture/d'un devis, liste filtrée, tableau de bord, paramètres). N'utilise PAS la navigation pour des actions sensibles.",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        destination: {
+          type: 'string',
+          enum: [
+            'dashboard',
+            'invoices',
+            'invoices_overdue',
+            'quotes',
+            'clients',
+            'company',
+            'settings',
+            'invoice_detail',
+            'quote_detail',
+          ],
+          description:
+            "L'écran à ouvrir. invoice_detail et quote_detail nécessitent un id (récupérable via les outils de consultation).",
+        },
+        id: {
+          type: 'string',
+          description: "ID de la facture ou du devis (requis pour invoice_detail / quote_detail)",
+        },
+        label: {
+          type: 'string',
+          description:
+            "Texte du bouton, court et explicite (ex: « Ouvrir la facture 20260605-01 », « Voir mes impayés »)",
+        },
+      },
+      required: ['destination', 'label'],
+    },
+  },
 ]
 
 // Fonction pour rechercher une entreprise via l'API gouvernementale
@@ -914,30 +1035,41 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { messages } = body
+    const { messages, attachments } = body as {
+      messages: Array<{ role: string; content: string }>
+      attachments?: IncomingAttachment[]
+    }
 
     const anthropic = new Anthropic({ apiKey })
 
-    // Première requête avec les outils
-    let response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
-      thinking: { type: 'disabled' },
-      system: SYSTEM_PROMPT + clientsContext,
-      tools,
-      messages: messages.map((m: { role: string; content: string }) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })),
-    })
-
-    // Boucle pour gérer les appels d'outils
+    // Historique de la conversation. Les pièces jointes (PDF/images) sont rattachées
+    // au DERNIER message utilisateur (le tour courant) en contenu multimodal ; elles ne
+    // sont pas conservées dans l'historique (le frontend n'envoie que des placeholders).
     const conversationMessages: Anthropic.MessageParam[] = messages.map(
-      (m: { role: string; content: string }) => ({
+      (m): Anthropic.MessageParam => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
       })
     )
+
+    if (attachments && attachments.length > 0 && conversationMessages.length > 0) {
+      const blocks = await buildAttachmentBlocks(attachments)
+      const last = conversationMessages[conversationMessages.length - 1]
+      if (blocks.length > 0 && last.role === 'user') {
+        const text = typeof last.content === 'string' ? last.content : ''
+        last.content = [...(text ? [{ type: 'text' as const, text }] : []), ...blocks]
+      }
+    }
+
+    // Première requête avec les outils
+    let response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      thinking: { type: 'disabled' },
+      system: SYSTEM_PROMPT + clientsContext,
+      tools,
+      messages: conversationMessages,
+    })
 
     // Stocker les actions exécutées pour le frontend
     const executedActions: Array<{
@@ -946,6 +1078,9 @@ export async function POST(request: NextRequest) {
       data?: Record<string, unknown>
       error?: string
     }> = []
+
+    // Suggestions de navigation (boutons cliquables côté frontend, jamais automatiques).
+    const navigations: Array<{ label: string; path: string }> = []
 
     while (response.stop_reason === 'tool_use') {
       const toolUseBlocks = response.content.filter(
@@ -1229,6 +1364,20 @@ export async function POST(request: NextRequest) {
             )
             break
           }
+          case 'navigate': {
+            const input = toolUse.input as { destination: string; id?: string; label: string }
+            const path = navPath(input.destination, input.id)
+            if (!path) {
+              result = JSON.stringify({
+                success: false,
+                error: 'Destination inconnue ou id manquant.',
+              })
+              break
+            }
+            navigations.push({ label: input.label, path })
+            result = JSON.stringify({ success: true, suggestion: input.label })
+            break
+          }
           default:
             result = JSON.stringify({ error: 'Outil inconnu' })
         }
@@ -1247,7 +1396,7 @@ export async function POST(request: NextRequest) {
 
       response = await anthropic.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2048,
+        max_tokens: 4096,
         thinking: { type: 'disabled' },
         system: SYSTEM_PROMPT + clientsContext,
         tools,
@@ -1264,6 +1413,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: responseText,
       executedActions,
+      navigations,
     })
   } catch (error) {
     console.error('Chat error:', error)
