@@ -27,7 +27,10 @@ import { DownloadPdfButton } from '@/components/invoices/download-pdf-button'
 import { TransmitChorusProButton } from '@/components/invoices/transmit-chorus-pro-button'
 import { TransmitPdpButton } from '@/components/invoices/transmit-pdp-button'
 import { EreportB2cButton } from '@/components/invoices/ereport-b2c-button'
+import { ActivatePdpButton } from '@/components/invoices/activate-pdp-button'
 import { PdpLifecycle } from '@/components/invoices/pdp-lifecycle'
+import { createClient } from '@/lib/supabase/server'
+import { getPdpConnection } from '@/lib/pdp'
 import type { InvoiceStatus } from '@/types/database'
 
 interface InvoicePageProps {
@@ -58,9 +61,15 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
     notFound()
   }
 
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const pdpConnected = user ? (await getPdpConnection(supabase, user.id)).connected : false
+
   return (
     <DashboardLayout>
-      <InvoiceContent invoice={invoice} company={company} />
+      <InvoiceContent invoice={invoice} company={company} pdpConnected={pdpConnected} />
     </DashboardLayout>
   )
 }
@@ -68,9 +77,11 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
 function InvoiceContent({
   invoice,
   company,
+  pdpConnected,
 }: {
   invoice: NonNullable<Awaited<ReturnType<typeof getInvoice>>>
   company: Awaited<ReturnType<typeof getCompany>>
+  pdpConnected: boolean
 }) {
   const t = useTranslations()
   const status = statusConfig[invoice.status]
@@ -286,10 +297,17 @@ function InvoiceContent({
               <DownloadPdfButton invoiceId={invoice.id} />
               <TransmitPdpButton
                 invoiceId={invoice.id}
-                canTransmit={invoice.status !== 'draft' && invoice.client?.type === 'professional'}
+                canTransmit={
+                  invoice.status !== 'draft' &&
+                  invoice.client?.type === 'professional' &&
+                  pdpConnected
+                }
               />
-              {invoice.status !== 'draft' && invoice.client?.type === 'individual' && (
-                <EreportB2cButton invoiceId={invoice.id} />
+              {invoice.status !== 'draft' &&
+                invoice.client?.type === 'individual' &&
+                pdpConnected && <EreportB2cButton invoiceId={invoice.id} />}
+              {invoice.status !== 'draft' && !pdpConnected && (
+                <ActivatePdpButton className="w-full" />
               )}
               {invoice.status !== 'draft' && (
                 <TransmitChorusProButton invoiceId={invoice.id} />

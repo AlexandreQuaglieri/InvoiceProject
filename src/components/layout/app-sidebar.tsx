@@ -14,6 +14,7 @@ import {
   Sparkles,
   Inbox,
   BarChart3,
+  Plug,
 } from 'lucide-react'
 
 import {
@@ -29,7 +30,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar'
 
-export function AppSidebar() {
+export function AppSidebar({ pdpConnected = false }: { pdpConnected?: boolean }) {
   const pathname = usePathname()
   const t = useTranslations('nav')
   const tCommon = useTranslations('common')
@@ -112,7 +113,16 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t p-4">
+      <SidebarFooter className="border-t p-4 space-y-3">
+        {!pdpConnected && (
+          <a
+            href="/api/pdp/connect"
+            className="flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <Plug className="h-4 w-4" />
+            Activer la facturation élec.
+          </a>
+        )}
         <p className="text-xs text-muted-foreground text-center">
           {tCommon('appName')} v0.1.0
         </p>
