@@ -297,9 +297,9 @@ export function FloatingChatWidget() {
                 <Bot className="h-10 w-10 mx-auto mb-3 opacity-40" />
                 <p className="text-sm mb-3">Je peux vous aider à :</p>
                 <ul className="text-xs space-y-1 text-muted-foreground/70">
-                  <li>"Modifie le prix de l'étape 1 à 5000€"</li>
                   <li>"Crée une facture pour ce devis"</li>
-                  <li>"Ajoute une ligne de prestation"</li>
+                  <li>"Combien j'ai facturé ce mois ?"</li>
+                  <li>"Mes factures en retard ?"</li>
                 </ul>
               </div>
             ) : (

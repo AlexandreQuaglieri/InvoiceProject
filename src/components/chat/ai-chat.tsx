@@ -307,12 +307,13 @@ export function AIChat({ conversations: initialConversations, initialConversatio
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="mb-2">Bonjour ! Je peux vous aider à :</p>
                 <ul className="text-sm space-y-1">
-                  <li>"Crée un client pour OVH"</li>
                   <li>"Crée une facture de 500€ pour Client X"</li>
                   <li>"Fais un devis pour une prestation de conseil"</li>
+                  <li>"Combien j'ai facturé ce mois ?"</li>
+                  <li>"Quelles sont mes factures en retard ?"</li>
                 </ul>
                 <p className="text-xs mt-4 text-muted-foreground/70">
-                  Je crée automatiquement les clients, factures et devis pour vous.
+                  Je crée vos clients, factures et devis, et je réponds à vos questions sur votre activité.
                 </p>
               </div>
             ) : (

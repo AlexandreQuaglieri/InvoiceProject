@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import * as svc from '@/lib/services'
+import type { InvoiceStatus, QuoteStatus } from '@/types/database'
 
 // Rate limiting: 20 requêtes par utilisateur par minute
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -16,47 +18,34 @@ function checkRateLimit(userId: string): boolean {
   return true
 }
 
-const SYSTEM_PROMPT = `Tu es un assistant spécialisé dans la création de factures, devis et gestion de clients pour une application de facturation française.
+const SYSTEM_PROMPT = `Tu es le copilote de Factur-IA, une application de facturation française. Tu n'es pas qu'un exécuteur d'actions : tu ACCOMPAGNES l'utilisateur — tu expliques, tu conseilles ET tu agis.
 
-Tu aides l'utilisateur à:
-1. Créer des factures en langage naturel
-2. Créer des devis
-3. Créer et gérer des clients
-4. Répondre à des questions sur la facturation
-5. Rechercher des informations d'entreprises françaises (SIRET, adresse, etc.)
+TON RÔLE
+- Aider à créer et gérer factures, devis et clients.
+- Répondre aux questions sur l'activité de l'utilisateur (CA, impayés, détails...).
+- Expliquer le fonctionnement de l'application et accompagner la prise en main.
+- Conseiller sur la facturation française (mentions légales, TVA, délais) et la facturation électronique obligatoire 2026.
 
-TU AS ACCÈS À DES OUTILS POUR AGIR DIRECTEMENT:
-- search_company: Rechercher une entreprise française (SIRET, adresse, etc.)
-- create_client: Créer un nouveau client dans la base de données
-- create_invoice: Créer une nouvelle facture
-- create_quote: Créer un nouveau devis
-- update_quote: Modifier le contenu d'un devis existant (lignes, prix, notes, conditions, date de validité)
+TES OUTILS
+- Actions : search_company, create_client, update_client, delete_client, create_invoice, update_invoice_status, delete_invoice, create_quote, update_quote, update_quote_status, delete_quote, convert_quote_to_invoice.
+- Consultation (lecture seule) : get_invoice_stats, list_invoices, get_invoice, list_quotes, get_quote, list_clients, get_company.
+- Connaissance : get_guide(topic) — fiches de référence fiables sur le métier et l'app. Sujets : mentions_obligatoires, tva, delais_paiement, facturation_electronique_2026, chorus_pro, app_demarrage, app_fonctionnalites.
 
-COMPORTEMENT ATTENDU:
-1. Quand l'utilisateur te demande de créer quelque chose, UTILISE L'OUTIL APPROPRIÉ
-2. Ne demande pas de confirmation si tu as toutes les informations nécessaires
-3. Si des informations manquent, pose des questions pour les obtenir
-4. Une fois que tu as toutes les infos, EXÉCUTE L'ACTION avec l'outil
+COMMENT TE COMPORTER
+1. Question sur SES données (CA, factures en retard, détail d'un devis, top client...) → utilise d'abord les outils de CONSULTATION, puis réponds clairement (montants en euros).
+2. Question métier, légale ou sur l'application → appuie-toi sur get_guide (n'invente JAMAIS une règle ni une date), puis explique simplement, avec pédagogie.
+3. Demande de création / modification → si tu as toutes les infos, AGIS avec l'outil ; sinon pose les questions manquantes.
+4. CONFIRME TOUJOURS avant une action destructive ou externe : suppression (client, facture, devis) et transmission à Chorus Pro. Récapitule ce que tu vas faire et attends l'accord explicite.
+5. Après une action réussie, confirme avec un récap clair (numéro, client, montant TTC, échéance) et propose la suite logique si c'est pertinent.
 
-INFORMATIONS REQUISES:
+STYLE
+- Toujours en français, ton chaleureux et professionnel, concis mais pédagogue.
+- Montants en euros. Mets en avant la valeur (gain de temps, conformité) quand c'est utile.
+- Si une erreur survient, explique clairement le problème et la marche à suivre.
 
-Pour un client:
-- Nom (obligatoire)
-- Type: "individual" (particulier) ou "professional" (entreprise)
-- Adresse, code postal, ville (obligatoires)
-- Email (optionnel)
-- SIRET (pour les professionnels)
-
-Pour une facture/devis:
-- Client (doit exister - utilise son ID ou son nom exact)
-- Au moins une ligne avec: description, quantité, prix unitaire
-- Taux de TVA (0%, 5.5%, 10%, ou 20%)
-
-IMPORTANT:
-- Réponds toujours en français
-- Sois concis et pratique
-- Quand tu crées quelque chose avec succès, confirme à l'utilisateur avec les détails
-- Si une erreur survient, explique clairement le problème`
+INFORMATIONS REQUISES
+- Client : nom (obligatoire), type "individual" (particulier) ou "professional" (entreprise), adresse + code postal + ville (obligatoires), email (optionnel), SIRET (pour les professionnels).
+- Facture / devis : un client existant (par son nom exact), au moins une ligne (description, quantité, prix unitaire HT), taux de TVA (0, 5.5, 10 ou 20).`
 
 // Définition des outils pour Claude
 const tools: Anthropic.Tool[] = [
@@ -414,73 +403,118 @@ const tools: Anthropic.Tool[] = [
       required: ['quote_number'],
     },
   },
+  {
+    name: 'get_invoice_stats',
+    description:
+      "Statistiques de facturation : chiffre d'affaires encaissé (mois et année), montant en attente, et répartition des factures par statut. Utilise cet outil pour « combien j'ai facturé ce mois ? », « combien on me doit ? ».",
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'list_invoices',
+    description:
+      "Liste les factures de l'utilisateur (filtres optionnels). Pour « mes factures en retard », « les factures de Client X », « mes dernières factures ».",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'],
+          description: 'Filtrer par statut',
+        },
+        client_name: { type: 'string', description: 'Filtrer par nom de client' },
+        limit: { type: 'number', description: 'Nombre maximum de résultats' },
+      },
+    },
+  },
+  {
+    name: 'get_invoice',
+    description: "Récupère le détail complet d'une facture (lignes incluses) par son numéro.",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        invoice_number: { type: 'string', description: 'Numéro de la facture (ex: 20260605-01)' },
+      },
+      required: ['invoice_number'],
+    },
+  },
+  {
+    name: 'list_quotes',
+    description: "Liste les devis de l'utilisateur (filtre optionnel par statut).",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['draft', 'sent', 'accepted', 'rejected', 'expired', 'converted'],
+          description: 'Filtrer par statut',
+        },
+        limit: { type: 'number', description: 'Nombre maximum de résultats' },
+      },
+    },
+  },
+  {
+    name: 'get_quote',
+    description: "Récupère le détail complet d'un devis (lignes incluses) par son numéro.",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        quote_number: { type: 'string', description: 'Numéro du devis (ex: D-2026-001)' },
+      },
+      required: ['quote_number'],
+    },
+  },
+  {
+    name: 'list_clients',
+    description: "Liste les clients de l'utilisateur (recherche optionnelle par nom ou email).",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        search: { type: 'string', description: 'Rechercher par nom ou email' },
+        limit: { type: 'number', description: 'Nombre maximum de résultats' },
+      },
+    },
+  },
+  {
+    name: 'get_company',
+    description:
+      "Informations de l'entreprise de l'utilisateur (raison sociale, SIRET, TVA, adresse, coordonnées bancaires).",
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_guide',
+    description:
+      "Fiche de référence fiable sur la facturation française et le fonctionnement de l'application. Utilise cet outil AVANT de répondre à une question métier, légale ou sur l'app (ne jamais inventer de règle ni de date).",
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        topic: {
+          type: 'string',
+          enum: [
+            'mentions_obligatoires',
+            'tva',
+            'delais_paiement',
+            'facturation_electronique_2026',
+            'chorus_pro',
+            'app_demarrage',
+            'app_fonctionnalites',
+          ],
+          description: 'Le sujet de la fiche de référence',
+        },
+      },
+      required: ['topic'],
+    },
+  },
 ]
 
 // Fonction pour rechercher une entreprise via l'API gouvernementale
 async function searchCompany(query: string): Promise<string> {
-  try {
-    const cleanQuery = query.trim()
-    const isNumeric = /^\d+$/.test(cleanQuery.replace(/\s/g, ''))
-
-    let url: string
-    if (isNumeric && cleanQuery.replace(/\s/g, '').length >= 9) {
-      const siret = cleanQuery.replace(/\s/g, '')
-      url = `https://recherche-entreprises.api.gouv.fr/search?q=${siret}&page=1&per_page=5`
-    } else {
-      url = `https://recherche-entreprises.api.gouv.fr/search?q=${encodeURIComponent(cleanQuery)}&page=1&per_page=5`
-    }
-
-    const response = await fetch(url, {
-      headers: { Accept: 'application/json' },
-    })
-
-    if (!response.ok) {
-      return JSON.stringify({ error: 'Erreur lors de la recherche', status: response.status })
-    }
-
-    const data = await response.json()
-
-    if (!data.results || data.results.length === 0) {
-      return JSON.stringify({ error: 'Aucune entreprise trouvée', query })
-    }
-
-    const results = data.results.slice(0, 5).map((company: {
-      nom_complet?: string
-      nom_raison_sociale?: string
-      siren?: string
-      siege?: {
-        siret?: string
-        adresse?: string
-        code_postal?: string
-        libelle_commune?: string
-      }
-    }) => {
-      const siege = company.siege || {}
-      const siren = company.siren || ''
-      const siret = siege.siret || ''
-
-      let vatNumber = ''
-      if (siren) {
-        const key = (12 + 3 * (parseInt(siren) % 97)) % 97
-        vatNumber = `FR${key.toString().padStart(2, '0')}${siren}`
-      }
-
-      return {
-        name: company.nom_complet || company.nom_raison_sociale || 'Nom inconnu',
-        siren,
-        siret,
-        address: siege.adresse || '',
-        postal_code: siege.code_postal || '',
-        city: siege.libelle_commune || '',
-        vat_number: vatNumber,
-      }
-    })
-
-    return JSON.stringify({ results, total: data.total_results })
-  } catch (error) {
-    console.error('Company search error:', error)
-    return JSON.stringify({ error: "Erreur lors de la recherche d'entreprise" })
-  }
+  return JSON.stringify(await svc.company.searchCompany(query))
 }
 
 // Fonction pour créer un client
@@ -500,44 +534,18 @@ async function createClientTool(
     vat_number?: string
   }
 ): Promise<string> {
-  try {
-    const { data: client, error } = await supabase
-      .from('clients')
-      .insert({
-        company_id: companyId,
-        name: data.name,
-        type: data.type,
-        address: data.address,
-        postal_code: data.postal_code,
-        city: data.city,
-        country: data.country || 'France',
-        email: data.email || '',
-        phone: data.phone || '',
-        siret: data.siret || '',
-        vat_number: data.vat_number || '',
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating client:', error)
-      return JSON.stringify({ success: false, error: error.message })
-    }
-
-    return JSON.stringify({
-      success: true,
-      client: {
-        id: client.id,
-        name: client.name,
-        type: client.type,
-        address: client.address,
-        city: client.city,
-      },
-    })
-  } catch (error) {
-    console.error('Error creating client:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la création du client' })
-  }
+  const r = await svc.clients.create(supabase, { userId: '', companyId }, data)
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  return JSON.stringify({
+    success: true,
+    client: {
+      id: r.data.id,
+      name: r.data.name,
+      type: r.data.type,
+      address: r.data.address,
+      city: r.data.city,
+    },
+  })
 }
 
 // Fonction pour créer une facture
@@ -556,117 +564,30 @@ async function createInvoiceTool(
     notes?: string
   }
 ): Promise<string> {
-  try {
-    // Trouver le client par nom
-    const { data: clients } = await supabase
-      .from('clients')
-      .select('id, name')
-      .eq('company_id', companyId)
-      .ilike('name', `%${data.client_name}%`)
-      .limit(1)
-
-    if (!clients || clients.length === 0) {
-      return JSON.stringify({
-        success: false,
-        error: `Client "${data.client_name}" non trouvé. Créez d'abord le client.`,
-      })
-    }
-
-    const client = clients[0]
-
-    // Récupérer le prochain numéro de facture
-    const { data: settings } = await supabase
-      .from('user_settings')
-      .select('invoice_prefix, invoice_next_number')
-      .eq('user_id', userId)
-      .single()
-
-    const nextNumber = settings?.invoice_next_number || 1
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    const invoiceNumber = `${year}${month}${day}-${nextNumber.toString().padStart(2, '0')}`
-
-    // Calculer les totaux
-    let subtotal = 0
-    let taxAmount = 0
-    const itemsWithTotals = data.items.map((item) => {
-      const lineTotal = item.quantity * item.unit_price
-      const lineTax = lineTotal * (item.vat_rate / 100)
-      subtotal += lineTotal
-      taxAmount += lineTax
-      return {
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        vat_rate: item.vat_rate,
-        total: lineTotal,
-      }
-    })
-
-    const total = subtotal + taxAmount
-    const issueDate = new Date().toISOString().split('T')[0]
-    const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
-    // Créer la facture
-    const { data: invoice, error: invoiceError } = await supabase
-      .from('invoices')
-      .insert({
-        company_id: companyId,
-        client_id: client.id,
-        number: invoiceNumber,
-        issue_date: issueDate,
-        due_date: dueDate,
-        status: 'draft',
-        total_ht: subtotal,
-        total_vat: taxAmount,
-        total_ttc: total,
-        notes: data.notes || '',
-      })
-      .select()
-      .single()
-
-    if (invoiceError) {
-      console.error('Error creating invoice:', invoiceError)
-      return JSON.stringify({ success: false, error: invoiceError.message })
-    }
-
-    // Créer les lignes de facture
-    const invoiceItems = itemsWithTotals.map((item, index) => ({
-      invoice_id: invoice.id,
-      description: item.description,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      vat_rate: item.vat_rate,
-      total_ht: item.total,
-      total_vat: item.total * (item.vat_rate / 100),
-      total_ttc: item.total * (1 + item.vat_rate / 100),
-      position: index,
-    }))
-
-    await supabase.from('invoice_items').insert(invoiceItems)
-
-    // Incrémenter le numéro de facture
-    await supabase
-      .from('user_settings')
-      .update({ invoice_next_number: nextNumber + 1 })
-      .eq('user_id', userId)
-
+  const ctx = { userId, companyId }
+  const client = await svc.clients.findByName(supabase, ctx, data.client_name)
+  if (!client.ok) {
     return JSON.stringify({
-      success: true,
-      invoice: {
-        id: invoice.id,
-        number: invoiceNumber,
-        client: client.name,
-        total: total.toFixed(2),
-        status: 'draft',
-      },
+      success: false,
+      error: `Client "${data.client_name}" non trouvé. Créez d'abord le client.`,
     })
-  } catch (error) {
-    console.error('Error creating invoice:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la création de la facture' })
   }
+  const r = await svc.invoices.create(supabase, ctx, {
+    client_id: client.data.id,
+    items: data.items,
+    notes: data.notes,
+  })
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  return JSON.stringify({
+    success: true,
+    invoice: {
+      id: r.data.id,
+      number: r.data.number,
+      client: r.data.clientName,
+      total: r.data.total_ttc.toFixed(2),
+      status: 'draft',
+    },
+  })
 }
 
 // Fonction pour créer un devis
@@ -685,104 +606,30 @@ async function createQuoteTool(
     notes?: string
   }
 ): Promise<string> {
-  try {
-    // Trouver le client par nom
-    const { data: clients } = await supabase
-      .from('clients')
-      .select('id, name')
-      .eq('company_id', companyId)
-      .ilike('name', `%${data.client_name}%`)
-      .limit(1)
-
-    if (!clients || clients.length === 0) {
-      return JSON.stringify({
-        success: false,
-        error: `Client "${data.client_name}" non trouvé. Créez d'abord le client.`,
-      })
-    }
-
-    const client = clients[0]
-
-    // Générer le numéro de devis
-    const { count } = await supabase
-      .from('quotes')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-
-    const currentYear = new Date().getFullYear()
-    const quoteNumber = `DEV-${currentYear}-${((count || 0) + 1).toString().padStart(3, '0')}`
-
-    // Calculer les totaux
-    let subtotal = 0
-    let taxAmount = 0
-    const itemsWithTotals = data.items.map((item) => {
-      const lineTotal = item.quantity * item.unit_price
-      const lineTax = lineTotal * (item.tax_rate / 100)
-      subtotal += lineTotal
-      taxAmount += lineTax
-      return {
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        tax_rate: item.tax_rate,
-        total: lineTotal,
-      }
-    })
-
-    const total = subtotal + taxAmount
-    const issueDate = new Date().toISOString().split('T')[0]
-    const validityDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
-    // Créer le devis
-    const { data: quote, error: quoteError } = await supabase
-      .from('quotes')
-      .insert({
-        user_id: userId,
-        company_id: companyId,
-        client_id: client.id,
-        quote_number: quoteNumber,
-        issue_date: issueDate,
-        validity_date: validityDate,
-        status: 'draft',
-        subtotal,
-        tax_amount: taxAmount,
-        total,
-        notes: data.notes || '',
-      })
-      .select()
-      .single()
-
-    if (quoteError) {
-      console.error('Error creating quote:', quoteError)
-      return JSON.stringify({ success: false, error: quoteError.message })
-    }
-
-    // Créer les lignes du devis
-    const quoteItems = itemsWithTotals.map((item) => ({
-      quote_id: quote.id,
-      description: item.description,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      tax_rate: item.tax_rate,
-      total: item.total,
-    }))
-
-    await supabase.from('quote_items').insert(quoteItems)
-
+  const ctx = { userId, companyId }
+  const client = await svc.clients.findByName(supabase, ctx, data.client_name)
+  if (!client.ok) {
     return JSON.stringify({
-      success: true,
-      quote: {
-        id: quote.id,
-        number: quoteNumber,
-        client: client.name,
-        total: total.toFixed(2),
-        status: 'draft',
-      },
+      success: false,
+      error: `Client "${data.client_name}" non trouvé. Créez d'abord le client.`,
     })
-  } catch (error) {
-    console.error('Error creating quote:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la création du devis' })
   }
+  const r = await svc.quotes.create(supabase, ctx, {
+    client_id: client.data.id,
+    items: data.items,
+    notes: data.notes,
+  })
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  return JSON.stringify({
+    success: true,
+    quote: {
+      id: r.data.id,
+      number: r.data.quote_number,
+      client: r.data.clientName,
+      total: r.data.total.toFixed(2),
+      status: 'draft',
+    },
+  })
 }
 
 // Fonction pour mettre à jour un client
@@ -803,65 +650,22 @@ async function updateClientTool(
     vat_number?: string
   }
 ): Promise<string> {
-  try {
-    // Trouver le client
-    const { data: clients } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('company_id', companyId)
-      .ilike('name', `%${data.client_name}%`)
-      .limit(1)
-
-    if (!clients || clients.length === 0) {
-      return JSON.stringify({
-        success: false,
-        error: `Client "${data.client_name}" non trouvé.`,
-      })
-    }
-
-    const client = clients[0]
-
-    // Construire l'objet de mise à jour
-    const updateData: Record<string, string> = {}
-    if (data.name) updateData.name = data.name
-    if (data.type) updateData.type = data.type
-    if (data.address) updateData.address = data.address
-    if (data.postal_code) updateData.postal_code = data.postal_code
-    if (data.city) updateData.city = data.city
-    if (data.country) updateData.country = data.country
-    if (data.email !== undefined) updateData.email = data.email
-    if (data.phone !== undefined) updateData.phone = data.phone
-    if (data.siret !== undefined) updateData.siret = data.siret
-    if (data.vat_number !== undefined) updateData.vat_number = data.vat_number
-
-    if (Object.keys(updateData).length === 0) {
-      return JSON.stringify({
-        success: false,
-        error: 'Aucune modification spécifiée.',
-      })
-    }
-
-    const { error } = await supabase
-      .from('clients')
-      .update(updateData)
-      .eq('id', client.id)
-
-    if (error) {
-      return JSON.stringify({ success: false, error: error.message })
-    }
-
-    return JSON.stringify({
-      success: true,
-      client: {
-        id: client.id,
-        name: data.name || client.name,
-        updated_fields: Object.keys(updateData),
-      },
-    })
-  } catch (error) {
-    console.error('Error updating client:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la mise à jour du client' })
+  const ctx = { userId: '', companyId }
+  const client = await svc.clients.findByName(supabase, ctx, data.client_name)
+  if (!client.ok) {
+    return JSON.stringify({ success: false, error: `Client "${data.client_name}" non trouvé.` })
   }
+  // svc.clients.update ignore client_name : seuls les champs connus sont appliqués.
+  const r = await svc.clients.update(supabase, ctx, client.data.id, data)
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  return JSON.stringify({
+    success: true,
+    client: {
+      id: r.data.id,
+      name: r.data.name,
+      updated_fields: r.data.updatedFields,
+    },
+  })
 }
 
 // Fonction pour supprimer un client
@@ -870,58 +674,14 @@ async function deleteClientTool(
   companyId: string,
   clientName: string
 ): Promise<string> {
-  try {
-    const { data: clients } = await supabase
-      .from('clients')
-      .select('id, name')
-      .eq('company_id', companyId)
-      .ilike('name', `%${clientName}%`)
-      .limit(1)
-
-    if (!clients || clients.length === 0) {
-      return JSON.stringify({
-        success: false,
-        error: `Client "${clientName}" non trouvé.`,
-      })
-    }
-
-    const client = clients[0]
-
-    // Vérifier s'il y a des factures ou devis liés
-    const { count: invoiceCount } = await supabase
-      .from('invoices')
-      .select('*', { count: 'exact', head: true })
-      .eq('client_id', client.id)
-
-    const { count: quoteCount } = await supabase
-      .from('quotes')
-      .select('*', { count: 'exact', head: true })
-      .eq('client_id', client.id)
-
-    if ((invoiceCount || 0) > 0 || (quoteCount || 0) > 0) {
-      return JSON.stringify({
-        success: false,
-        error: `Impossible de supprimer "${client.name}": il a ${invoiceCount || 0} facture(s) et ${quoteCount || 0} devis liés.`,
-      })
-    }
-
-    const { error } = await supabase
-      .from('clients')
-      .delete()
-      .eq('id', client.id)
-
-    if (error) {
-      return JSON.stringify({ success: false, error: error.message })
-    }
-
-    return JSON.stringify({
-      success: true,
-      message: `Client "${client.name}" supprimé.`,
-    })
-  } catch (error) {
-    console.error('Error deleting client:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la suppression du client' })
+  const ctx = { userId: '', companyId }
+  const client = await svc.clients.findByName(supabase, ctx, clientName)
+  if (!client.ok) {
+    return JSON.stringify({ success: false, error: `Client "${clientName}" non trouvé.` })
   }
+  const r = await svc.clients.remove(supabase, ctx, client.data.id)
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  return JSON.stringify({ success: true, message: `Client "${r.data.name}" supprimé.` })
 }
 
 // Fonction pour mettre à jour le statut d'une facture
@@ -931,53 +691,29 @@ async function updateInvoiceStatusTool(
   invoiceNumber: string,
   status: 'draft' | 'sent' | 'paid' | 'cancelled'
 ): Promise<string> {
-  try {
-    const { data: invoices } = await supabase
-      .from('invoices')
-      .select('id, number, status')
-      .eq('company_id', companyId)
-      .ilike('number', `%${invoiceNumber}%`)
-      .limit(1)
-
-    if (!invoices || invoices.length === 0) {
-      return JSON.stringify({
-        success: false,
-        error: `Facture "${invoiceNumber}" non trouvée.`,
-      })
-    }
-
-    const invoice = invoices[0]
-
-    const { error } = await supabase
-      .from('invoices')
-      .update({ status })
-      .eq('id', invoice.id)
-
-    if (error) {
-      return JSON.stringify({ success: false, error: error.message })
-    }
-
-    const statusLabels: Record<string, string> = {
-      draft: 'brouillon',
-      sent: 'envoyée',
-      paid: 'payée',
-      cancelled: 'annulée',
-    }
-
-    return JSON.stringify({
-      success: true,
-      invoice: {
-        id: invoice.id,
-        number: invoice.number,
-        old_status: invoice.status,
-        new_status: status,
-        message: `Facture ${invoice.number} marquée comme ${statusLabels[status]}.`,
-      },
-    })
-  } catch (error) {
-    console.error('Error updating invoice:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la mise à jour de la facture' })
+  const ctx = { userId: '', companyId }
+  const inv = await svc.invoices.findByNumber(supabase, ctx, invoiceNumber)
+  if (!inv.ok) {
+    return JSON.stringify({ success: false, error: `Facture "${invoiceNumber}" non trouvée.` })
   }
+  const r = await svc.invoices.setStatus(supabase, ctx, inv.data.id, status)
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  const statusLabels: Record<string, string> = {
+    draft: 'brouillon',
+    sent: 'envoyée',
+    paid: 'payée',
+    cancelled: 'annulée',
+  }
+  return JSON.stringify({
+    success: true,
+    invoice: {
+      id: r.data.id,
+      number: r.data.number,
+      old_status: r.data.oldStatus,
+      new_status: status,
+      message: `Facture ${r.data.number} marquée comme ${statusLabels[status]}.`,
+    },
+  })
 }
 
 // Fonction pour supprimer une facture
@@ -986,149 +722,64 @@ async function deleteInvoiceTool(
   companyId: string,
   invoiceNumber: string
 ): Promise<string> {
-  try {
-    const { data: invoices } = await supabase
-      .from('invoices')
-      .select('id, number, status')
-      .eq('company_id', companyId)
-      .ilike('number', `%${invoiceNumber}%`)
-      .limit(1)
-
-    if (!invoices || invoices.length === 0) {
-      return JSON.stringify({
-        success: false,
-        error: `Facture "${invoiceNumber}" non trouvée.`,
-      })
-    }
-
-    const invoice = invoices[0]
-
-    if (invoice.status !== 'draft') {
-      return JSON.stringify({
-        success: false,
-        error: `Impossible de supprimer la facture ${invoice.number}: elle n'est pas en brouillon (statut actuel: ${invoice.status}).`,
-      })
-    }
-
-    // Supprimer les lignes puis la facture
-    await supabase.from('invoice_items').delete().eq('invoice_id', invoice.id)
-    const { error } = await supabase.from('invoices').delete().eq('id', invoice.id)
-
-    if (error) {
-      return JSON.stringify({ success: false, error: error.message })
-    }
-
-    return JSON.stringify({
-      success: true,
-      message: `Facture ${invoice.number} supprimée.`,
-    })
-  } catch (error) {
-    console.error('Error deleting invoice:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la suppression de la facture' })
+  const ctx = { userId: '', companyId }
+  const inv = await svc.invoices.findByNumber(supabase, ctx, invoiceNumber)
+  if (!inv.ok) {
+    return JSON.stringify({ success: false, error: `Facture "${invoiceNumber}" non trouvée.` })
   }
+  const r = await svc.invoices.remove(supabase, ctx, inv.data.id)
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  return JSON.stringify({ success: true, message: `Facture ${r.data.number} supprimée.` })
 }
 
 // Fonction pour mettre à jour le statut d'un devis
 async function updateQuoteStatusTool(
   supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
   companyId: string,
   quoteNumber: string,
   status: 'draft' | 'sent' | 'accepted' | 'rejected'
 ): Promise<string> {
-  try {
-    const { data: quotes } = await supabase
-      .from('quotes')
-      .select('id, quote_number, status')
-      .eq('company_id', companyId)
-      .ilike('quote_number', `%${quoteNumber}%`)
-      .limit(1)
-
-    if (!quotes || quotes.length === 0) {
-      return JSON.stringify({
-        success: false,
-        error: `Devis "${quoteNumber}" non trouvé.`,
-      })
-    }
-
-    const quote = quotes[0]
-
-    const { error } = await supabase
-      .from('quotes')
-      .update({ status })
-      .eq('id', quote.id)
-
-    if (error) {
-      return JSON.stringify({ success: false, error: error.message })
-    }
-
-    const statusLabels: Record<string, string> = {
-      draft: 'brouillon',
-      sent: 'envoyé',
-      accepted: 'accepté',
-      rejected: 'refusé',
-    }
-
-    return JSON.stringify({
-      success: true,
-      quote: {
-        id: quote.id,
-        number: quote.quote_number,
-        old_status: quote.status,
-        new_status: status,
-        message: `Devis ${quote.quote_number} marqué comme ${statusLabels[status]}.`,
-      },
-    })
-  } catch (error) {
-    console.error('Error updating quote:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la mise à jour du devis' })
+  const ctx = { userId, companyId }
+  const q = await svc.quotes.findByNumber(supabase, ctx, quoteNumber)
+  if (!q.ok) {
+    return JSON.stringify({ success: false, error: `Devis "${quoteNumber}" non trouvé.` })
   }
+  const r = await svc.quotes.setStatus(supabase, ctx, q.data.id, status)
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  const statusLabels: Record<string, string> = {
+    draft: 'brouillon',
+    sent: 'envoyé',
+    accepted: 'accepté',
+    rejected: 'refusé',
+  }
+  return JSON.stringify({
+    success: true,
+    quote: {
+      id: q.data.id,
+      number: r.data.quote_number,
+      old_status: r.data.oldStatus,
+      new_status: status,
+      message: `Devis ${r.data.quote_number} marqué comme ${statusLabels[status]}.`,
+    },
+  })
 }
 
 // Fonction pour supprimer un devis
 async function deleteQuoteTool(
   supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
   companyId: string,
   quoteNumber: string
 ): Promise<string> {
-  try {
-    const { data: quotes } = await supabase
-      .from('quotes')
-      .select('id, quote_number, status')
-      .eq('company_id', companyId)
-      .ilike('quote_number', `%${quoteNumber}%`)
-      .limit(1)
-
-    if (!quotes || quotes.length === 0) {
-      return JSON.stringify({
-        success: false,
-        error: `Devis "${quoteNumber}" non trouvé.`,
-      })
-    }
-
-    const quote = quotes[0]
-
-    if (quote.status !== 'draft') {
-      return JSON.stringify({
-        success: false,
-        error: `Impossible de supprimer le devis ${quote.quote_number}: il n'est pas en brouillon (statut actuel: ${quote.status}).`,
-      })
-    }
-
-    await supabase.from('quote_items').delete().eq('quote_id', quote.id)
-    const { error } = await supabase.from('quotes').delete().eq('id', quote.id)
-
-    if (error) {
-      return JSON.stringify({ success: false, error: error.message })
-    }
-
-    return JSON.stringify({
-      success: true,
-      message: `Devis ${quote.quote_number} supprimé.`,
-    })
-  } catch (error) {
-    console.error('Error deleting quote:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la suppression du devis' })
+  const ctx = { userId, companyId }
+  const q = await svc.quotes.findByNumber(supabase, ctx, quoteNumber)
+  if (!q.ok) {
+    return JSON.stringify({ success: false, error: `Devis "${quoteNumber}" non trouvé.` })
   }
+  const r = await svc.quotes.remove(supabase, ctx, q.data.id)
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  return JSON.stringify({ success: true, message: `Devis ${r.data.quote_number} supprimé.` })
 }
 
 // Fonction pour modifier un devis
@@ -1144,83 +795,27 @@ async function updateQuoteTool(
     validity_date?: string
   }
 ): Promise<string> {
-  try {
-    const { data: quotes } = await supabase
-      .from('quotes')
-      .select('id, quote_number, status, client_id, issue_date, validity_date, notes, terms')
-      .eq('company_id', companyId)
-      .eq('user_id', userId)
-      .ilike('quote_number', `%${data.quote_number}%`)
-      .limit(1)
-
-    if (!quotes || quotes.length === 0) {
-      return JSON.stringify({ success: false, error: `Devis "${data.quote_number}" non trouvé.` })
-    }
-
-    const quote = quotes[0]
-
-    if (quote.status !== 'draft') {
-      return JSON.stringify({
-        success: false,
-        error: `Le devis ${quote.quote_number} est en statut "${quote.status}" et ne peut plus être modifié. Seuls les brouillons sont modifiables.`,
-      })
-    }
-
-    // Recalculer les totaux si des lignes sont fournies
-    let updateData: Record<string, unknown> = {}
-
-    if (data.items && data.items.length > 0) {
-      let subtotal = 0
-      let taxAmount = 0
-      const itemsWithTotals = data.items.map((item, index) => {
-        const lineTotal = item.quantity * item.unit_price
-        const lineTax = lineTotal * (item.tax_rate / 100)
-        subtotal += lineTotal
-        taxAmount += lineTax
-        return { ...item, total: lineTotal, position: index }
-      })
-
-      // Supprimer les anciennes lignes et recréer
-      await supabase.from('quote_items').delete().eq('quote_id', quote.id)
-      await supabase.from('quote_items').insert(
-        itemsWithTotals.map((item) => ({
-          quote_id: quote.id,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          tax_rate: item.tax_rate,
-          total: item.total,
-          position: item.position,
-        }))
-      )
-
-      updateData.subtotal = subtotal
-      updateData.tax_amount = taxAmount
-      updateData.total = subtotal + taxAmount
-    }
-
-    if (data.notes !== undefined) updateData.notes = data.notes
-    if (data.terms !== undefined) updateData.terms = data.terms
-    if (data.validity_date) updateData.validity_date = data.validity_date
-
-    if (Object.keys(updateData).length > 0) {
-      const { error } = await supabase.from('quotes').update(updateData).eq('id', quote.id)
-      if (error) return JSON.stringify({ success: false, error: error.message })
-    }
-
-    return JSON.stringify({
-      success: true,
-      quote: {
-        id: quote.id,
-        number: quote.quote_number,
-        total: updateData.total ? (updateData.total as number).toFixed(2) : undefined,
-        message: `Devis ${quote.quote_number} mis à jour avec succès.`,
-      },
-    })
-  } catch (error) {
-    console.error('Error updating quote:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la modification du devis' })
+  const ctx = { userId, companyId }
+  const q = await svc.quotes.findByNumber(supabase, ctx, data.quote_number)
+  if (!q.ok) {
+    return JSON.stringify({ success: false, error: `Devis "${data.quote_number}" non trouvé.` })
   }
+  const r = await svc.quotes.update(supabase, ctx, q.data.id, {
+    items: data.items,
+    notes: data.notes,
+    terms: data.terms,
+    validity_date: data.validity_date,
+  })
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  return JSON.stringify({
+    success: true,
+    quote: {
+      id: q.data.id,
+      number: r.data.quote_number,
+      total: r.data.total !== undefined ? r.data.total.toFixed(2) : undefined,
+      message: `Devis ${r.data.quote_number} mis à jour avec succès.`,
+    },
+  })
 }
 
 // Fonction pour convertir un devis en facture
@@ -1230,109 +825,22 @@ async function convertQuoteToInvoiceTool(
   companyId: string,
   quoteNumber: string
 ): Promise<string> {
-  try {
-    const { data: quotes } = await supabase
-      .from('quotes')
-      .select('*, quote_items(*)')
-      .eq('company_id', companyId)
-      .ilike('quote_number', `%${quoteNumber}%`)
-      .limit(1)
-
-    if (!quotes || quotes.length === 0) {
-      return JSON.stringify({
-        success: false,
-        error: `Devis "${quoteNumber}" non trouvé.`,
-      })
-    }
-
-    const quote = quotes[0]
-
-    if (quote.status === 'converted') {
-      return JSON.stringify({
-        success: false,
-        error: `Le devis ${quote.quote_number} a déjà été converti en facture.`,
-      })
-    }
-
-    // Récupérer le prochain numéro de facture
-    const { data: settings } = await supabase
-      .from('user_settings')
-      .select('invoice_prefix, invoice_next_number')
-      .eq('user_id', userId)
-      .single()
-
-    const nextNumber = settings?.invoice_next_number || 1
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    const invoiceNumber = `${year}${month}${day}-${nextNumber.toString().padStart(2, '0')}`
-
-    const issueDate = now.toISOString().split('T')[0]
-    const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
-    // Créer la facture
-    const { data: invoice, error: invoiceError } = await supabase
-      .from('invoices')
-      .insert({
-        company_id: companyId,
-        client_id: quote.client_id,
-        number: invoiceNumber,
-        issue_date: issueDate,
-        due_date: dueDate,
-        status: 'draft',
-        total_ht: quote.subtotal,
-        total_vat: quote.tax_amount,
-        total_ttc: quote.total,
-        notes: quote.notes || '',
-      })
-      .select()
-      .single()
-
-    if (invoiceError) {
-      return JSON.stringify({ success: false, error: invoiceError.message })
-    }
-
-    // Copier les lignes
-    const invoiceItems = quote.quote_items.map((item: { description: string; quantity: number; unit_price: number; tax_rate: number; total: number; position: number }, index: number) => ({
-      invoice_id: invoice.id,
-      description: item.description,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      vat_rate: item.tax_rate,
-      total_ht: item.total,
-      total_vat: item.total * (item.tax_rate / 100),
-      total_ttc: item.total * (1 + item.tax_rate / 100),
-      position: item.position || index,
-    }))
-
-    await supabase.from('invoice_items').insert(invoiceItems)
-
-    // Mettre à jour le devis
-    await supabase
-      .from('quotes')
-      .update({ status: 'converted', converted_invoice_id: invoice.id })
-      .eq('id', quote.id)
-
-    // Incrémenter le numéro de facture
-    await supabase
-      .from('user_settings')
-      .update({ invoice_next_number: nextNumber + 1 })
-      .eq('user_id', userId)
-
-    return JSON.stringify({
-      success: true,
-      invoice: {
-        id: invoice.id,
-        number: invoiceNumber,
-        from_quote: quote.quote_number,
-        total: quote.total.toFixed(2),
-      },
-    })
-  } catch (error) {
-    console.error('Error converting quote:', error)
-    return JSON.stringify({ success: false, error: 'Erreur lors de la conversion du devis' })
+  const ctx = { userId, companyId }
+  const q = await svc.quotes.findByNumber(supabase, ctx, quoteNumber)
+  if (!q.ok) {
+    return JSON.stringify({ success: false, error: `Devis "${quoteNumber}" non trouvé.` })
   }
+  const r = await svc.quotes.convert(supabase, ctx, q.data.id)
+  if (!r.ok) return JSON.stringify({ success: false, error: r.error })
+  return JSON.stringify({
+    success: true,
+    invoice: {
+      id: r.data.invoiceId,
+      number: r.data.invoiceNumber,
+      from_quote: r.data.quoteNumber,
+      total: r.data.total.toFixed(2),
+    },
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -1412,8 +920,9 @@ export async function POST(request: NextRequest) {
 
     // Première requête avec les outils
     let response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 2048,
+      thinking: { type: 'disabled' },
       system: SYSTEM_PROMPT + clientsContext,
       tools,
       messages: messages.map((m: { role: string; content: string }) => ({
@@ -1592,7 +1101,7 @@ export async function POST(request: NextRequest) {
               quote_number: string
               status: 'draft' | 'sent' | 'accepted' | 'rejected'
             }
-            result = await updateQuoteStatusTool(supabase, company.id, input.quote_number, input.status)
+            result = await updateQuoteStatusTool(supabase, user.id, company.id, input.quote_number, input.status)
             const parsed = JSON.parse(result)
             executedActions.push({
               type: 'update_quote_status',
@@ -1622,7 +1131,7 @@ export async function POST(request: NextRequest) {
           }
           case 'delete_quote': {
             const input = toolUse.input as { quote_number: string }
-            result = await deleteQuoteTool(supabase, company.id, input.quote_number)
+            result = await deleteQuoteTool(supabase, user.id, company.id, input.quote_number)
             const parsed = JSON.parse(result)
             executedActions.push({
               type: 'delete_quote',
@@ -1644,6 +1153,82 @@ export async function POST(request: NextRequest) {
             })
             break
           }
+          case 'get_invoice_stats': {
+            const r = await svc.invoices.stats(supabase, { userId: user.id, companyId: company.id })
+            result = JSON.stringify(r.ok ? r.data : { error: r.error })
+            break
+          }
+          case 'list_invoices': {
+            const input = toolUse.input as {
+              status?: InvoiceStatus
+              client_name?: string
+              limit?: number
+            }
+            const r = await svc.invoices.list(
+              supabase,
+              { userId: user.id, companyId: company.id },
+              { status: input.status, clientName: input.client_name, limit: input.limit }
+            )
+            result = JSON.stringify(r.ok ? r.data : { error: r.error })
+            break
+          }
+          case 'get_invoice': {
+            const input = toolUse.input as { invoice_number: string }
+            const ctx = { userId: user.id, companyId: company.id }
+            const found = await svc.invoices.findByNumber(supabase, ctx, input.invoice_number)
+            if (!found.ok) {
+              result = JSON.stringify({ error: found.error })
+              break
+            }
+            const r = await svc.invoices.getById(supabase, ctx, found.data.id)
+            result = JSON.stringify(r.ok ? r.data : { error: r.error })
+            break
+          }
+          case 'list_quotes': {
+            const input = toolUse.input as { status?: QuoteStatus; limit?: number }
+            const r = await svc.quotes.list(
+              supabase,
+              { userId: user.id, companyId: company.id },
+              { status: input.status, limit: input.limit }
+            )
+            result = JSON.stringify(r.ok ? r.data : { error: r.error })
+            break
+          }
+          case 'get_quote': {
+            const input = toolUse.input as { quote_number: string }
+            const ctx = { userId: user.id, companyId: company.id }
+            const found = await svc.quotes.findByNumber(supabase, ctx, input.quote_number)
+            if (!found.ok) {
+              result = JSON.stringify({ error: found.error })
+              break
+            }
+            const r = await svc.quotes.getById(supabase, ctx, found.data.id)
+            result = JSON.stringify(r.ok ? r.data : { error: r.error })
+            break
+          }
+          case 'list_clients': {
+            const input = toolUse.input as { search?: string; limit?: number }
+            const r = await svc.clients.list(
+              supabase,
+              { userId: user.id, companyId: company.id },
+              { search: input.search, limit: input.limit }
+            )
+            result = JSON.stringify(r.ok ? r.data : { error: r.error })
+            break
+          }
+          case 'get_company': {
+            const r = await svc.company.getInfo(supabase, { userId: user.id, companyId: company.id })
+            result = JSON.stringify(r.ok ? r.data : { error: r.error })
+            break
+          }
+          case 'get_guide': {
+            const input = toolUse.input as { topic: string }
+            const guide = svc.getGuide(input.topic)
+            result = JSON.stringify(
+              guide ? { topic: input.topic, guide } : { error: 'Sujet inconnu' }
+            )
+            break
+          }
           default:
             result = JSON.stringify({ error: 'Outil inconnu' })
         }
@@ -1661,8 +1246,9 @@ export async function POST(request: NextRequest) {
       })
 
       response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2048,
+        thinking: { type: 'disabled' },
         system: SYSTEM_PROMPT + clientsContext,
         tools,
         messages: conversationMessages,

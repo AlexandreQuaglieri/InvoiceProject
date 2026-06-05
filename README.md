@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Factur-IA
 
-## Getting Started
+SaaS de **facturation française AI-first**, conçu pour la facturation électronique
+obligatoire (2026). Trois façons de piloter sa facturation :
 
-First, run the development server:
+1. **Interface web** classique (dashboard, CRUD entreprise / clients / factures / devis)
+2. **Assistant IA intégré** — créer/modifier en langage naturel (« Crée une facture de 500 € pour Client X »)
+3. **Serveur MCP distant** — piloter sa facturation directement depuis Claude.ai / Claude Desktop
+
+## Stack
+
+| Couche        | Technologie |
+|---------------|-------------|
+| Framework     | Next.js 16 (App Router, RSC, Server Actions) · React 19 |
+| UI            | Tailwind v4 · shadcn/ui (Radix) · next-themes · next-intl (FR/EN) |
+| Données / Auth | Supabase (Postgres + RLS + Auth Google + Storage) |
+| IA            | `@anthropic-ai/sdk` — chat function-calling + extraction vision (modèle `claude-sonnet-4-6`) |
+| MCP           | `mcp-handler` · `@modelcontextprotocol/sdk` · OAuth 2.1 |
+| E-invoicing   | Factur-X (XML CII EN16931 + PDF/A-3 via `pdf-lib`) · Chorus Pro / PISTE |
+| PDF           | `@react-pdf/renderer` |
+| Sync          | Data Wallet (Fluid Store) |
+
+## Démarrage
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Build de production :
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm run start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Variables d'environnement
 
-## Learn More
+À placer dans `.env.local` (jamais committé — voir `.gitignore`).
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Rôle |
+|----------|------|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL du projet Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clé anonyme Supabase (client) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clé service_role (serveur / MCP — **secrète**) |
+| `ANTHROPIC_API_KEY` | Clé Claude plateforme (fallback si l'utilisateur n'a pas sa propre clé BYOK) |
+| `NEXT_PUBLIC_APP_URL` | URL publique stable (OAuth MCP). **Ne jamais utiliser `VERCEL_URL`** — voir `src/lib/base-url.ts` |
+| `CHORUS_PRO_CLIENT_ID` / `CHORUS_PRO_CLIENT_SECRET` | Identifiants PISTE (OAuth Chorus Pro) |
+| `CHORUS_PRO_LOGIN` / `CHORUS_PRO_PASSWORD` | Compte technique Chorus Pro |
+| `CHORUS_PRO_SANDBOX` | `true` = sandbox PISTE, `false` = production |
+| `WALLET_URL` / `WALLET_APP_ID` / `WALLET_API_KEY` | Sync Data Wallet (optionnel) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> ⚠️ Les clés `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY` et les identifiants
+> Chorus Pro sont des secrets serveur. Faites-les tourner avant tout partage du code
+> ou passage en production publique.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Base de données
 
-## Deploy on Vercel
+Migrations SQL dans `supabase/migrations/` (à appliquer dans l'ordre via le SQL
+Editor Supabase ou la CLI). Tables principales : `companies`, `clients`,
+`invoices` + `invoice_items`, `quotes` + `quote_items`, `user_settings`,
+`documents`, et les tables OAuth MCP (`mcp_oauth_*`, `mcp_api_tokens`). RLS activé
+partout ; les totaux de facture sont recalculés par trigger côté base.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Architecture (src/)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+  api/chat            Assistant IA in-app (function calling)
+  api/extract-document Extraction IA Kbis/RIB (vision)
+  api/invoices/[id]/pdf, .../transmit   PDF + transmission Chorus Pro
+  mcp/[transport]     Serveur MCP (outils clients/factures/devis/entreprise)
+  oauth/*, .well-known/*   Flux OAuth 2.1 du connecteur MCP
+actions/              Server Actions (CRUD + wallet sync)
+lib/
+  facturx/            Génération XML CII + embarquement PDF/A-3 (Factur-X)
+  chorus-pro/         Client PISTE / Chorus Pro
+  pdf/                Templates PDF facture & devis
+  supabase/           Clients SSR / admin / middleware
+  validations/        Schémas Zod + numérotation
+```
+
+## Numérotation
+
+- **Factures** : `YYYYMMDD-NN` (`generateInvoiceNumber`, compteur `user_settings.invoice_next_number`).
+- **Devis** : `D-YYYY-NNN` — source de vérité unique partagée par l'app, le serveur MCP et l'assistant chat.
+
+## Déploiement
+
+Déployé sur Vercel (`https://invoice-project-lime.vercel.app`). Définir toutes les
+variables d'environnement ci-dessus côté Vercel (prod + preview), en particulier
+`NEXT_PUBLIC_APP_URL` pour un domaine OAuth MCP stable.
+
+## Serveur MCP
+
+Documentation de connexion détaillée : [`docs/MCP_SERVER_SETUP.md`](docs/MCP_SERVER_SETUP.md).
