@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
-import { Send, Loader2, Bot, User, Sparkles, Plus, Trash2, MessageSquare, CheckCircle, XCircle, FileText, ClipboardList, UserPlus } from 'lucide-react'
+import { Send, Loader2, Bot, User, Sparkles, Plus, Trash2, MessageSquare, CheckCircle, XCircle, FileText, ClipboardList, UserPlus, ArrowRight, Paperclip, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -35,11 +35,23 @@ interface ExecutedAction {
   error?: string
 }
 
+interface NavigationSuggestion {
+  label: string
+  path: string
+}
+
+interface Attachment {
+  name: string
+  media_type: string
+  data: string
+}
+
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   executedActions?: ExecutedAction[]
+  navigations?: NavigationSuggestion[]
 }
 
 interface AIChatProps {
@@ -58,6 +70,8 @@ export function AIChat({ conversations: initialConversations, initialConversatio
   const [isLoading, setIsLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [attachments, setAttachments] = useState<Attachment[]>([])
 
   // Charger les messages de la conversation sélectionnée
   useEffect(() => {
@@ -102,19 +116,54 @@ export function AIChat({ conversations: initialConversations, initialConversatio
     }
   }
 
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(((reader.result as string) || '').split(',')[1] || '')
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files) return
+    const accepted = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    const next: Attachment[] = []
+    for (const file of Array.from(files)) {
+      if (!accepted.includes(file.type)) {
+        toast.error(`Format non supporté : ${file.name} (PDF ou image)`)
+        continue
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name} dépasse 10 Mo`)
+        continue
+      }
+      next.push({ name: file.name, media_type: file.type, data: await fileToBase64(file) })
+    }
+    if (next.length) setAttachments((prev) => [...prev, ...next])
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removeAttachment = (idx: number) =>
+    setAttachments((prev) => prev.filter((_, i) => i !== idx))
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || isLoading) return
+    if ((!input.trim() && attachments.length === 0) || isLoading) return
+
+    const currentAttachments = attachments
+    const attachmentNote = currentAttachments.map((a) => `📎 ${a.name}`).join('\n')
+    const userContent = [input.trim(), attachmentNote].filter(Boolean).join('\n')
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: userContent,
     }
 
     const newMessages = [...messages, userMessage]
     setMessages(newMessages)
     setInput('')
+    setAttachments([])
     setIsLoading(true)
 
     try {
@@ -122,10 +171,8 @@ export function AIChat({ conversations: initialConversations, initialConversatio
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: newMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          attachments: currentAttachments.length ? currentAttachments : undefined,
         }),
       })
 
@@ -141,6 +188,7 @@ export function AIChat({ conversations: initialConversations, initialConversatio
         role: 'assistant',
         content: data.message,
         executedActions: data.executedActions,
+        navigations: data.navigations,
       }
 
       const updatedMessages = [...newMessages, assistantMessage]
@@ -307,12 +355,13 @@ export function AIChat({ conversations: initialConversations, initialConversatio
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="mb-2">Bonjour ! Je peux vous aider à :</p>
                 <ul className="text-sm space-y-1">
-                  <li>"Crée un client pour OVH"</li>
                   <li>"Crée une facture de 500€ pour Client X"</li>
                   <li>"Fais un devis pour une prestation de conseil"</li>
+                  <li>"Combien j'ai facturé ce mois ?"</li>
+                  <li>"Quelles sont mes factures en retard ?"</li>
                 </ul>
                 <p className="text-xs mt-4 text-muted-foreground/70">
-                  Je crée automatiquement les clients, factures et devis pour vous.
+                  Je crée vos clients, factures et devis, et je réponds à vos questions sur votre activité.
                 </p>
               </div>
             ) : (
@@ -386,6 +435,22 @@ export function AIChat({ conversations: initialConversations, initialConversatio
                         ))}
                       </div>
                     )}
+
+                    {/* Suggestions de navigation */}
+                    {message.navigations && message.navigations.length > 0 && (
+                      <div className="mt-2 ml-11 flex flex-wrap gap-2">
+                        {message.navigations.map((nav, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => router.push(nav.path)}
+                            className="inline-flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-sm hover:bg-muted transition-colors"
+                          >
+                            <ArrowRight className="h-3.5 w-3.5" />
+                            {nav.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {isLoading && (
@@ -406,7 +471,45 @@ export function AIChat({ conversations: initialConversations, initialConversatio
           </ScrollArea>
 
           <form onSubmit={handleSubmit} className="border-t p-4">
+            {attachments.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {attachments.map((att, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs"
+                  >
+                    <Paperclip className="h-3 w-3" />
+                    <span className="max-w-[160px] truncate">{att.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(idx)}
+                      className="hover:text-destructive"
+                      aria-label="Retirer la pièce jointe"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                title="Joindre un document (PDF ou image)"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
               <Textarea
                 ref={inputRef}
                 value={input}
@@ -420,7 +523,11 @@ export function AIChat({ conversations: initialConversations, initialConversatio
                   }
                 }}
               />
-              <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+              <Button
+                type="submit"
+                size="icon"
+                disabled={isLoading || (!input.trim() && attachments.length === 0)}
+              >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (

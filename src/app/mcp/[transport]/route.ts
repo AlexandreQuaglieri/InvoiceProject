@@ -2,10 +2,7 @@ import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js'
 import { createMcpHandler, withMcpAuth } from 'mcp-handler'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
-import {
-  generateInvoiceNumber,
-  calculateLineTotal,
-} from '@/lib/validations/invoice'
+import * as svc from '@/lib/services'
 
 // ============ HELPERS ============
 
@@ -26,71 +23,14 @@ function fail(text: string): ToolResult {
 
 type AdminClient = ReturnType<typeof createAdminClient>
 
-// Résout l'entreprise de l'utilisateur (maybeSingle => message clair si absente).
+// Résolution de l'entreprise déléguée à la couche services (source de vérité unique),
+// en conservant la forme de retour attendue par les outils MCP de lecture.
 async function resolveCompanyId(
   supabase: AdminClient,
   userId: string
 ): Promise<{ companyId: string } | { error: string }> {
-  const { data: company, error } = await supabase
-    .from('companies')
-    .select('id')
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  if (error) {
-    return { error: `Erreur base de données: ${error.message}` }
-  }
-  if (!company) {
-    return {
-      error:
-        "Aucune entreprise configurée pour ce compte. Ouvre l'application et complète la fiche entreprise (menu « Entreprise ») avant d'utiliser cet outil.",
-    }
-  }
-  return { companyId: company.id }
-}
-
-// Récupère (ou crée) les paramètres utilisateur pour la numérotation des factures.
-async function getOrCreateUserSettings(
-  supabase: AdminClient,
-  userId: string
-): Promise<{ invoice_prefix: string; invoice_next_number: number } | null> {
-  const { data } = await supabase
-    .from('user_settings')
-    .select('invoice_prefix, invoice_next_number')
-    .eq('user_id', userId)
-    .maybeSingle()
-
-  if (data) return data
-
-  const { data: created, error } = await supabase
-    .from('user_settings')
-    .insert({ user_id: userId, invoice_prefix: 'FAC', invoice_next_number: 1 })
-    .select('invoice_prefix, invoice_next_number')
-    .single()
-
-  if (error) return null
-  return created
-}
-
-// Numéro de devis suivant au format D-YYYY-NNN (cohérent avec l'application).
-async function getNextQuoteNumber(supabase: AdminClient, userId: string): Promise<string> {
-  const year = new Date().getFullYear()
-
-  const { data } = await supabase
-    .from('quotes')
-    .select('quote_number')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-
-  if (!data || data.length === 0) return `D-${year}-001`
-
-  const last = data[0].quote_number as string
-  const match = last.match(/D-\d{4}-(\d+)/) || last.match(/D-(\d+)/)
-  if (match) {
-    return `D-${year}-${String(parseInt(match[1], 10) + 1).padStart(3, '0')}`
-  }
-  return `D-${year}-001`
+  const r = await svc.resolveCompanyId(supabase, userId)
+  return r.ok ? { companyId: r.data } : { error: r.error }
 }
 
 const STATUS_ICONS: Record<string, string> = {
@@ -131,26 +71,18 @@ const handler = createMcpHandler(
         const company = await resolveCompanyId(supabase, userId)
         if ('error' in company) return fail(company.error)
 
-        let query = supabase
-          .from('clients')
-          .select('id, name, email, city, type')
-          .eq('company_id', company.companyId)
-          .order('name')
+        const r = await svc.clients.list(
+          supabase,
+          { userId, companyId: company.companyId },
+          { search, limit }
+        )
+        if (!r.ok) return fail(`Erreur: ${r.error}`)
+        if (r.data.length === 0) return ok('Aucun client trouvé.')
 
-        if (search) {
-          query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`)
-        }
-        if (limit) query = query.limit(limit)
-
-        const { data, error } = await query
-        if (error) return fail(`Erreur: ${error.message}`)
-
-        if (!data || data.length === 0) return ok('Aucun client trouvé.')
-
-        const list = data
+        const list = r.data
           .map((c) => `- ${c.name} (${c.email || "pas d'email"}) — ID: ${c.id}`)
           .join('\n')
-        return ok(`📋 **${data.length} client(s)**\n\n${list}`)
+        return ok(`📋 **${r.data.length} client(s)**\n\n${list}`)
       }
     )
 
@@ -168,15 +100,13 @@ const handler = createMcpHandler(
         const company = await resolveCompanyId(supabase, userId)
         if ('error' in company) return fail(company.error)
 
-        const { data: c, error } = await supabase
-          .from('clients')
-          .select('*')
-          .eq('id', client_id)
-          .eq('company_id', company.companyId)
-          .maybeSingle()
-
-        if (error) return fail(`Erreur: ${error.message}`)
-        if (!c) return fail('Client non trouvé')
+        const cr = await svc.clients.getById(
+          supabase,
+          { userId, companyId: company.companyId },
+          client_id
+        )
+        if (!cr.ok) return fail(cr.error)
+        const c = cr.data
 
         return ok(
           `👤 **${c.name}** (${c.type === 'individual' ? 'particulier' : 'professionnel'})\n` +
@@ -217,29 +147,11 @@ const handler = createMcpHandler(
         const company = await resolveCompanyId(supabase, userId)
         if ('error' in company) return fail(company.error)
 
-        const { data, error } = await supabase
-          .from('clients')
-          .insert({
-            company_id: company.companyId,
-            type: input.type ?? 'professional',
-            name: input.name,
-            address: input.address,
-            postal_code: input.postal_code,
-            city: input.city,
-            country: input.country || 'France',
-            email: input.email ?? null,
-            phone: input.phone ?? null,
-            siret: input.siret ?? null,
-            vat_number: input.vat_number ?? null,
-            notes: input.notes ?? null,
-          })
-          .select()
-          .single()
-
-        if (error) return fail(`Erreur: ${error.message}`)
+        const r = await svc.clients.create(supabase, { userId, companyId: company.companyId }, input)
+        if (!r.ok) return fail(`Erreur: ${r.error}`)
 
         return ok(
-          `✅ Client créé !\n\n**${data.name}**\nID: ${data.id}\nEmail: ${data.email || 'Non renseigné'}`
+          `✅ Client créé !\n\n**${r.data.name}**\nID: ${r.data.id}\nEmail: ${r.data.email || 'Non renseigné'}`
         )
       }
     )
@@ -265,38 +177,22 @@ const handler = createMcpHandler(
         const company = await resolveCompanyId(supabase, userId)
         if ('error' in company) return fail(company.error)
 
-        let query = supabase
-          .from('invoices')
-          .select('id, number, status, total_ttc, due_date, client:clients(name)')
-          .eq('company_id', company.companyId)
-          .order('created_at', { ascending: false })
+        const r = await svc.invoices.list(
+          supabase,
+          { userId, companyId: company.companyId },
+          { status, clientName: client_name, limit }
+        )
+        if (!r.ok) return fail(`Erreur: ${r.error}`)
+        if (r.data.length === 0) return ok('Aucune facture trouvée.')
 
-        if (status) query = query.eq('status', status)
-        if (limit) query = query.limit(limit)
-
-        const { data, error } = await query
-        if (error) return fail(`Erreur: ${error.message}`)
-
-        let invoices = data || []
-        if (client_name) {
-          const needle = client_name.toLowerCase()
-          invoices = invoices.filter((inv) =>
-            (inv.client as { name?: string } | null)?.name?.toLowerCase().includes(needle)
+        const list = r.data
+          .map(
+            (inv) =>
+              `${STATUS_ICONS[inv.status] || ''} ${inv.number} — ${inv.clientName} — ${inv.total_ttc.toFixed(2)}€ — ID: ${inv.id}`
           )
-        }
-
-        if (invoices.length === 0) return ok('Aucune facture trouvée.')
-
-        const list = invoices
-          .map((inv) => {
-            const clientName = (inv.client as { name?: string } | null)?.name || 'N/A'
-            return `${STATUS_ICONS[inv.status] || ''} ${inv.number} — ${clientName} — ${Number(
-              inv.total_ttc
-            ).toFixed(2)}€ — ID: ${inv.id}`
-          })
           .join('\n')
 
-        return ok(`📄 **${invoices.length} facture(s)**\n\n${list}`)
+        return ok(`📄 **${r.data.length} facture(s)**\n\n${list}`)
       }
     )
 
@@ -314,37 +210,31 @@ const handler = createMcpHandler(
         const company = await resolveCompanyId(supabase, userId)
         if ('error' in company) return fail(company.error)
 
-        const { data: inv, error } = await supabase
-          .from('invoices')
-          .select(
-            'id, number, status, issue_date, due_date, paid_at, notes, payment_terms, total_ht, total_vat, total_ttc, client:clients(name), items:invoice_items(description, quantity, unit_price, vat_rate, total_ttc, position)'
-          )
-          .eq('id', invoice_id)
-          .eq('company_id', company.companyId)
-          .maybeSingle()
+        const ir = await svc.invoices.getById(
+          supabase,
+          { userId, companyId: company.companyId },
+          invoice_id
+        )
+        if (!ir.ok) return fail(ir.error)
+        const inv = ir.data
 
-        if (error) return fail(`Erreur: ${error.message}`)
-        if (!inv) return fail('Facture non trouvée')
-
-        const clientName = (inv.client as { name?: string } | null)?.name || 'N/A'
-        const items = ((inv.items as Array<Record<string, unknown>>) || [])
-          .sort((a, b) => Number(a.position) - Number(b.position))
+        const items = inv.items
           .map(
             (it) =>
-              `  • ${it.description} — ${it.quantity} × ${Number(it.unit_price).toFixed(2)}€ ` +
-              `(TVA ${it.vat_rate}%) = ${Number(it.total_ttc).toFixed(2)}€ TTC`
+              `  • ${it.description} — ${it.quantity} × ${it.unit_price.toFixed(2)}€ ` +
+              `(TVA ${it.vat_rate}%) = ${it.total_ttc.toFixed(2)}€ TTC`
           )
           .join('\n')
 
         return ok(
           `📄 **Facture ${inv.number}** ${STATUS_ICONS[inv.status] || ''} (${inv.status})\n` +
-            `Client: ${clientName}\n` +
+            `Client: ${inv.clientName}\n` +
             `Émise le: ${inv.issue_date} — Échéance: ${inv.due_date}` +
-            (inv.paid_at ? ` — Payée le: ${String(inv.paid_at).split('T')[0]}` : '') +
+            (inv.paid_at ? ` — Payée le: ${inv.paid_at.split('T')[0]}` : '') +
             `\n\nLignes:\n${items || '  (aucune)'}\n\n` +
-            `Total HT: ${Number(inv.total_ht).toFixed(2)}€\n` +
-            `TVA: ${Number(inv.total_vat).toFixed(2)}€\n` +
-            `**Total TTC: ${Number(inv.total_ttc).toFixed(2)}€**` +
+            `Total HT: ${inv.total_ht.toFixed(2)}€\n` +
+            `TVA: ${inv.total_vat.toFixed(2)}€\n` +
+            `**Total TTC: ${inv.total_ttc.toFixed(2)}€**` +
             (inv.notes ? `\n\nNotes: ${inv.notes}` : '')
         )
       }
@@ -395,93 +285,15 @@ const handler = createMcpHandler(
         const company = await resolveCompanyId(supabase, userId)
         if ('error' in company) return fail(company.error)
 
-        // Vérifier que le client appartient à l'entreprise
-        const { data: client } = await supabase
-          .from('clients')
-          .select('id, name')
-          .eq('id', input.client_id)
-          .eq('company_id', company.companyId)
-          .maybeSingle()
-
-        if (!client) return fail('Client non trouvé (vérifie client_id via list_clients)')
-
-        // Numérotation cohérente avec l'application (user_settings)
-        const settings = await getOrCreateUserSettings(supabase, userId)
-        if (!settings) return fail("Impossible de récupérer les paramètres de numérotation")
-
-        const invoiceNumber = generateInvoiceNumber(
-          settings.invoice_prefix || 'FAC',
-          settings.invoice_next_number || 1
-        )
-
-        const today = new Date().toISOString().split('T')[0]
-        const defaultDue = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0]
-
-        // Créer la facture (les totaux seront recalculés par le trigger DB à l'insertion des lignes)
-        const { data: invoice, error: invoiceError } = await supabase
-          .from('invoices')
-          .insert({
-            company_id: company.companyId,
-            client_id: input.client_id,
-            number: invoiceNumber,
-            status: 'draft',
-            issue_date: input.issue_date || today,
-            due_date: input.due_date || defaultDue,
-            payment_terms: input.payment_terms ?? null,
-            notes: input.notes ?? null,
-            discount_type: input.discount_type ?? null,
-            discount_value: input.discount_value ?? 0,
-          })
-          .select('id, number')
-          .single()
-
-        if (invoiceError) return fail(`Erreur création facture: ${invoiceError.message}`)
-
-        // Créer les lignes (le trigger calcule total_ht/vat/ttc par ligne ET au niveau facture)
-        const items = input.items.map((item, index) => {
-          const vatRate = item.vat_rate ?? 20
-          const line = calculateLineTotal(item.quantity, item.unit_price, vatRate)
-          return {
-            invoice_id: invoice.id,
-            description: item.description,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            vat_rate: vatRate,
-            total_ht: line.totalHt,
-            total_vat: line.totalVat,
-            total_ttc: line.totalTtc,
-            position: index,
-          }
-        })
-
-        const { error: itemsError } = await supabase.from('invoice_items').insert(items)
-        if (itemsError) {
-          // Rollback : supprimer la facture si les lignes échouent
-          await supabase.from('invoices').delete().eq('id', invoice.id)
-          return fail(`Erreur création des lignes: ${itemsError.message}`)
-        }
-
-        // Incrémenter le compteur de numérotation
-        await supabase
-          .from('user_settings')
-          .update({ invoice_next_number: (settings.invoice_next_number || 1) + 1 })
-          .eq('user_id', userId)
-
-        // Relire les totaux finaux (calculés par le trigger)
-        const { data: final } = await supabase
-          .from('invoices')
-          .select('total_ttc')
-          .eq('id', invoice.id)
-          .maybeSingle()
+        const r = await svc.invoices.create(supabase, { userId, companyId: company.companyId }, input)
+        if (!r.ok) return fail(r.error)
 
         return ok(
           `✅ **Facture créée !**\n\n` +
-            `📄 Numéro: ${invoice.number}\n` +
-            `👤 Client: ${client.name}\n` +
-            `💰 Total TTC: ${Number(final?.total_ttc ?? 0).toFixed(2)}€\n` +
-            `📋 Statut: Brouillon\n\nID: ${invoice.id}`
+            `📄 Numéro: ${r.data.number}\n` +
+            `👤 Client: ${r.data.clientName}\n` +
+            `💰 Total TTC: ${r.data.total_ttc.toFixed(2)}€\n` +
+            `📋 Statut: Brouillon\n\nID: ${r.data.id}`
         )
       }
     )
@@ -503,29 +315,15 @@ const handler = createMcpHandler(
         const company = await resolveCompanyId(supabase, userId)
         if ('error' in company) return fail(company.error)
 
-        const { data: existing } = await supabase
-          .from('invoices')
-          .select('id, number')
-          .eq('id', invoice_id)
-          .eq('company_id', company.companyId)
-          .maybeSingle()
-
-        if (!existing) return fail('Facture non trouvée')
-
-        const { error } = await supabase
-          .from('invoices')
-          .update({
-            status,
-            paid_at: status === 'paid' ? new Date().toISOString() : null,
-          })
-          .eq('id', invoice_id)
-          .eq('company_id', company.companyId)
-
-        if (error) return fail(`Erreur: ${error.message}`)
-
-        return ok(
-          `${STATUS_ICONS[status] || ''} Facture ${existing.number} → statut « ${status} »`
+        const r = await svc.invoices.setStatus(
+          supabase,
+          { userId, companyId: company.companyId },
+          invoice_id,
+          status
         )
+        if (!r.ok) return fail(r.error)
+
+        return ok(`${STATUS_ICONS[status] || ''} Facture ${r.data.number} → statut « ${status} »`)
       }
     )
 
@@ -543,28 +341,10 @@ const handler = createMcpHandler(
         const company = await resolveCompanyId(supabase, userId)
         if ('error' in company) return fail(company.error)
 
-        const { data: existing } = await supabase
-          .from('invoices')
-          .select('id, number, status')
-          .eq('id', invoice_id)
-          .eq('company_id', company.companyId)
-          .maybeSingle()
+        const r = await svc.invoices.remove(supabase, { userId, companyId: company.companyId }, invoice_id)
+        if (!r.ok) return fail(r.error)
 
-        if (!existing) return fail('Facture non trouvée')
-        if (existing.status !== 'draft') {
-          return fail('Seuls les brouillons peuvent être supprimés')
-        }
-
-        await supabase.from('invoice_items').delete().eq('invoice_id', invoice_id)
-        const { error } = await supabase
-          .from('invoices')
-          .delete()
-          .eq('id', invoice_id)
-          .eq('company_id', company.companyId)
-
-        if (error) return fail(`Erreur: ${error.message}`)
-
-        return ok(`🗑️ Facture ${existing.number} supprimée.`)
+        return ok(`🗑️ Facture ${r.data.number} supprimée.`)
       }
     )
 
@@ -580,31 +360,23 @@ const handler = createMcpHandler(
         const company = await resolveCompanyId(supabase, userId)
         if ('error' in company) return fail(company.error)
 
-        const { data: invoices, error } = await supabase
-          .from('invoices')
-          .select('status, total_ttc')
-          .eq('company_id', company.companyId)
-
-        if (error) return fail(`Erreur: ${error.message}`)
-        if (!invoices || invoices.length === 0) return ok('Aucune facture pour le moment.')
-
-        const by = (s: string) => invoices.filter((i) => i.status === s)
-        const sum = (rows: typeof invoices) =>
-          rows.reduce((acc, i) => acc + Number(i.total_ttc || 0), 0)
-
-        const totalPaid = sum(by('paid'))
-        const totalPending = sum(invoices.filter((i) => ['sent', 'overdue'].includes(i.status)))
+        const r = await svc.invoices.stats(supabase, { userId, companyId: company.companyId })
+        if (!r.ok) return fail(`Erreur: ${r.error}`)
+        const s = r.data
+        if (s.total === 0) return ok('Aucune facture pour le moment.')
 
         return ok(
           `📊 **Statistiques Factures**\n\n` +
-            `📋 Total: ${invoices.length}\n` +
-            `📝 Brouillons: ${by('draft').length}\n` +
-            `📤 Envoyées: ${by('sent').length}\n` +
-            `✅ Payées: ${by('paid').length}\n` +
-            `⚠️ En retard: ${by('overdue').length}\n` +
-            `❌ Annulées: ${by('cancelled').length}\n\n` +
-            `💰 Total encaissé: ${totalPaid.toFixed(2)}€\n` +
-            `⏳ En attente: ${totalPending.toFixed(2)}€`
+            `📋 Total: ${s.total}\n` +
+            `📝 Brouillons: ${s.draft}\n` +
+            `📤 Envoyées: ${s.sent}\n` +
+            `✅ Payées: ${s.paid}\n` +
+            `⚠️ En retard: ${s.overdue}\n` +
+            `❌ Annulées: ${s.cancelled}\n\n` +
+            `💰 CA encaissé (mois): ${s.revenueThisMonth.toFixed(2)}€\n` +
+            `💰 CA encaissé (année): ${s.revenueThisYear.toFixed(2)}€\n` +
+            `💰 Total encaissé: ${s.totalPaid.toFixed(2)}€\n` +
+            `⏳ En attente: ${s.totalPending.toFixed(2)}€`
         )
       }
     )
@@ -626,29 +398,25 @@ const handler = createMcpHandler(
         if (!userId) return fail('Non authentifié')
 
         const supabase = createAdminClient()
-        let query = supabase
-          .from('quotes')
-          .select('id, quote_number, status, total, validity_date, client:clients(name)')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
+        const company = await resolveCompanyId(supabase, userId)
+        if ('error' in company) return fail(company.error)
 
-        if (status) query = query.eq('status', status)
-        if (limit) query = query.limit(limit)
+        const r = await svc.quotes.list(
+          supabase,
+          { userId, companyId: company.companyId },
+          { status, limit }
+        )
+        if (!r.ok) return fail(`Erreur: ${r.error}`)
+        if (r.data.length === 0) return ok('Aucun devis trouvé.')
 
-        const { data, error } = await query
-        if (error) return fail(`Erreur: ${error.message}`)
-        if (!data || data.length === 0) return ok('Aucun devis trouvé.')
-
-        const list = data
-          .map((q) => {
-            const clientName = (q.client as { name?: string } | null)?.name || 'N/A'
-            return `${QUOTE_STATUS_ICONS[q.status] || ''} ${q.quote_number} — ${clientName} — ${Number(
-              q.total
-            ).toFixed(2)}€ TTC — ID: ${q.id}`
-          })
+        const list = r.data
+          .map(
+            (q) =>
+              `${QUOTE_STATUS_ICONS[q.status] || ''} ${q.quote_number} — ${q.clientName} — ${q.total.toFixed(2)}€ TTC — ID: ${q.id}`
+          )
           .join('\n')
 
-        return ok(`🧾 **${data.length} devis**\n\n${list}`)
+        return ok(`🧾 **${r.data.length} devis**\n\n${list}`)
       }
     )
 
@@ -663,37 +431,34 @@ const handler = createMcpHandler(
         if (!userId) return fail('Non authentifié')
 
         const supabase = createAdminClient()
-        const { data: q, error } = await supabase
-          .from('quotes')
-          .select(
-            'id, quote_number, status, issue_date, validity_date, notes, terms, subtotal, tax_amount, total, converted_invoice_id, client:clients(name), items:quote_items(description, quantity, unit_price, tax_rate, total, position)'
-          )
-          .eq('id', quote_id)
-          .eq('user_id', userId)
-          .maybeSingle()
+        const company = await resolveCompanyId(supabase, userId)
+        if ('error' in company) return fail(company.error)
 
-        if (error) return fail(`Erreur: ${error.message}`)
-        if (!q) return fail('Devis non trouvé')
+        const qr = await svc.quotes.getById(
+          supabase,
+          { userId, companyId: company.companyId },
+          quote_id
+        )
+        if (!qr.ok) return fail(qr.error)
+        const q = qr.data
 
-        const clientName = (q.client as { name?: string } | null)?.name || 'N/A'
-        const items = ((q.items as Array<Record<string, unknown>>) || [])
-          .sort((a, b) => Number(a.position) - Number(b.position))
+        const items = q.items
           .map(
             (it) =>
-              `  • ${it.description} — ${it.quantity} × ${Number(it.unit_price).toFixed(2)}€ ` +
-              `(TVA ${it.tax_rate}%) = ${Number(it.total).toFixed(2)}€ HT`
+              `  • ${it.description} — ${it.quantity} × ${it.unit_price.toFixed(2)}€ ` +
+              `(TVA ${it.tax_rate}%) = ${it.total.toFixed(2)}€ HT`
           )
           .join('\n')
 
         return ok(
           `🧾 **Devis ${q.quote_number}** ${QUOTE_STATUS_ICONS[q.status] || ''} (${q.status})\n` +
-            `Client: ${clientName}\n` +
+            `Client: ${q.clientName}\n` +
             `Émis le: ${q.issue_date} — Valide jusqu'au: ${q.validity_date}` +
             (q.converted_invoice_id ? `\nConverti en facture: ${q.converted_invoice_id}` : '') +
             `\n\nLignes:\n${items || '  (aucune)'}\n\n` +
-            `Sous-total HT: ${Number(q.subtotal).toFixed(2)}€\n` +
-            `TVA: ${Number(q.tax_amount).toFixed(2)}€\n` +
-            `**Total TTC: ${Number(q.total).toFixed(2)}€**` +
+            `Sous-total HT: ${q.subtotal.toFixed(2)}€\n` +
+            `TVA: ${q.tax_amount.toFixed(2)}€\n` +
+            `**Total TTC: ${q.total.toFixed(2)}€**` +
             (q.notes ? `\n\nNotes: ${q.notes}` : '') +
             (q.terms ? `\nConditions: ${q.terms}` : '')
         )
@@ -740,80 +505,15 @@ const handler = createMcpHandler(
         const company = await resolveCompanyId(supabase, userId)
         if ('error' in company) return fail(company.error)
 
-        const { data: client } = await supabase
-          .from('clients')
-          .select('id, name')
-          .eq('id', input.client_id)
-          .eq('company_id', company.companyId)
-          .maybeSingle()
-
-        if (!client) return fail('Client non trouvé (vérifie client_id via list_clients)')
-
-        // Calcul des totaux (pas de trigger DB sur les devis)
-        let subtotal = 0
-        let taxAmount = 0
-        const itemsWithTotals = input.items.map((item, index) => {
-          const taxRate = item.tax_rate ?? 20
-          const lineHt = Math.round(item.quantity * item.unit_price * 100) / 100
-          const lineTax = Math.round(lineHt * taxRate) / 100
-          subtotal += lineHt
-          taxAmount += lineTax
-          return {
-            description: item.description,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            tax_rate: taxRate,
-            total: lineHt,
-            position: index,
-          }
-        })
-        subtotal = Math.round(subtotal * 100) / 100
-        taxAmount = Math.round(taxAmount * 100) / 100
-        const total = Math.round((subtotal + taxAmount) * 100) / 100
-
-        const today = new Date().toISOString().split('T')[0]
-        const defaultValidity = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0]
-
-        const quoteNumber = await getNextQuoteNumber(supabase, userId)
-
-        const { data: quote, error: quoteError } = await supabase
-          .from('quotes')
-          .insert({
-            user_id: userId,
-            company_id: company.companyId,
-            client_id: input.client_id,
-            quote_number: quoteNumber,
-            issue_date: input.issue_date || today,
-            validity_date: input.validity_date || defaultValidity,
-            status: 'draft',
-            subtotal,
-            tax_amount: taxAmount,
-            total,
-            notes: input.notes ?? null,
-            terms: input.terms ?? null,
-          })
-          .select('id, quote_number')
-          .single()
-
-        if (quoteError) return fail(`Erreur création devis: ${quoteError.message}`)
-
-        const { error: itemsError } = await supabase.from('quote_items').insert(
-          itemsWithTotals.map((item) => ({ quote_id: quote.id, ...item }))
-        )
-
-        if (itemsError) {
-          await supabase.from('quotes').delete().eq('id', quote.id)
-          return fail(`Erreur création des lignes: ${itemsError.message}`)
-        }
+        const r = await svc.quotes.create(supabase, { userId, companyId: company.companyId }, input)
+        if (!r.ok) return fail(r.error)
 
         return ok(
           `✅ **Devis créé !**\n\n` +
-            `🧾 Numéro: ${quote.quote_number}\n` +
-            `👤 Client: ${client.name}\n` +
-            `💰 Total TTC: ${total.toFixed(2)}€\n` +
-            `📋 Statut: Brouillon\n\nID: ${quote.id}`
+            `🧾 Numéro: ${r.data.quote_number}\n` +
+            `👤 Client: ${r.data.clientName}\n` +
+            `💰 Total TTC: ${r.data.total.toFixed(2)}€\n` +
+            `📋 Statut: Brouillon\n\nID: ${r.data.id}`
         )
       }
     )
@@ -832,29 +532,18 @@ const handler = createMcpHandler(
         if (!userId) return fail('Non authentifié')
 
         const supabase = createAdminClient()
-        const { data: existing } = await supabase
-          .from('quotes')
-          .select('id, quote_number, status')
-          .eq('id', quote_id)
-          .eq('user_id', userId)
-          .maybeSingle()
+        const company = await resolveCompanyId(supabase, userId)
+        if ('error' in company) return fail(company.error)
 
-        if (!existing) return fail('Devis non trouvé')
-        if (existing.status === 'converted') {
-          return fail('Un devis converti en facture ne peut plus changer de statut')
-        }
-
-        const { error } = await supabase
-          .from('quotes')
-          .update({ status })
-          .eq('id', quote_id)
-          .eq('user_id', userId)
-
-        if (error) return fail(`Erreur: ${error.message}`)
-
-        return ok(
-          `${QUOTE_STATUS_ICONS[status] || ''} Devis ${existing.quote_number} → statut « ${status} »`
+        const r = await svc.quotes.setStatus(
+          supabase,
+          { userId, companyId: company.companyId },
+          quote_id,
+          status
         )
+        if (!r.ok) return fail(r.error)
+
+        return ok(`${QUOTE_STATUS_ICONS[status] || ''} Devis ${r.data.quote_number} → statut « ${status} »`)
       }
     )
 
@@ -869,83 +558,14 @@ const handler = createMcpHandler(
         if (!userId) return fail('Non authentifié')
 
         const supabase = createAdminClient()
+        const company = await resolveCompanyId(supabase, userId)
+        if ('error' in company) return fail(company.error)
 
-        const { data: quote } = await supabase
-          .from('quotes')
-          .select('*, items:quote_items(*)')
-          .eq('id', quote_id)
-          .eq('user_id', userId)
-          .maybeSingle()
-
-        if (!quote) return fail('Devis non trouvé')
-        if (quote.status === 'converted') {
-          return fail('Ce devis a déjà été converti en facture')
-        }
-
-        const settings = await getOrCreateUserSettings(supabase, userId)
-        if (!settings) return fail('Impossible de récupérer les paramètres de numérotation')
-
-        const invoiceNumber = generateInvoiceNumber(
-          settings.invoice_prefix || 'FAC',
-          settings.invoice_next_number || 1
-        )
-        const today = new Date().toISOString().split('T')[0]
-        const due = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
-        const { data: invoice, error: invoiceError } = await supabase
-          .from('invoices')
-          .insert({
-            company_id: quote.company_id,
-            client_id: quote.client_id,
-            number: invoiceNumber,
-            status: 'draft',
-            issue_date: today,
-            due_date: due,
-            notes: quote.notes,
-          })
-          .select('id, number')
-          .single()
-
-        if (invoiceError) return fail(`Erreur création facture: ${invoiceError.message}`)
-
-        const items = (quote.items as Array<Record<string, unknown>>) || []
-        const { error: itemsError } = await supabase.from('invoice_items').insert(
-          items.map((item) => {
-            const qty = Number(item.quantity)
-            const unit = Number(item.unit_price)
-            const vatRate = Number(item.tax_rate)
-            const line = calculateLineTotal(qty, unit, vatRate)
-            return {
-              invoice_id: invoice.id,
-              description: item.description,
-              quantity: qty,
-              unit_price: unit,
-              vat_rate: vatRate,
-              total_ht: line.totalHt,
-              total_vat: line.totalVat,
-              total_ttc: line.totalTtc,
-              position: Number(item.position),
-            }
-          })
-        )
-
-        if (itemsError) {
-          await supabase.from('invoices').delete().eq('id', invoice.id)
-          return fail(`Erreur création des lignes: ${itemsError.message}`)
-        }
-
-        await supabase
-          .from('quotes')
-          .update({ status: 'converted', converted_invoice_id: invoice.id })
-          .eq('id', quote_id)
-
-        await supabase
-          .from('user_settings')
-          .update({ invoice_next_number: (settings.invoice_next_number || 1) + 1 })
-          .eq('user_id', userId)
+        const r = await svc.quotes.convert(supabase, { userId, companyId: company.companyId }, quote_id)
+        if (!r.ok) return fail(r.error)
 
         return ok(
-          `🔄 Devis converti !\n\n📄 Facture créée: ${invoice.number} (brouillon)\nID facture: ${invoice.id}`
+          `🔄 Devis converti !\n\n📄 Facture créée: ${r.data.invoiceNumber} (brouillon)\nID facture: ${r.data.invoiceId}`
         )
       }
     )
@@ -961,18 +581,9 @@ const handler = createMcpHandler(
         if (!userId) return fail('Non authentifié')
 
         const supabase = createAdminClient()
-        const { data: company, error } = await supabase
-          .from('companies')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle()
-
-        if (error) return fail(`Erreur: ${error.message}`)
-        if (!company) {
-          return fail(
-            "Aucune entreprise configurée. Complète la fiche entreprise dans l'application."
-          )
-        }
+        const cr = await svc.company.getInfo(supabase, { userId, companyId: '' })
+        if (!cr.ok) return fail(cr.error)
+        const company = cr.data
 
         return ok(
           `🏢 **${company.name}**\n\n` +

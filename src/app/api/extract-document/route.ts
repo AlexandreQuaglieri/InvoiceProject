@@ -94,14 +94,10 @@ export async function POST(request: NextRequest) {
     let buffer = Buffer.from(bytes)
     let finalMediaType = file.type
 
-    console.log(`[EXTRACT] Fichier reçu: ${file.name}, type: ${file.type}, taille: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`)
-
     // Compresser les images si nécessaire (limite Claude: 5MB en base64)
     // Base64 augmente la taille d'environ 33%, donc on limite à 3.5 MB binaire
     const MAX_SIZE = 3.5 * 1024 * 1024 // 3.5 MB binaire = ~4.7 MB en base64
     if (file.type.startsWith('image/') && buffer.length > MAX_SIZE) {
-      console.log(`[EXTRACT] Image trop grande, compression avec sharp...`)
-
       try {
         // Compresser avec sharp - réduire fortement pour être sûr
         let compressedBuffer = await sharp(buffer)
@@ -109,20 +105,16 @@ export async function POST(request: NextRequest) {
           .jpeg({ quality: 70 })
           .toBuffer()
 
-        console.log(`[EXTRACT] Après 1ere compression: ${(compressedBuffer.length / 1024 / 1024).toFixed(2)} MB`)
-
         // Réduire encore si nécessaire
         if (compressedBuffer.length > MAX_SIZE) {
           compressedBuffer = await sharp(buffer)
             .resize(1000, 1000, { fit: 'inside', withoutEnlargement: true })
             .jpeg({ quality: 50 })
             .toBuffer()
-          console.log(`[EXTRACT] Après 2eme compression: ${(compressedBuffer.length / 1024 / 1024).toFixed(2)} MB`)
         }
 
         buffer = Buffer.from(compressedBuffer)
         finalMediaType = 'image/jpeg'
-        console.log(`[EXTRACT] Compression terminée: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`)
       } catch (compressError) {
         console.error('[EXTRACT] Erreur compression:', compressError)
         return NextResponse.json(
@@ -133,7 +125,6 @@ export async function POST(request: NextRequest) {
     }
 
     const base64 = buffer.toString('base64')
-    console.log(`[EXTRACT] Base64 généré, taille: ${(base64.length / 1024 / 1024).toFixed(2)} MB`)
 
     // Appeler Claude Vision
     const anthropic = new Anthropic({
@@ -183,8 +174,9 @@ export async function POST(request: NextRequest) {
     }
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1024,
+      thinking: { type: 'disabled' },
       messages: [
         {
           role: 'user',

@@ -9,8 +9,6 @@ export async function GET(request: Request) {
   const error_description = searchParams.get('error_description')
   const next = searchParams.get('next') ?? '/dashboard'
 
-  console.log('[AUTH CALLBACK] Starting - code:', !!code, 'error:', error_param)
-
   // Si Supabase renvoie une erreur directement
   if (error_param) {
     console.error('[AUTH CALLBACK] Error from Supabase:', error_param, error_description)
@@ -43,17 +41,13 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
-    console.log('[AUTH CALLBACK] Exchange result - session:', !!data?.session, 'error:', error?.message)
-
     if (!error && data.session) {
       // Vérifier s'il y a un redirect OAuth MCP
       const oauthRedirect = searchParams.get('oauth_redirect')
       if (oauthRedirect) {
-        console.log('[AUTH CALLBACK] OAuth redirect to:', oauthRedirect)
         return NextResponse.redirect(oauthRedirect)
       }
 
-      console.log('[AUTH CALLBACK] Success! Redirecting to:', next)
       return NextResponse.redirect(`${origin}${next}`)
     }
 
