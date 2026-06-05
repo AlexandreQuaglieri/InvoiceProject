@@ -12,6 +12,7 @@ import {
   Receipt,
   ClipboardList,
   Sparkles,
+  Inbox,
 } from 'lucide-react'
 
 import {
@@ -47,6 +48,11 @@ export function AppSidebar() {
       title: t('invoices'),
       url: '/invoices',
       icon: FileText,
+    },
+    {
+      title: 'Factures reçues',
+      url: '/inbox',
+      icon: Inbox,
     },
     {
       title: t('quotes'),

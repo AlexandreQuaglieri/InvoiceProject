@@ -40,12 +40,18 @@ export type PdpLifecycleEvent = {
 }
 
 // Métadonnées d'une facture entrante (réception). Le contenu brut (Factur-X) est
-// récupéré séparément via downloadInvoice().
+// récupéré séparément via downloadInvoice(). Le résumé (émetteur, montant…) provient
+// des données structurées EN16931 (en_invoice) quand elles sont disponibles.
 export type PdpInboundInvoice = {
   depositId: string
   externalId?: string
-  senderSiren?: string
   receivedAt: string
+  number?: string
+  sellerName?: string
+  sellerVat?: string
+  totalWithVat?: number
+  currency?: string
+  issueDate?: string
 }
 
 // Données e-reporting (B2C, international, statuts de paiement) — structure à affiner.

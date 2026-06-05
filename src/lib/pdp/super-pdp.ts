@@ -147,12 +147,25 @@ export function createSuperPdpProvider(config: SuperPdpConfig): PdpProvider {
       const res = await call(`${API}/invoices?direction=in`)
       const data = await res.json()
       return ((data.data ?? []) as Array<Record<string, unknown>>).map((inv) => {
-        const en = inv.en_invoice as { seller?: { identifiers?: Array<{ value?: string }> } } | undefined
+        const en = inv.en_invoice as
+          | {
+              number?: string
+              issue_date?: string
+              currency_code?: string
+              seller?: { name?: string; trading_name?: string; vat_identifier?: string }
+              totals?: { total_with_vat?: string }
+            }
+          | undefined
         return {
           depositId: String(inv.id),
           externalId: inv.external_id as string | undefined,
-          senderSiren: en?.seller?.identifiers?.[0]?.value,
           receivedAt: inv.created_at as string,
+          number: en?.number,
+          sellerName: en?.seller?.name || en?.seller?.trading_name,
+          sellerVat: en?.seller?.vat_identifier,
+          totalWithVat: en?.totals?.total_with_vat != null ? Number(en.totals.total_with_vat) : undefined,
+          currency: en?.currency_code,
+          issueDate: en?.issue_date,
         }
       })
     },
