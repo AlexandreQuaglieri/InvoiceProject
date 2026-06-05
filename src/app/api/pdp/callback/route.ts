@@ -1,0 +1,76 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { exchangeAuthCode, SUPER_PDP_BASE } from '@/lib/pdp'
+
+function getOrigin(request: NextRequest): string {
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host
+  const proto = request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol.replace(':', '')
+  return `${proto}://${host}`
+}
+
+// Retour du consentement Super PDP : échange le code, récupère la société, stocke les jetons.
+export async function GET(request: NextRequest) {
+  const origin = getOrigin(request)
+  const settings = (status: string) => NextResponse.redirect(`${origin}/settings?tab=einvoicing&pdp=${status}`)
+
+  const clientId = process.env.SUPER_PDP_CLIENT_ID
+  const clientSecret = process.env.SUPER_PDP_CLIENT_SECRET
+  if (!clientId || !clientSecret) return settings('error')
+
+  const url = request.nextUrl
+  const code = url.searchParams.get('code')
+  const state = url.searchParams.get('state')
+  const cookieState = request.cookies.get('pdp_oauth_state')?.value
+  if (!code || !state || !cookieState || state !== cookieState) return settings('error')
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return NextResponse.redirect(new URL('/login', request.url))
+
+  try {
+    const redirectUri = `${origin}/api/pdp/callback`
+    const tokens = await exchangeAuthCode({ clientId, clientSecret, code, redirectUri })
+
+    // Récupère la société raccordée (pour l'afficher).
+    let company: Record<string, unknown> = {}
+    try {
+      const meRes = await fetch(`${SUPER_PDP_BASE}/v1.beta/companies/me`, {
+        headers: { Authorization: `Bearer ${tokens.accessToken}` },
+      })
+      if (meRes.ok) company = await meRes.json()
+    } catch {
+      // non bloquant
+    }
+
+    const payload = {
+      pdp_access_token: tokens.accessToken,
+      pdp_refresh_token: tokens.refreshToken ?? null,
+      pdp_token_expires_at: new Date(Date.now() + tokens.expiresIn * 1000).toISOString(),
+      pdp_company_number: (company.number as string | undefined) ?? null,
+      pdp_company_name:
+        (company.formal_name as string | undefined) || (company.trade_name as string | undefined) || null,
+      pdp_env: (company.env as string | undefined) ?? null,
+      pdp_connected_at: new Date().toISOString(),
+    }
+
+    const { data: existing } = await supabase
+      .from('user_settings')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (existing) {
+      await supabase.from('user_settings').update(payload).eq('user_id', user.id)
+    } else {
+      await supabase.from('user_settings').insert({ user_id: user.id, ...payload })
+    }
+
+    const res = settings('connected')
+    res.cookies.delete('pdp_oauth_state')
+    return res
+  } catch {
+    return settings('error')
+  }
+}

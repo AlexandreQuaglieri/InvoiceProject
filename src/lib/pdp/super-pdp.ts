@@ -15,40 +15,16 @@ import type {
 //   - Auth OAuth 2.0 client_credentials → POST /oauth2/token → jeton Bearer.
 //   - API métier sous le préfixe /v1.beta.
 
-type SuperPdpConfig = {
-  clientId: string
-  clientSecret: string
-  // Indicatif : l'environnement réel dépend des identifiants (companies/me renvoie "env").
-  sandbox: boolean
-}
-
 const BASE = 'https://api.superpdp.tech'
 const API = '/v1.beta'
+export const SUPER_PDP_BASE = BASE
 
-export function createSuperPdpProvider(config: SuperPdpConfig): PdpProvider {
-  let cached: { token: string; expiresAt: number } | null = null
+// Fournisseur de jeton Bearer — abstrait la stratégie d'auth : `client_credentials`
+// côté éditeur (mono-société, fallback), ou `access_token` délégué par utilisateur
+// (multi-tenant, OAuth authorization_code).
+export type TokenProvider = () => Promise<string>
 
-  async function getToken(): Promise<string> {
-    if (cached && cached.expiresAt > Date.now() + 30_000) return cached.token
-
-    const res = await fetch(`${BASE}/oauth2/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-      }),
-    })
-    if (!res.ok) {
-      throw new Error(`Super PDP — authentification échouée (${res.status}): ${await res.text()}`)
-    }
-    const data = await res.json()
-    const expiresIn = Number(data.expires_in ?? 1799)
-    cached = { token: data.access_token as string, expiresAt: Date.now() + expiresIn * 1000 }
-    return cached.token
-  }
-
+export function createSuperPdpProvider(getToken: TokenProvider): PdpProvider {
   async function call(path: string, init?: RequestInit): Promise<Response> {
     const token = await getToken()
     const res = await fetch(`${BASE}${path}`, {
@@ -199,15 +175,103 @@ export function createSuperPdpProvider(config: SuperPdpConfig): PdpProvider {
   }
 }
 
-// Construit le provider Super PDP à partir des variables d'environnement,
-// ou null s'il n'est pas configuré (identifiants OAuth absents).
+// Jeton via OAuth client_credentials (app éditeur) — avec cache mémoire.
+function clientCredentialsToken(clientId: string, clientSecret: string): TokenProvider {
+  let cached: { token: string; expiresAt: number } | null = null
+  return async () => {
+    if (cached && cached.expiresAt > Date.now() + 30_000) return cached.token
+    const res = await fetch(`${BASE}/oauth2/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    })
+    if (!res.ok) {
+      throw new Error(`Super PDP — authentification échouée (${res.status}): ${await res.text()}`)
+    }
+    const data = await res.json()
+    const expiresIn = Number(data.expires_in ?? 1799)
+    cached = { token: data.access_token as string, expiresAt: Date.now() + expiresIn * 1000 }
+    return cached.token
+  }
+}
+
+// Provider à partir des variables d'environnement (app éditeur, client_credentials),
+// ou null si non configuré. Sert de fallback tant que l'utilisateur n'a pas raccordé
+// sa propre société (multi-tenant).
 export function superPdpFromEnv(): PdpProvider | null {
   const clientId = process.env.SUPER_PDP_CLIENT_ID
   const clientSecret = process.env.SUPER_PDP_CLIENT_SECRET
   if (!clientId || !clientSecret) return null
-  return createSuperPdpProvider({
-    clientId,
-    clientSecret,
-    sandbox: process.env.SUPER_PDP_SANDBOX !== 'false',
+  return createSuperPdpProvider(clientCredentialsToken(clientId, clientSecret))
+}
+
+// --- OAuth 2.0 Authorization Code (multi-tenant : délégation par utilisateur) ---
+export type OAuthTokenSet = { accessToken: string; refreshToken?: string; expiresIn: number }
+
+// Construit l'URL de consentement où rediriger l'utilisateur.
+export function buildAuthorizeUrl(params: {
+  clientId: string
+  redirectUri: string
+  state: string
+  scope?: string
+}): string {
+  const u = new URL(`${BASE}/oauth2/authorize`)
+  u.searchParams.set('response_type', 'code')
+  u.searchParams.set('client_id', params.clientId)
+  u.searchParams.set('redirect_uri', params.redirectUri)
+  u.searchParams.set('state', params.state)
+  if (params.scope) u.searchParams.set('scope', params.scope)
+  return u.toString()
+}
+
+async function oauthToken(body: Record<string, string>): Promise<OAuthTokenSet> {
+  const res = await fetch(`${BASE}/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(body),
   })
+  if (!res.ok) {
+    throw new Error(`Super PDP — jeton OAuth échoué (${res.status}): ${await res.text()}`)
+  }
+  const data = await res.json()
+  return {
+    accessToken: data.access_token as string,
+    refreshToken: data.refresh_token as string | undefined,
+    expiresIn: Number(data.expires_in ?? 1799),
+  }
+}
+
+// Échange le code d'autorisation contre des jetons (access + refresh).
+export function exchangeAuthCode(params: {
+  clientId: string
+  clientSecret: string
+  code: string
+  redirectUri: string
+}): Promise<OAuthTokenSet> {
+  return oauthToken({
+    grant_type: 'authorization_code',
+    code: params.code,
+    redirect_uri: params.redirectUri,
+    client_id: params.clientId,
+    client_secret: params.clientSecret,
+  })
+}
+
+// Rafraîchit l'access_token via le refresh_token.
+export async function refreshAccessToken(params: {
+  clientId: string
+  clientSecret: string
+  refreshToken: string
+}): Promise<OAuthTokenSet> {
+  const set = await oauthToken({
+    grant_type: 'refresh_token',
+    refresh_token: params.refreshToken,
+    client_id: params.clientId,
+    client_secret: params.clientSecret,
+  })
+  return { ...set, refreshToken: set.refreshToken ?? params.refreshToken }
 }

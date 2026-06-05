@@ -1,14 +1,19 @@
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart3 } from 'lucide-react'
-import { superPdpFromEnv, type PdpEReporting } from '@/lib/pdp'
+import { createClient } from '@/lib/supabase/server'
+import { superPdpForRequest, type PdpEReporting } from '@/lib/pdp'
 
 const kindLabel = (k: string) =>
   k === 'transaction' ? 'Transactions' : k === 'payment' ? 'Paiements' : k
 const roleLabel = (r: string) => (r === 'SE' ? 'Vendeur' : r === 'BY' ? 'Acheteur' : r)
 
 export default async function EReportingPage() {
-  const pdp = superPdpFromEnv()
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const pdp = user ? await superPdpForRequest(supabase, user.id) : null
   let items: PdpEReporting[] = []
   let error: string | null = null
   if (pdp) {

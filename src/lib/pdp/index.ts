@@ -4,3 +4,4 @@
 export * from './types'
 export * from './provider'
 export * from './super-pdp'
+export * from './user-connection'

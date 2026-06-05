@@ -43,6 +43,13 @@ export interface Database {
           chorus_pro_login: string | null
           chorus_pro_password: string | null
           chorus_pro_sandbox: boolean
+          pdp_access_token: string | null
+          pdp_refresh_token: string | null
+          pdp_token_expires_at: string | null
+          pdp_company_number: string | null
+          pdp_company_name: string | null
+          pdp_env: string | null
+          pdp_connected_at: string | null
           created_at: string
           updated_at: string
         }
@@ -59,6 +66,13 @@ export interface Database {
           chorus_pro_login?: string | null
           chorus_pro_password?: string | null
           chorus_pro_sandbox?: boolean
+          pdp_access_token?: string | null
+          pdp_refresh_token?: string | null
+          pdp_token_expires_at?: string | null
+          pdp_company_number?: string | null
+          pdp_company_name?: string | null
+          pdp_env?: string | null
+          pdp_connected_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -75,6 +89,13 @@ export interface Database {
           chorus_pro_login?: string | null
           chorus_pro_password?: string | null
           chorus_pro_sandbox?: boolean
+          pdp_access_token?: string | null
+          pdp_refresh_token?: string | null
+          pdp_token_expires_at?: string | null
+          pdp_company_number?: string | null
+          pdp_company_name?: string | null
+          pdp_env?: string | null
+          pdp_connected_at?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -2,7 +2,8 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Download, Inbox as InboxIcon } from 'lucide-react'
-import { superPdpFromEnv, type PdpInboundInvoice } from '@/lib/pdp'
+import { createClient } from '@/lib/supabase/server'
+import { superPdpForRequest, type PdpInboundInvoice } from '@/lib/pdp'
 
 function formatDate(d: string) {
   return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' }).format(new Date(d))
@@ -13,7 +14,11 @@ function formatAmount(amount: number, currency?: string) {
 }
 
 export default async function InboxPage() {
-  const pdp = superPdpFromEnv()
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const pdp = user ? await superPdpForRequest(supabase, user.id) : null
   let inbound: PdpInboundInvoice[] = []
   let error: string | null = null
   if (pdp) {

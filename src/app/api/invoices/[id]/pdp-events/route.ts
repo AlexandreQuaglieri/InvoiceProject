@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { superPdpFromEnv } from '@/lib/pdp'
+import { superPdpForRequest } from '@/lib/pdp'
 
 // Récupère le cycle de vie e-invoicing d'une facture transmise via la PDP
 // (statuts Déposée / Refusée / Encaissée…), depuis GET /v1.beta/invoice_events.
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  const pdp = superPdpFromEnv()
-  if (!pdp) return NextResponse.json({ error: 'PDP non configurée.' }, { status: 503 })
-
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+
+  const pdp = await superPdpForRequest(supabase, user.id)
+  if (!pdp) return NextResponse.json({ error: 'PDP non configurée.' }, { status: 503 })
 
   const { data: company } = await supabase
     .from('companies')

@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { buildInvoiceFacturX } from '@/lib/facturx/build'
-import { superPdpFromEnv } from '@/lib/pdp'
+import { superPdpForRequest } from '@/lib/pdp'
 
 // Transmet une facture (Factur-X) en B2B via la PDP (Super PDP). Le secret OAuth
 // reste côté serveur. Réservé aux factures finalisées (pas les brouillons).
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  const pdp = superPdpFromEnv()
-  if (!pdp) {
-    return NextResponse.json({ error: 'PDP non configurée sur la plateforme.' }, { status: 503 })
-  }
-
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+
+  const pdp = await superPdpForRequest(supabase, user.id)
+  if (!pdp) {
+    return NextResponse.json({ error: 'PDP non configurée sur la plateforme.' }, { status: 503 })
+  }
 
   const { data: company } = await supabase
     .from('companies')
