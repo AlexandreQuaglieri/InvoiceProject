@@ -120,21 +120,20 @@ export const CompanyForm = forwardRef<CompanyFormRef, CompanyFormProps>(
     },
   })
 
-  // Exposer une méthode pour pré-remplir le formulaire depuis l'extérieur
+  // Exposer une méthode pour pré-remplir le formulaire depuis l'extérieur.
+  // reset(merge) plutôt qu'une boucle setValue : resynchronise TOUS les champs
+  // contrôlés (y compris les Select Radix) de façon fiable.
   useImperativeHandle(ref, () => ({
     setFormValues: (data: Partial<CompanyFormData>) => {
-      const entries = Object.entries(data) as [
-        keyof CompanyFormInput,
-        CompanyFormInput[keyof CompanyFormInput],
-      ][]
-      entries.forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          form.setValue(key, value, {
-            shouldValidate: true,
-            shouldDirty: true,
-          })
-        }
-      })
+      const sanitized = Object.fromEntries(
+        Object.entries(data).filter(
+          ([, value]) => value !== undefined && value !== null && value !== ''
+        )
+      ) as Partial<CompanyFormInput>
+      form.reset(
+        { ...form.getValues(), ...sanitized },
+        { keepDefaultValues: true }
+      )
     },
   }))
 

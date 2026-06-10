@@ -444,6 +444,26 @@ export async function POST(request: NextRequest) {
       cleanedData.vat_number = vatNumberFromSiren(cleanedData.siren)
     }
 
+    // Régime TVA : une société (SAS, SARL…) est assujettie — on préremplit
+    // « réel simplifié » (le plus courant), l'utilisateur ajuste si besoin.
+    // Les micro/EI restent sur le défaut « franchise en base » du formulaire.
+    const societes = ['sas', 'sasu', 'sarl', 'eurl', 'sa']
+    if (typeof cleanedData.legal_form === 'string' && societes.includes(cleanedData.legal_form)) {
+      cleanedData.vat_regime = 'reel_simplifie'
+    }
+
+    // Email de contact : prérempli avec l'email du compte (modifiable) —
+    // aucune base publique ne fournit l'email d'une entreprise de façon fiable.
+    if (!cleanedData.email && user.email) {
+      cleanedData.email = user.email
+    }
+
+    console.info('[extract] fiche entreprise extraite', {
+      userId: user.id,
+      source: file ? 'file' : 'text',
+      fields: Object.keys(cleanedData),
+    })
+
     return NextResponse.json({
       success: true,
       data: cleanedData,
