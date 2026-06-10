@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { buildInvoiceFacturX } from '@/lib/facturx/build'
 import { superPdpForRequest } from '@/lib/pdp'
+import { rateLimit } from '@/lib/rate-limit'
 
 // Vérifie la conformité d'une facture (schematrons EN16931 / FR-CTC) via la PDP,
 // SANS la transmettre. Utilisable sur n'importe quel statut (même brouillon).
@@ -13,6 +14,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+
+  if (!(await rateLimit('transmit', user.id, { max: 10, windowSeconds: 60 }))) {
+    return NextResponse.json({ error: 'Trop de requêtes. Veuillez patienter une minute.' }, { status: 429 })
+  }
 
   const pdp = await superPdpForRequest(supabase, user.id)
   if (!pdp) {

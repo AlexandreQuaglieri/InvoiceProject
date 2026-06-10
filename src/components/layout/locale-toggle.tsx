@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -15,12 +16,15 @@ import { localeNames, type Locale } from '@/i18n/config'
 
 export function LocaleToggle() {
   const locale = useLocale()
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   const handleLocaleChange = (newLocale: Locale) => {
     startTransition(async () => {
       await setLocale(newLocale)
-      window.location.reload()
+      // Dernier recours légitime : les messages next-intl sont chargés en RSC,
+      // un refresh serveur est nécessaire (jamais de window.location.reload).
+      router.refresh()
     })
   }
 

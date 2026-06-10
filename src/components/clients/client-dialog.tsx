@@ -17,6 +17,7 @@ import { Plus, Pencil } from 'lucide-react'
 
 import { ClientForm } from './client-form'
 import { createClientAction, updateClientAction } from '@/actions/clients'
+import { useLiveStoreActions } from '@/lib/realtime'
 import type { ClientFormData } from '@/lib/validations/client'
 import type { Client } from '@/types/database'
 
@@ -27,6 +28,7 @@ interface ClientDialogProps {
 
 export function ClientDialog({ client, trigger }: ClientDialogProps) {
   const t = useTranslations()
+  const { upsertClient } = useLiveStoreActions()
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -38,12 +40,16 @@ export function ClientDialog({ client, trigger }: ClientDialogProps) {
         : await createClientAction(data)
 
       if (result.success) {
+        // Write-through : l'action renvoie la ligne complète, le store live
+        // reflète immédiatement la création/mise à jour (Realtime réconcilie).
+        if (result.data) upsertClient(result.data)
         toast.success(client ? 'Client mis à jour' : 'Client créé')
         setOpen(false)
       } else {
         toast.error(result.error || 'Une erreur est survenue')
       }
     } catch (error) {
+      console.error('Enregistrement du client échoué', error)
       toast.error('Une erreur est survenue')
     } finally {
       setIsLoading(false)

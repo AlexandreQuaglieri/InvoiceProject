@@ -1,0 +1,226 @@
+{
+  "onboarding": {
+    "welcome": {
+      "title": "Bienvenue 👋",
+      "subtitle": "Configurez votre compte en 3 étapes pour émettre votre première facture conforme 2026. Comptez moins de 2 minutes."
+    },
+    "stepper": {
+      "label": "Progression de la configuration",
+      "done": "Étape terminée",
+      "steps": {
+        "company": { "kicker": "Étape 1", "title": "Entreprise" },
+        "client": { "kicker": "Étape 2", "title": "Client" },
+        "invoice": { "kicker": "Étape 3", "title": "1ère facture" }
+      }
+    },
+    "headings": {
+      "company": {
+        "title": "Comment voulez-vous configurer votre entreprise ?",
+        "subtitle": "Choisissez une méthode — vous pourrez tout ajuster plus tard."
+      },
+      "client": {
+        "title": "Ajoutez votre premier client",
+        "subtitle": "La méthode IA va le plus vite : un email signé suffit."
+      },
+      "invoice": {
+        "title": "Créez votre première facture",
+        "subtitle": "Conforme 2026 (Factur-X) quelle que soit la méthode."
+      }
+    },
+    "methods": {
+      "ai": {
+        "title": "Avec l'IA",
+        "badge": "Recommandé",
+        "tag": "Pour ceux qui n'ont pas de temps à perdre.",
+        "time": "~40 s",
+        "desc": {
+          "company": "Déposez votre Kbis — ou discutez avec l'assistant. Votre fiche se remplit toute seule.",
+          "client": "Collez un email ou un devis, déposez un PDF, ou demandez simplement à l'assistant.",
+          "invoice": "Décrivez la prestation en une phrase, l'IA rédige la facture conforme 2026."
+        },
+        "cta": {
+          "company": "Déposer ou discuter",
+          "client": "Coller, importer ou discuter",
+          "invoice": "Décrire ma facture"
+        }
+      },
+      "mcp": {
+        "title": "Via Claude ou ChatGPT",
+        "badge": "MCP",
+        "tag": "Pour ceux qui optimisent chaque seconde… et les flemmards assumés.",
+        "time": "~2 min la 1re fois",
+        "desc": {
+          "company": "Connectez Factur-IA à votre assistant IA et dictez tout depuis le chat.",
+          "client": "Demandez à votre assistant IA d'ajouter vos clients depuis le chat.",
+          "invoice": "Dictez votre facture à votre assistant IA, elle se crée dans Factur-IA."
+        },
+        "cta": {
+          "company": "Connecter mon assistant",
+          "client": "Connecter mon assistant",
+          "invoice": "Connecter mon assistant"
+        }
+      },
+      "manual": {
+        "title": "Manuellement",
+        "tag": "Pour les dinosaures 🦕",
+        "time": "~3 min",
+        "desc": {
+          "company": "Le bon vieux formulaire, champ par champ.",
+          "client": "Saisissez les coordonnées une à une.",
+          "invoice": "Composez la facture ligne par ligne."
+        },
+        "cta": {
+          "company": "Remplir le formulaire",
+          "client": "Remplir le formulaire",
+          "invoice": "Créer la facture"
+        }
+      }
+    },
+    "hint": "Astuce : commencez par l'IA — c'est le plus rapide. Les autres méthodes restent disponibles à tout moment.",
+    "panel": {
+      "close": "Fermer"
+    },
+    "ai": {
+      "title": {
+        "company": "Avec l'IA — déposez ou collez",
+        "client": "Avec l'IA — coller ou importer",
+        "invoice": "Avec l'IA — langage naturel"
+      },
+      "subtitle": {
+        "company": "Déposez votre Kbis, ou collez son contenu — l'assistant remplit tout.",
+        "client": "Collez les coordonnées ou déposez un document — un email signé suffit.",
+        "invoice": "Indiquez le client, la prestation et le montant."
+      },
+      "dropTitle": {
+        "company": "Déposez votre Kbis",
+        "client": "Déposez un devis, une facture ou une carte de visite"
+      },
+      "dropHint": "PDF, PNG ou JPG · max 10 Mo",
+      "orPaste": {
+        "company": "Ou collez le texte",
+        "client": "Ou collez les informations",
+        "invoice": "Décrivez la prestation"
+      },
+      "placeholder": {
+        "company": "Collez le texte de votre Kbis…",
+        "client": "Collez un email, une signature…",
+        "invoice": "Décrivez votre prestation : « Refonte de logo pour Studio Méridien, 2 400 € HT »"
+      },
+      "analyze": "Analyser",
+      "generate": "Générer la facture",
+      "analyzing": {
+        "company": "Lecture en cours…",
+        "client": "Analyse des coordonnées…",
+        "invoice": "Rédaction de la facture…"
+      },
+      "analyzingHint": {
+        "company": "Reconnaissance des champs légaux : raison sociale, SIRET, TVA…",
+        "client": "Extraction du nom, de l'email et de l'adresse…",
+        "invoice": "Mise en forme des lignes et calcul de la TVA…"
+      },
+      "reviewBanner": {
+        "company": "Document analysé — vérifiez puis validez.",
+        "client": "Coordonnées extraites — vérifiez puis validez.",
+        "invoice": "Brouillon généré — vérifiez puis validez."
+      },
+      "restart": "Recommencer",
+      "manualFallback": "Remplir à la main",
+      "fileTooLarge": "Le fichier est trop volumineux (max 10 Mo)",
+      "fileType": "Format non supporté. Utilisez PDF, PNG, JPG ou WebP.",
+      "extractError": "L'analyse a échoué. Réessayez ou remplissez à la main.",
+      "noItems": "Aucune ligne de facture détectée — précisez la prestation et le montant."
+    },
+    "mcp": {
+      "title": "Via Claude ou ChatGPT (MCP)",
+      "subtitle": "Pilotez Factur-IA par le chat depuis votre assistant IA.",
+      "step1": "Copiez l'URL du serveur MCP de Factur-IA.",
+      "copy": "Copier l'URL",
+      "copied": "URL copiée dans le presse-papiers",
+      "copyError": "Impossible de copier l'URL",
+      "step2": "Ajoutez le connecteur dans votre assistant :",
+      "step2Sub": "Claude — Paramètres → Connecteurs · ChatGPT — Paramètres → Apps & connecteurs. Collez l'URL, c'est tout — pas de token à saisir.",
+      "step3": "Connectez-vous via OAuth avec votre compte Factur-IA dans la fenêtre qui s'ouvre.",
+      "step3Sub": "Accès sécurisé, limité à votre compte — révocable à tout moment.",
+      "step4": "Demandez à votre assistant, en langage naturel :",
+      "ask": {
+        "company": "« Crée mon entreprise dans Factur-IA : Atelier Quatools, SAS, SIRET 901 234 567 00018. »",
+        "client": "« Ajoute le client Studio Méridien, contact@studio-meridien.fr. »",
+        "invoice": "« Crée une facture de 2 400 € HT pour Studio Méridien. »"
+      },
+      "realtime": "Dès que c'est fait dans Claude, cette page avance automatiquement."
+    },
+    "manual": {
+      "title": {
+        "company": "Manuellement — fiche entreprise",
+        "client": "Manuellement — fiche client",
+        "invoice": "Manuellement — nouvelle facture"
+      },
+      "subtitle": "Remplissez les champs, vous pourrez tout modifier plus tard."
+    },
+    "toasts": {
+      "clientCreated": "Client créé",
+      "invoiceCreated": "Facture créée",
+      "genericError": "Une erreur est survenue"
+    },
+    "demo": {
+      "eyebrow": "Ce que Factur-IA fait pour vous",
+      "items": {
+        "compliance": {
+          "title": "Conformité 2026",
+          "desc": "Factures Factur-X transmises via PDP, e-reporting inclus."
+        },
+        "quotes": {
+          "title": "Devis → Facture",
+          "desc": "Convertissez un devis en facture en un clic."
+        },
+        "assistant": {
+          "title": "Assistant IA",
+          "desc": "Créez factures, devis et clients en langage naturel. Il vous épaule dans vos démarches."
+        },
+        "reminders": {
+          "title": "Suivi & relances",
+          "desc": "Tableau de bord du CA, impayés et factures en retard."
+        }
+      }
+    },
+    "notdo": {
+      "eyebrow": "Ce que Factur-IA ne fait <em>pas</em> pour vous",
+      "items": {
+        "accounting": {
+          "title": "Tenir votre comptabilité",
+          "desc": "Factur-IA n'est pas votre expert-comptable. La saisie comptable et le bilan restent son métier."
+        },
+        "decide": {
+          "title": "Décider à votre place",
+          "desc": "Vos déclarations fiscales et sociales (TVA, URSSAF) restent sous votre responsabilité — vérifiez avant d'envoyer."
+        },
+        "legal": {
+          "title": "Garantir le juridique",
+          "desc": "L'IA prépare, vous validez. Vous restez responsable de l'exactitude des données facturées."
+        },
+        "coffee": {
+          "title": "Faire le café ☕",
+          "desc": "Pour ça, faites comme tout le monde : prenez un stagiaire. ☕"
+        }
+      },
+      "note": "En clair : Factur-IA vous fait gagner du temps, mais ne remplace ni votre expert-comptable ni votre jugement. Vous gardez la main."
+    },
+    "reassure": {
+      "compliance": "<strong>Conformité 2026</strong> — Factur-X & e-reporting prêts",
+      "data": "Données chiffrées, <strong>hébergées en France</strong>"
+    },
+    "completion": {
+      "title": "Tout est prêt 🎉",
+      "subtitle": "Votre compte Factur-IA est configuré et conforme à la facturation électronique 2026.",
+      "recap": {
+        "company": "Entreprise",
+        "client": "Premier client",
+        "invoice": "Première facture"
+      },
+      "consent": "J'accepte les <cgu>CGU</cgu> (incluant les conditions de service) et la <privacy>politique de confidentialité</privacy>",
+      "cta": "Voir mon tableau de bord",
+      "ctaHint": "Acceptez les conditions pour continuer",
+      "acceptError": "Impossible d'enregistrer votre acceptation. Réessayez."
+    }
+  }
+}

@@ -56,7 +56,8 @@ export function WalletConnect({ userId }: { userId: string }) {
       } else {
         toast.error(r.error || 'Échec de la synchronisation.')
       }
-    } catch {
+    } catch (error) {
+      console.error('Synchronisation du wallet échouée', error)
       toast.error('Échec de la synchronisation.')
     } finally {
       setSyncing(false)

@@ -28,7 +28,8 @@ export function TransmitChorusProButton({ invoiceId }: TransmitChorusProButtonPr
       toast.success(
         `Facture transmise à Chorus Pro\nN° flux : ${data.numeroFluxDepot}`
       )
-    } catch {
+    } catch (error) {
+      console.error('Transmission à Chorus Pro échouée', error)
       toast.error('Impossible de contacter Chorus Pro')
     } finally {
       setLoading(false)

@@ -18,6 +18,7 @@ import { Plus, Pencil } from 'lucide-react'
 
 import { QuoteForm, type QuoteFormData } from './quote-form'
 import { createQuote } from '@/actions/quotes'
+import { useLiveStoreActions } from '@/lib/realtime'
 import type { Client, QuoteWithRelations } from '@/types/database'
 
 interface QuoteDialogProps {
@@ -29,6 +30,7 @@ interface QuoteDialogProps {
 export function QuoteDialog({ quote, clients, trigger }: QuoteDialogProps) {
   const t = useTranslations()
   const router = useRouter()
+  const { upsertQuote } = useLiveStoreActions()
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -53,12 +55,15 @@ export function QuoteDialog({ quote, clients, trigger }: QuoteDialogProps) {
         toast.success('Devis créé')
         setOpen(false)
         if (result.quote) {
+          // Write-through : le devis créé entre immédiatement dans le store live.
+          upsertQuote(result.quote)
           router.push(`/quotes/${result.quote.id}`)
         }
       } else {
         toast.error(result.error || 'Une erreur est survenue')
       }
     } catch (error) {
+      console.error('Enregistrement du devis échoué', error)
       toast.error('Une erreur est survenue')
     } finally {
       setIsLoading(false)

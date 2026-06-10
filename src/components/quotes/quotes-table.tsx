@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -49,11 +49,8 @@ import {
   updateQuoteStatus,
   convertQuoteToInvoice,
 } from '@/actions/quotes'
+import { useLiveQuotes, useLiveStoreActions } from '@/lib/realtime'
 import type { QuoteWithRelations, QuoteStatus } from '@/types/database'
-
-interface QuotesTableProps {
-  quotes: QuoteWithRelations[]
-}
 
 const statusConfig: Record<QuoteStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ComponentType<{ className?: string }> }> = {
   draft: { label: 'Brouillon', variant: 'secondary', icon: Clock },
@@ -64,11 +61,13 @@ const statusConfig: Record<QuoteStatus, { label: string; variant: 'default' | 's
   converted: { label: 'Converti', variant: 'default', icon: FileText },
 }
 
-export function QuotesTable({ quotes }: QuotesTableProps) {
+export function QuotesTable() {
   const t = useTranslations()
   const router = useRouter()
+  const quotes = useLiveQuotes()
+  const { upsertQuote, removeQuote, upsertInvoice } = useLiveStoreActions()
+  const [, startTransition] = useTransition()
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
   const [convertingId, setConvertingId] = useState<string | null>(null)
 
   const formatCurrency = (amount: number) => {
@@ -82,49 +81,72 @@ export function QuotesTable({ quotes }: QuotesTableProps) {
     return new Intl.DateTimeFormat('fr-FR').format(new Date(date))
   }
 
-  const handleDelete = async () => {
+  // Suppression optimiste : retrait immédiat du store, rollback si le serveur échoue.
+  const handleDelete = () => {
     if (!deleteId) return
-
-    setIsDeleting(true)
-    try {
-      const result = await deleteQuote(deleteId)
-      if (result.success) {
-        toast.success('Devis supprimé')
-      } else {
-        toast.error(result.error || 'Erreur lors de la suppression')
-      }
-    } catch (error) {
-      toast.error('Erreur lors de la suppression')
-    } finally {
-      setIsDeleting(false)
+    const prev = quotes.find((q) => q.id === deleteId)
+    if (!prev) {
       setDeleteId(null)
+      return
     }
-  }
 
-  const handleStatusChange = async (id: string, status: QuoteStatus) => {
-    try {
-      const result = await updateQuoteStatus(id, status)
-      if (result.success) {
-        toast.success('Statut mis à jour')
-      } else {
-        toast.error(result.error || 'Erreur lors de la mise à jour')
+    removeQuote(prev.id)
+    setDeleteId(null)
+    startTransition(async () => {
+      try {
+        const result = await deleteQuote(prev.id)
+        if (result.success) {
+          toast.success('Devis supprimé')
+        } else {
+          upsertQuote(prev)
+          toast.error(result.error || 'Erreur lors de la suppression')
+        }
+      } catch (error) {
+        console.error('Suppression du devis échouée', error)
+        upsertQuote(prev)
+        toast.error('Erreur lors de la suppression')
       }
-    } catch (error) {
-      toast.error('Erreur lors de la mise à jour')
-    }
+    })
   }
 
+  // Changement de statut optimiste : l'UI bouge tout de suite, rollback en cas d'erreur.
+  // NE PAS modifier updated_at (l'event Realtime, plus frais, doit gagner).
+  const handleStatusChange = (quote: QuoteWithRelations, status: QuoteStatus) => {
+    const prev = quote
+    upsertQuote({ ...quote, status })
+    startTransition(async () => {
+      try {
+        const result = await updateQuoteStatus(quote.id, status)
+        if (result.success) {
+          if (result.quote) upsertQuote(result.quote)
+          toast.success('Statut mis à jour')
+        } else {
+          upsertQuote(prev)
+          toast.error(result.error || 'Erreur lors de la mise à jour')
+        }
+      } catch (error) {
+        console.error('Mise à jour du statut du devis échouée', error)
+        upsertQuote(prev)
+        toast.error('Erreur lors de la mise à jour')
+      }
+    })
+  }
+
+  // Conversion : write-through du devis converti et de la facture créée renvoyés par l'action.
   const handleConvert = async (id: string) => {
     setConvertingId(id)
     try {
       const result = await convertQuoteToInvoice(id)
       if (result.success && result.invoiceId) {
+        if (result.quote) upsertQuote(result.quote)
+        if (result.invoice) upsertInvoice(result.invoice)
         toast.success('Devis converti en facture')
         router.push(`/invoices/${result.invoiceId}`)
       } else {
         toast.error(result.error || 'Erreur lors de la conversion')
       }
     } catch (error) {
+      console.error('Conversion du devis en facture échouée', error)
       toast.error('Erreur lors de la conversion')
     } finally {
       setConvertingId(null)
@@ -193,7 +215,7 @@ export function QuotesTable({ quotes }: QuotesTableProps) {
 
                       {quote.status === 'draft' && (
                         <DropdownMenuItem
-                          onClick={() => handleStatusChange(quote.id, 'sent')}
+                          onClick={() => handleStatusChange(quote, 'sent')}
                         >
                           <Send className="mr-2 h-4 w-4" />
                           Marquer comme envoyé
@@ -203,13 +225,13 @@ export function QuotesTable({ quotes }: QuotesTableProps) {
                       {quote.status === 'sent' && (
                         <>
                           <DropdownMenuItem
-                            onClick={() => handleStatusChange(quote.id, 'accepted')}
+                            onClick={() => handleStatusChange(quote, 'accepted')}
                           >
                             <CheckCircle className="mr-2 h-4 w-4" />
                             Marquer comme accepté
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleStatusChange(quote.id, 'rejected')}
+                            onClick={() => handleStatusChange(quote, 'rejected')}
                           >
                             <XCircle className="mr-2 h-4 w-4" />
                             Marquer comme refusé
@@ -264,15 +286,14 @@ export function QuotesTable({ quotes }: QuotesTableProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>
+            <AlertDialogCancel>
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? t('common.loading') : t('common.delete')}
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

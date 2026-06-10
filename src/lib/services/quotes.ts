@@ -1,5 +1,5 @@
 // Service Devis — create/update/statut/suppression/conversion + résolution par numéro.
-// Les devis sont scopés par user_id (cohérent avec l'app et le serveur MCP).
+// Les devis sont scopés par company_id (aligné sur clients/factures, charte règle 5).
 import {
   type DbClient,
   type Ctx,
@@ -80,7 +80,7 @@ export async function create(
   const defaultValidity = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split('T')[0]
-  const quoteNumber = await getNextQuoteNumber(supabase, ctx.userId)
+  const quoteNumber = await getNextQuoteNumber(supabase, ctx.companyId)
 
   const { data: quote, error: quoteError } = await supabase
     .from('quotes')
@@ -123,7 +123,7 @@ export async function findByNumber(
   const { data } = await supabase
     .from('quotes')
     .select('id, quote_number, status')
-    .eq('user_id', ctx.userId)
+    .eq('company_id', ctx.companyId)
     .ilike('quote_number', `%${number}%`)
     .limit(1)
 
@@ -142,7 +142,7 @@ export async function update(
     .from('quotes')
     .select('id, quote_number, status')
     .eq('id', quoteId)
-    .eq('user_id', ctx.userId)
+    .eq('company_id', ctx.companyId)
     .maybeSingle()
 
   if (!quote) return err('Devis non trouvé.')
@@ -189,7 +189,7 @@ export async function setStatus(
     .from('quotes')
     .select('id, quote_number, status')
     .eq('id', quoteId)
-    .eq('user_id', ctx.userId)
+    .eq('company_id', ctx.companyId)
     .maybeSingle()
 
   if (!existing) return err('Devis non trouvé.')
@@ -201,7 +201,7 @@ export async function setStatus(
     .from('quotes')
     .update({ status })
     .eq('id', quoteId)
-    .eq('user_id', ctx.userId)
+    .eq('company_id', ctx.companyId)
 
   if (error) return err(error.message)
   return ok({ quote_number: existing.quote_number, oldStatus: existing.status })
@@ -217,7 +217,7 @@ export async function remove(
     .from('quotes')
     .select('id, quote_number, status')
     .eq('id', quoteId)
-    .eq('user_id', ctx.userId)
+    .eq('company_id', ctx.companyId)
     .maybeSingle()
 
   if (!existing) return err('Devis non trouvé.')
@@ -243,7 +243,7 @@ export async function convert(
     .from('quotes')
     .select('*, items:quote_items(*)')
     .eq('id', quoteId)
-    .eq('user_id', ctx.userId)
+    .eq('company_id', ctx.companyId)
     .maybeSingle()
 
   if (!quote) return err('Devis non trouvé.')
@@ -340,7 +340,7 @@ export async function list(
   let query = supabase
     .from('quotes')
     .select('id, quote_number, status, total, validity_date, client:clients(name)')
-    .eq('user_id', ctx.userId)
+    .eq('company_id', ctx.companyId)
     .order('created_at', { ascending: false })
 
   if (opts.status) query = query.eq('status', opts.status)
@@ -395,7 +395,7 @@ export async function getById(
       'id, quote_number, status, issue_date, validity_date, notes, terms, subtotal, tax_amount, total, converted_invoice_id, client:clients(name), items:quote_items(description, quantity, unit_price, tax_rate, total, position)'
     )
     .eq('id', quoteId)
-    .eq('user_id', ctx.userId)
+    .eq('company_id', ctx.companyId)
     .maybeSingle()
 
   if (error) return err(error.message)

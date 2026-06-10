@@ -2,6 +2,59 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import sharp from 'sharp'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/rate-limit'
+import { decryptSecretOrNull } from '@/lib/crypto'
+
+// Cible d'extraction : fiche entreprise (Kbis), fiche client (email/signature/devis)
+// ou facture (description de prestation). Entrée : document (PDF/image) OU texte libre.
+type ExtractKind = 'company' | 'client' | 'invoice'
+
+const CLIENT_PROMPT = `Tu es un assistant spécialisé dans l'extraction de coordonnées clients depuis du texte ou des documents (emails, signatures, cartes de visite, devis, Kbis).
+
+Analyse le contenu et extrais les informations du CLIENT au format JSON strict.
+
+RÈGLES IMPORTANTES:
+1. Retourne UNIQUEMENT un objet JSON valide, sans texte avant ou après
+2. Si une information n'est pas trouvée, ne l'inclus pas (pas de null)
+3. "type": "professional" si c'est une entreprise (SIRET, raison sociale, TVA), "individual" si c'est un particulier
+
+FORMAT JSON:
+{
+  "name": "Raison sociale ou Prénom Nom",
+  "type": "professional",
+  "email": "contact@exemple.fr",
+  "phone": "06 12 34 56 78",
+  "address": "12 rue Exemple",
+  "postal_code": "75001",
+  "city": "Paris",
+  "siret": "52018152000011",
+  "vat_number": "FR40520181520"
+}
+
+Analyse le contenu et retourne le JSON:`
+
+const INVOICE_PROMPT = `Tu es un assistant spécialisé dans la préparation de factures françaises à partir d'une description libre de prestation.
+
+Analyse la description et structure les lignes de facture au format JSON strict.
+
+RÈGLES IMPORTANTES:
+1. Retourne UNIQUEMENT un objet JSON valide, sans texte avant ou après
+2. Si une information n'est pas trouvée, ne l'inclus pas (pas de null)
+3. Les montants donnés sont supposés HT sauf mention TTC explicite (dans ce cas convertis en HT avec le taux de TVA)
+4. "vat_rate": 20 par défaut sauf mention contraire (10, 5.5, 2.1 ou 0)
+5. "client_name": le nom du client si mentionné dans la description
+6. Quantité par défaut: 1
+
+FORMAT JSON:
+{
+  "client_name": "Studio Méridien",
+  "items": [
+    { "description": "Refonte d'identité visuelle", "quantity": 1, "unit_price": 2400, "vat_rate": 20 }
+  ],
+  "notes": "Acompte de 30 % à la commande"
+}
+
+Analyse la description et retourne le JSON:`
 
 const EXTRACTION_PROMPT = `Tu es un assistant spécialisé dans l'extraction de données de documents officiels français (Kbis, extraits d'immatriculation).
 
@@ -60,6 +113,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
+    if (!(await rateLimit('extract', user.id, { max: 10, windowSeconds: 60 }))) {
+      return NextResponse.json({ error: 'Trop de requêtes. Veuillez patienter une minute.' }, { status: 429 })
+    }
+
     // Récupérer la clé API Claude
     // D'abord vérifier si l'utilisateur a sa propre clé (BYOK)
     const { data: settings } = await supabase
@@ -68,7 +125,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .single()
 
-    const apiKey = settings?.claude_api_key || process.env.ANTHROPIC_API_KEY
+    const apiKey = decryptSecretOrNull(settings?.claude_api_key) || process.env.ANTHROPIC_API_KEY
 
     if (!apiKey) {
       return NextResponse.json(
@@ -80,24 +137,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Récupérer le fichier
+    // Récupérer le fichier OU le texte libre, et la cible d'extraction
     const formData = await request.formData()
-    const file = formData.get('file') as File
-    const documentType = formData.get('type') as string
+    const file = formData.get('file') as File | null
+    const freeText = (formData.get('text') as string | null)?.trim() || null
+    const kindRaw = (formData.get('kind') as string | null) ?? 'company'
+    const kind: ExtractKind = kindRaw === 'client' || kindRaw === 'invoice' ? kindRaw : 'company'
+    const prompt =
+      kind === 'client' ? CLIENT_PROMPT : kind === 'invoice' ? INVOICE_PROMPT : EXTRACTION_PROMPT
 
-    if (!file) {
-      return NextResponse.json({ error: 'Aucun fichier fourni' }, { status: 400 })
+    if (!file && !freeText) {
+      return NextResponse.json({ error: 'Aucun fichier ni texte fourni' }, { status: 400 })
     }
 
-    // Convertir le fichier en buffer
-    const bytes = await file.arrayBuffer()
+    // Convertir le fichier en buffer (si fichier)
+    const bytes = file ? await file.arrayBuffer() : new ArrayBuffer(0)
     let buffer = Buffer.from(bytes)
-    let finalMediaType = file.type
+    let finalMediaType = file?.type ?? ''
 
     // Compresser les images si nécessaire (limite Claude: 5MB en base64)
     // Base64 augmente la taille d'environ 33%, donc on limite à 3.5 MB binaire
     const MAX_SIZE = 3.5 * 1024 * 1024 // 3.5 MB binaire = ~4.7 MB en base64
-    if (file.type.startsWith('image/') && buffer.length > MAX_SIZE) {
+    if (file && file.type.startsWith('image/') && buffer.length > MAX_SIZE) {
       try {
         // Compresser avec sharp - réduire fortement pour être sûr
         let compressedBuffer = await sharp(buffer)
@@ -131,10 +192,17 @@ export async function POST(request: NextRequest) {
       apiKey: apiKey,
     })
 
-    // Construire le contenu selon le type de fichier
+    // Construire le contenu : texte libre OU document (PDF / image)
     let content: Anthropic.MessageCreateParams['messages'][0]['content']
 
-    if (file.type === 'application/pdf') {
+    if (!file && freeText) {
+      content = [
+        {
+          type: 'text' as const,
+          text: `TEXTE À ANALYSER:\n${freeText}\n\n${prompt}`,
+        },
+      ]
+    } else if (file && file.type === 'application/pdf') {
       // Pour les PDF, utiliser le type "document"
       content = [
         {
@@ -147,7 +215,7 @@ export async function POST(request: NextRequest) {
         },
         {
           type: 'text' as const,
-          text: EXTRACTION_PROMPT,
+          text: prompt,
         },
       ]
     } else {
@@ -168,7 +236,7 @@ export async function POST(request: NextRequest) {
         },
         {
           type: 'text' as const,
-          text: EXTRACTION_PROMPT,
+          text: prompt,
         },
       ]
     }
@@ -204,7 +272,7 @@ export async function POST(request: NextRequest) {
       jsonStr = jsonStr.trim()
 
       extractedData = JSON.parse(jsonStr)
-    } catch (parseError) {
+    } catch {
       console.error('Error parsing Claude response:', responseText)
       return NextResponse.json(
         { error: 'Impossible d\'extraire les données du document. Essayez avec une image plus claire.' },
@@ -212,7 +280,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Valider et nettoyer les données
+    // Valider et nettoyer les données selon la cible
+    if (kind === 'client') {
+      return NextResponse.json({ success: true, data: cleanClientData(extractedData) })
+    }
+    if (kind === 'invoice') {
+      return NextResponse.json({ success: true, data: cleanInvoiceData(extractedData) })
+    }
+
     const cleanedData: Record<string, unknown> = {}
 
     if (extractedData.name) cleanedData.name = String(extractedData.name).trim()
@@ -292,4 +367,60 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// Nettoyage d'une fiche client extraite (texte libre ou document).
+function cleanClientData(extracted: Record<string, unknown>): Record<string, unknown> {
+  const cleaned: Record<string, unknown> = {}
+
+  if (extracted.name) cleaned.name = String(extracted.name).trim()
+  cleaned.type = extracted.type === 'individual' ? 'individual' : 'professional'
+  if (extracted.email && String(extracted.email).includes('@')) {
+    cleaned.email = String(extracted.email).trim()
+  }
+  if (extracted.phone) cleaned.phone = String(extracted.phone).trim()
+  if (extracted.address) cleaned.address = String(extracted.address).trim()
+  if (extracted.postal_code) {
+    const postalCode = String(extracted.postal_code).replace(/\D/g, '')
+    if (postalCode.length === 5) cleaned.postal_code = postalCode
+  }
+  if (extracted.city) cleaned.city = String(extracted.city).trim()
+  if (extracted.siret) {
+    const siret = String(extracted.siret).replace(/\D/g, '')
+    if (siret.length === 14) cleaned.siret = siret
+  }
+  if (extracted.vat_number) cleaned.vat_number = String(extracted.vat_number).trim()
+
+  return cleaned
+}
+
+// Nettoyage des lignes de facture extraites d'une description libre.
+function cleanInvoiceData(extracted: Record<string, unknown>): Record<string, unknown> {
+  const cleaned: Record<string, unknown> = {}
+  const validVatRates = [0, 2.1, 5.5, 10, 20]
+
+  if (extracted.client_name) cleaned.client_name = String(extracted.client_name).trim()
+  if (extracted.notes) cleaned.notes = String(extracted.notes).trim()
+
+  const rawItems = Array.isArray(extracted.items) ? (extracted.items as unknown[]) : []
+  const items = rawItems
+    .map((raw) => {
+      const item = raw as Record<string, unknown>
+      const description = item.description ? String(item.description).trim() : ''
+      const quantity = Number(item.quantity ?? 1)
+      const unitPrice = Number(item.unit_price)
+      const vatRateRaw = Number(item.vat_rate ?? 20)
+      const vatRate = validVatRates.includes(vatRateRaw) ? vatRateRaw : 20
+      if (!description || !Number.isFinite(unitPrice) || unitPrice <= 0) return null
+      return {
+        description,
+        quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+        unit_price: unitPrice,
+        vat_rate: vatRate,
+      }
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+
+  cleaned.items = items
+  return cleaned
 }

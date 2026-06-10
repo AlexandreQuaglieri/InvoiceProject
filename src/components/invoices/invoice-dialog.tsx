@@ -18,6 +18,7 @@ import { Plus, Pencil } from 'lucide-react'
 
 import { InvoiceForm } from './invoice-form'
 import { createInvoiceAction, updateInvoiceAction } from '@/actions/invoices'
+import { useLiveStoreActions } from '@/lib/realtime'
 import type { InvoiceFormData } from '@/lib/validations/invoice'
 import type { Client, InvoiceWithRelations } from '@/types/database'
 
@@ -30,6 +31,7 @@ interface InvoiceDialogProps {
 export function InvoiceDialog({ invoice, clients, trigger }: InvoiceDialogProps) {
   const t = useTranslations()
   const router = useRouter()
+  const { upsertInvoice } = useLiveStoreActions()
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -41,6 +43,10 @@ export function InvoiceDialog({ invoice, clients, trigger }: InvoiceDialogProps)
         : await createInvoiceAction(data)
 
       if (result.success) {
+        // Write-through : le serveur renvoie la ligne complète, on alimente le store live
+        if (result.data) {
+          upsertInvoice(result.data)
+        }
         toast.success(invoice ? 'Facture mise à jour' : 'Facture créée')
         setOpen(false)
         if (!invoice && result.data) {
@@ -50,6 +56,7 @@ export function InvoiceDialog({ invoice, clients, trigger }: InvoiceDialogProps)
         toast.error(result.error || 'Une erreur est survenue')
       }
     } catch (error) {
+      console.error('Enregistrement de la facture échoué', error)
       toast.error('Une erreur est survenue')
     } finally {
       setIsLoading(false)

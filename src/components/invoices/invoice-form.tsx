@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslations } from 'next-intl'
@@ -30,6 +29,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   invoiceSchema,
   type InvoiceFormData,
+  type InvoiceFormInput,
   vatRates,
   calculateInvoiceTotals,
   calculateLineTotal,
@@ -41,13 +41,60 @@ interface InvoiceFormProps {
   clients: Client[]
   onSubmit: (data: InvoiceFormData) => Promise<void>
   isLoading: boolean
+  // Mode embarqué (onboarding) : sections légères sans chrome Card redondant.
+  embedded?: boolean
 }
 
-export function InvoiceForm({ invoice, clients, onSubmit, isLoading }: InvoiceFormProps) {
+// Section du formulaire : Card autonome par défaut, simple section titrée en
+// mode embarqué (le conteneur — panel d'onboarding — apporte déjà son cadre).
+function FormSection({
+  embedded,
+  title,
+  action,
+  children,
+}: {
+  embedded: boolean
+  title?: string
+  action?: React.ReactNode
+  children: React.ReactNode
+}) {
+  if (embedded) {
+    if (!title) {
+      return <section className="rounded-lg border bg-muted/30 p-4">{children}</section>
+    }
+    return (
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <h3 className="text-sm font-semibold">{title}</h3>
+          {action}
+        </div>
+        {children}
+      </section>
+    )
+  }
+  if (!title) {
+    return (
+      <Card>
+        <CardContent className="pt-6">{children}</CardContent>
+      </Card>
+    )
+  }
+  return (
+    <Card>
+      <CardHeader className={action ? 'flex flex-row items-center justify-between' : undefined}>
+        <CardTitle>{title}</CardTitle>
+        {action}
+      </CardHeader>
+      <CardContent className="space-y-4">{children}</CardContent>
+    </Card>
+  )
+}
+
+export function InvoiceForm({ invoice, clients, onSubmit, isLoading, embedded = false }: InvoiceFormProps) {
   const t = useTranslations()
 
-  const form = useForm<InvoiceFormData>({
-    resolver: zodResolver(invoiceSchema) as any,
+  const form = useForm<InvoiceFormInput, unknown, InvoiceFormData>({
+    resolver: zodResolver(invoiceSchema),
     defaultValues: {
       client_id: invoice?.client_id || '',
       issue_date: invoice?.issue_date || new Date().toISOString().split('T')[0],
@@ -95,11 +142,7 @@ export function InvoiceForm({ invoice, clients, onSubmit, isLoading }: InvoiceFo
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Informations générales */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('invoices.details')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <FormSection embedded={embedded} title={t('invoices.details')}>
             <FormField
               control={form.control}
               name="client_id"
@@ -168,13 +211,13 @@ export function InvoiceForm({ invoice, clients, onSubmit, isLoading }: InvoiceFo
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+        </FormSection>
 
         {/* Lignes de facture */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{t('invoices.items')}</CardTitle>
+        <FormSection
+          embedded={embedded}
+          title={t('invoices.items')}
+          action={
             <Button
               type="button"
               variant="outline"
@@ -184,8 +227,8 @@ export function InvoiceForm({ invoice, clients, onSubmit, isLoading }: InvoiceFo
               <Plus className="mr-2 h-4 w-4" />
               Ajouter une ligne
             </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          }
+        >
             {fields.map((field, index) => {
               const item = watchItems?.[index]
               const lineTotal = item ? calculateLineTotal(item.quantity, item.unit_price, item.vat_rate) : { totalHt: 0, totalVat: 0, totalTtc: 0 }
@@ -295,15 +338,10 @@ export function InvoiceForm({ invoice, clients, onSubmit, isLoading }: InvoiceFo
                 </div>
               )
             })}
-          </CardContent>
-        </Card>
+        </FormSection>
 
         {/* Remise */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Remise</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <FormSection embedded={embedded} title="Remise">
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
@@ -354,15 +392,10 @@ export function InvoiceForm({ invoice, clients, onSubmit, isLoading }: InvoiceFo
                 />
               )}
             </div>
-          </CardContent>
-        </Card>
+        </FormSection>
 
         {/* Notes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <FormSection embedded={embedded} title="Notes">
             <FormField
               control={form.control}
               name="notes"
@@ -379,12 +412,10 @@ export function InvoiceForm({ invoice, clients, onSubmit, isLoading }: InvoiceFo
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+        </FormSection>
 
         {/* Totaux */}
-        <Card>
-          <CardContent className="pt-6">
+        <FormSection embedded={embedded}>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total HT</span>
@@ -400,8 +431,7 @@ export function InvoiceForm({ invoice, clients, onSubmit, isLoading }: InvoiceFo
                 <span className="font-bold">{formatCurrency(totals.totalTtc)}</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </FormSection>
 
         {/* Actions */}
         <div className="flex justify-end gap-2">

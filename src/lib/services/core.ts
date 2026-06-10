@@ -2,8 +2,8 @@
 // IA in-app (api/chat) et le serveur MCP. Les routes ne font que de la présentation
 // (JSON pour le chat, markdown pour MCP) au-dessus de ces fonctions.
 //
-// Scoping : on filtre TOUJOURS explicitement par company_id (clients/factures) ou
-// user_id (devis). C'est le dénominateur commun sûr : ça fonctionne aussi bien avec
+// Scoping : on filtre TOUJOURS explicitement par company_id (clients, factures,
+// devis). C'est le dénominateur commun sûr : ça fonctionne aussi bien avec
 // le client SSR (RLS de l'utilisateur) qu'avec le client admin (service_role, bypass RLS).
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -66,24 +66,22 @@ export async function getOrCreateUserSettings(
   return created as { invoice_prefix: string; invoice_next_number: number }
 }
 
-// Numéro de devis suivant au format D-YYYY-NNN (source de vérité unique,
-// cohérente avec actions/quotes.ts).
-export async function getNextQuoteNumber(supabase: DbClient, userId: string): Promise<string> {
+// Numéro de devis suivant au format D-YYYY-NNN, par entreprise.
+// On prend le max numérique des numéros de l'année (et non le dernier
+// created_at) : robuste aux suppressions et aux créations désordonnées.
+export async function getNextQuoteNumber(supabase: DbClient, companyId: string): Promise<string> {
   const year = new Date().getFullYear()
 
   const { data } = await supabase
     .from('quotes')
     .select('quote_number')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
+    .eq('company_id', companyId)
+    .like('quote_number', `D-${year}-%`)
 
-  if (!data || data.length === 0) return `D-${year}-001`
+  const max = (data ?? []).reduce((acc, row) => {
+    const match = (row.quote_number as string).match(/^D-\d{4}-(\d+)$/)
+    return match ? Math.max(acc, parseInt(match[1], 10)) : acc
+  }, 0)
 
-  const last = data[0].quote_number as string
-  const match = last.match(/D-\d{4}-(\d+)/) || last.match(/D-(\d+)/)
-  if (match) {
-    return `D-${year}-${String(parseInt(match[1], 10) + 1).padStart(3, '0')}`
-  }
-  return `D-${year}-001`
+  return `D-${year}-${String(max + 1).padStart(3, '0')}`
 }

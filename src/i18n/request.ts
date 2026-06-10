@@ -8,8 +8,22 @@ export default getRequestConfig(async () => {
 
   const locale = localeCookie && locales.includes(localeCookie) ? localeCookie : defaultLocale
 
+  // Messages éclatés par domaine (app = l'existant ; landing/onboarding/legal =
+  // surfaces de commercialisation). Fusion plate : les namespaces ne se recouvrent pas.
+  const [app, landing, onboarding, legal] = await Promise.all([
+    import(`../messages/${locale}/app.json`),
+    import(`../messages/${locale}/landing.json`),
+    import(`../messages/${locale}/onboarding.json`),
+    import(`../messages/${locale}/legal.json`),
+  ])
+
   return {
     locale,
-    messages: (await import(`../messages/${locale}.json`)).default,
+    messages: {
+      ...app.default,
+      ...landing.default,
+      ...onboarding.default,
+      ...legal.default,
+    },
   }
 })

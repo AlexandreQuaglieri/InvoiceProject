@@ -71,6 +71,21 @@ export type PdpB2cTransaction = {
   tax_subtotals: PdpB2cTaxSubtotal[]
 }
 
+// E-reporting des paiements (encaissements B2C — obligatoire pour les
+// prestations de services). Schéma OpenAPI b2c_payment : date + sous-totaux
+// (category_code, tax_percent, amount, currency_code), enveloppe { data: [...] }.
+export type PdpB2cPaymentSubtotal = {
+  category_code: 'TLB1' | 'TPS1' | 'TNT1' | 'TMA1'
+  tax_percent: string
+  amount: string
+  currency_code?: string
+}
+
+export type PdpB2cPayment = {
+  date: string // ISO 8601, date d'encaissement
+  subtotals: PdpB2cPaymentSubtotal[]
+}
+
 // Période d'e-reporting agrégée par la PDP.
 export type PdpEReporting = {
   id: number

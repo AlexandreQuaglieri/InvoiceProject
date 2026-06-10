@@ -34,29 +34,33 @@ import { Badge } from '@/components/ui/badge'
 
 import { ClientDialog } from './client-dialog'
 import { deleteClientAction } from '@/actions/clients'
-import type { Client } from '@/types/database'
+import { useLiveClients, useLiveStoreActions } from '@/lib/realtime'
 
-interface ClientsTableProps {
-  clients: Client[]
-}
-
-export function ClientsTable({ clients }: ClientsTableProps) {
+export function ClientsTable() {
   const t = useTranslations()
+  const clients = useLiveClients()
+  const { upsertClient, removeClient } = useLiveStoreActions()
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
     if (!deleteId) return
 
+    // Optimistic : retrait immédiat du store, rollback si le serveur refuse.
+    const previous = clients.find((c) => c.id === deleteId)
     setIsDeleting(true)
+    removeClient(deleteId)
     try {
       const result = await deleteClientAction(deleteId)
       if (result.success) {
         toast.success('Client supprimé')
       } else {
+        if (previous) upsertClient(previous)
         toast.error(result.error || 'Erreur lors de la suppression')
       }
     } catch (error) {
+      console.error('Suppression du client échouée', error)
+      if (previous) upsertClient(previous)
       toast.error('Erreur lors de la suppression')
     } finally {
       setIsDeleting(false)

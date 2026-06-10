@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/server'
 // Push des données de facturation vers le Data Wallet (Fluid Store), depuis le code serveur.
 // Fiable et debuggable (contrairement au webhook pg_net qui ne transmet pas le header Authorization).
 const WALLET_URL = process.env.WALLET_URL || 'https://fluid-store-mcp.quaglieri-alexandre.workers.dev'
-const WALLET_APP_ID = process.env.WALLET_APP_ID || 'facture-quatools-32cb35'
 const WALLET_API_KEY = process.env.WALLET_API_KEY || ''
 
 export type SyncResult = { ok: boolean; count: number; error?: string }
@@ -17,8 +16,12 @@ async function pushRecord(table: string, record: Record<string, unknown>): Promi
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${WALLET_API_KEY}` },
       body: JSON.stringify({ table, record }),
     })
+    if (!res.ok) {
+      console.error(`[wallet] ingest ${table} a échoué (HTTP ${res.status})`, { recordId: record.id })
+    }
     return res.ok
-  } catch {
+  } catch (e) {
+    console.error(`[wallet] ingest ${table} injoignable`, { recordId: record.id }, e)
     return false
   }
 }

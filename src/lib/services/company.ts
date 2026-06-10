@@ -86,7 +86,8 @@ export async function searchCompany(
       )
 
     return { results, total: data.total_results }
-  } catch {
+  } catch (e) {
+    console.error('[company] recherche entreprise (API gouv) en échec', e)
     return { error: "Erreur lors de la recherche d'entreprise" }
   }
 }

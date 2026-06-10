@@ -1,12 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle2, Plug, Loader2 } from 'lucide-react'
 import type { PdpConnection } from '@/lib/pdp'
 
-export function PdpConnect({ connection }: { connection: PdpConnection }) {
+export function PdpConnect({ connection: initialConnection }: { connection: PdpConnection }) {
+  const router = useRouter()
+  const [connection, setConnection] = useState(initialConnection)
   const [disconnecting, setDisconnecting] = useState(false)
 
   const handleDisconnect = async () => {
@@ -14,11 +17,15 @@ export function PdpConnect({ connection }: { connection: PdpConnection }) {
     try {
       const res = await fetch('/api/pdp/disconnect', { method: 'POST' })
       if (res.ok) {
-        window.location.reload()
+        // Résultat connu : mise à jour locale immédiate, puis refresh serveur
+        // (dernier recours légitime : l'état PDP vit dans user_settings, hors store live).
+        setConnection({ connected: false })
+        router.refresh()
+        setDisconnecting(false)
         return
       }
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error('Déconnexion de la PDP échouée', error)
     }
     setDisconnecting(false)
   }

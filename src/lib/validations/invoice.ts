@@ -23,7 +23,9 @@ export const invoiceSchema = z.object({
 })
 
 export type InvoiceItemFormData = z.infer<typeof invoiceItemSchema>
-export type InvoiceFormData = z.infer<typeof invoiceSchema>
+export type InvoiceFormData = z.output<typeof invoiceSchema>
+// Type d'entrée du formulaire (avant transformation Zod)
+export type InvoiceFormInput = z.input<typeof invoiceSchema>
 
 // Génère le numéro de facture au format YYYYMMDD-XX
 export function generateInvoiceNumber(prefix: string, nextNumber: number): string {

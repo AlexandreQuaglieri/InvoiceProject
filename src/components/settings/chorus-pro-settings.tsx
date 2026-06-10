@@ -9,30 +9,32 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { updateUserSettings } from '@/actions/settings'
+import { updateChorusProSettings } from '@/actions/settings'
 import { Eye, EyeOff } from 'lucide-react'
 
 const schema = z.object({
   chorus_pro_client_id: z.string().min(1, 'Requis'),
-  chorus_pro_client_secret: z.string().min(1, 'Requis'),
+  // Optionnels : vides = secrets existants inchangés (jamais renvoyés au client).
+  chorus_pro_client_secret: z.string(),
   chorus_pro_login: z.string().min(1, 'Requis'),
-  chorus_pro_password: z.string().min(1, 'Requis'),
+  chorus_pro_password: z.string(),
   chorus_pro_sandbox: z.boolean(),
 })
 
 type FormValues = z.infer<typeof schema>
 
 interface ChorusProSettingsProps {
+  // Les secrets ne quittent JAMAIS le serveur : seuls les identifiants non
+  // sensibles et un indicateur de configuration arrivent ici.
   initialValues: {
     chorus_pro_client_id?: string | null
-    chorus_pro_client_secret?: string | null
     chorus_pro_login?: string | null
-    chorus_pro_password?: string | null
     chorus_pro_sandbox?: boolean | null
   }
+  configured: boolean
 }
 
-export function ChorusProSettings({ initialValues }: ChorusProSettingsProps) {
+export function ChorusProSettings({ initialValues, configured }: ChorusProSettingsProps) {
   const [showSecret, setShowSecret] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -40,9 +42,9 @@ export function ChorusProSettings({ initialValues }: ChorusProSettingsProps) {
     resolver: zodResolver(schema),
     defaultValues: {
       chorus_pro_client_id: initialValues.chorus_pro_client_id ?? '',
-      chorus_pro_client_secret: initialValues.chorus_pro_client_secret ?? '',
+      chorus_pro_client_secret: '',
       chorus_pro_login: initialValues.chorus_pro_login ?? '',
-      chorus_pro_password: initialValues.chorus_pro_password ?? '',
+      chorus_pro_password: '',
       chorus_pro_sandbox: initialValues.chorus_pro_sandbox ?? true,
     },
   })
@@ -50,13 +52,30 @@ export function ChorusProSettings({ initialValues }: ChorusProSettingsProps) {
   const sandbox = watch('chorus_pro_sandbox')
 
   const onSubmit = async (values: FormValues) => {
-    const result = await updateUserSettings(values)
+    // À la première configuration, les secrets sont obligatoires.
+    if (!configured && (!values.chorus_pro_client_secret || !values.chorus_pro_password)) {
+      toast.error('Le client secret et le mot de passe technique sont requis.')
+      return
+    }
+
+    const result = await updateChorusProSettings({
+      chorus_pro_client_id: values.chorus_pro_client_id,
+      chorus_pro_login: values.chorus_pro_login,
+      chorus_pro_sandbox: values.chorus_pro_sandbox,
+      // Champ vide = on ne touche pas au secret existant.
+      chorus_pro_client_secret: values.chorus_pro_client_secret || undefined,
+      chorus_pro_password: values.chorus_pro_password || undefined,
+    })
     if (result.success) {
       toast.success('Paramètres Chorus Pro sauvegardés')
+      setValue('chorus_pro_client_secret', '')
+      setValue('chorus_pro_password', '')
     } else {
       toast.error(result.error ?? 'Erreur lors de la sauvegarde')
     }
   }
+
+  const secretPlaceholder = configured ? '•••••••• (configuré — laisser vide pour conserver)' : '••••••••••••'
 
   return (
     <Card>
@@ -110,7 +129,8 @@ export function ChorusProSettings({ initialValues }: ChorusProSettingsProps) {
               <Input
                 id="client_secret"
                 type={showSecret ? 'text' : 'password'}
-                placeholder="••••••••••••"
+                placeholder={secretPlaceholder}
+                autoComplete="new-password"
                 {...register('chorus_pro_client_secret')}
               />
               <button
@@ -149,7 +169,8 @@ export function ChorusProSettings({ initialValues }: ChorusProSettingsProps) {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••••••"
+                placeholder={secretPlaceholder}
+                autoComplete="new-password"
                 {...register('chorus_pro_password')}
               />
               <button

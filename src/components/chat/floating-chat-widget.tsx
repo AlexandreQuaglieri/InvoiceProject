@@ -202,9 +202,7 @@ export function FloatingChatWidget() {
         }
       }
 
-      if (data.executedActions?.some((a: ExecutedAction) => a.success)) {
-        router.refresh()
-      }
+      // Les écritures de l'IA sont reflétées par Realtime : aucun refresh.
 
       if (currentConversationId) {
         await updateConversation(currentConversationId, updatedMessages as ConversationMessage[])
@@ -222,7 +220,8 @@ export function FloatingChatWidget() {
           setConversations((prev) => [result.conversation!, ...prev])
         }
       }
-    } catch {
+    } catch (error) {
+      console.error('Requête au chat IA échouée', error)
       toast.error("Erreur de communication avec l'assistant")
     } finally {
       setIsLoading(false)
@@ -346,9 +345,9 @@ export function FloatingChatWidget() {
                 <Bot className="h-10 w-10 mx-auto mb-3 opacity-40" />
                 <p className="text-sm mb-3">Je peux vous aider à :</p>
                 <ul className="text-xs space-y-1 text-muted-foreground/70">
-                  <li>"Crée une facture pour ce devis"</li>
-                  <li>"Combien j'ai facturé ce mois ?"</li>
-                  <li>"Mes factures en retard ?"</li>
+                  <li>&quot;Crée une facture pour ce devis&quot;</li>
+                  <li>&quot;Combien j&apos;ai facturé ce mois ?&quot;</li>
+                  <li>&quot;Mes factures en retard ?&quot;</li>
                 </ul>
               </div>
             ) : (

@@ -16,10 +16,9 @@ import {
   createConversation,
   updateConversation,
   deleteConversation,
-  type Conversation,
   type ConversationMessage,
 } from '@/actions/conversations'
-import type { Client } from '@/types/database'
+import { useLiveConversations, useLiveStoreActions } from '@/lib/realtime'
 
 interface ExecutedAction {
   type: string
@@ -55,15 +54,16 @@ interface Message {
 }
 
 interface AIChatProps {
-  clients: Client[]
-  conversations: Conversation[]
   initialConversationId?: string
 }
 
-export function AIChat({ conversations: initialConversations, initialConversationId }: AIChatProps) {
+export function AIChat({ initialConversationId }: AIChatProps) {
   const t = useTranslations('chat')
   const router = useRouter()
-  const [conversations, setConversations] = useState<Conversation[]>(initialConversations)
+  // Conversations lues depuis le store live (Realtime + optimistic) ; les
+  // écritures font du write-through via upsertConversation/removeConversation.
+  const conversations = useLiveConversations()
+  const { upsertConversation, removeConversation } = useLiveStoreActions()
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(initialConversationId || null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -73,15 +73,15 @@ export function AIChat({ conversations: initialConversations, initialConversatio
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [attachments, setAttachments] = useState<Attachment[]>([])
 
-  // Charger les messages de la conversation sélectionnée
+  // Charger les messages de la conversation sélectionnée. Pas de reset quand
+  // aucune conversation n'est sélectionnée : un event Realtime sur la liste ne
+  // doit pas effacer une conversation en cours de rédaction (le vidage est fait
+  // explicitement par handleNewConversation / handleDeleteConversation).
   useEffect(() => {
-    if (currentConversationId) {
-      const conversation = conversations.find((c) => c.id === currentConversationId)
-      if (conversation) {
-        setMessages(conversation.messages as Message[])
-      }
-    } else {
-      setMessages([])
+    if (!currentConversationId) return
+    const conversation = conversations.find((c) => c.id === currentConversationId)
+    if (conversation) {
+      setMessages(conversation.messages as Message[])
     }
   }, [currentConversationId, conversations])
 
@@ -103,15 +103,18 @@ export function AIChat({ conversations: initialConversations, initialConversatio
 
   const handleDeleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
+    // Optimistic : retrait immédiat du store, rollback si le serveur refuse.
+    const previous = conversations.find((c) => c.id === id)
+    removeConversation(id)
+    if (currentConversationId === id) {
+      setCurrentConversationId(null)
+      setMessages([])
+    }
     const result = await deleteConversation(id)
     if (result.success) {
-      setConversations((prev) => prev.filter((c) => c.id !== id))
-      if (currentConversationId === id) {
-        setCurrentConversationId(null)
-        setMessages([])
-      }
       toast.success('Conversation supprimée')
     } else {
+      if (previous) upsertConversation(previous)
       toast.error(result.error || 'Erreur lors de la suppression')
     }
   }
@@ -209,29 +212,25 @@ export function AIChat({ conversations: initialConversations, initialConversatio
         }
       }
 
-      // Rafraîchir la page pour mettre à jour les listes
-      if (data.executedActions?.some((a: ExecutedAction) => a.success)) {
-        router.refresh()
-      }
+      // Les écritures de l'IA sont reflétées par Realtime : aucun refresh.
 
-      // Sauvegarder la conversation
+      // Sauvegarder la conversation (write-through dans le store live)
       if (currentConversationId) {
+        const conv = conversations.find((c) => c.id === currentConversationId)
+        if (conv) {
+          // Optimistic : updated_at inchangé, Realtime réconciliera la valeur DB.
+          upsertConversation({ ...conv, messages: updatedMessages as ConversationMessage[] })
+        }
         await updateConversation(currentConversationId, updatedMessages as ConversationMessage[])
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === currentConversationId
-              ? { ...c, messages: updatedMessages as ConversationMessage[], updated_at: new Date().toISOString() }
-              : c
-          )
-        )
       } else {
         const result = await createConversation(updatedMessages as ConversationMessage[])
         if (result.success && result.conversation) {
           setCurrentConversationId(result.conversation.id)
-          setConversations((prev) => [result.conversation!, ...prev])
+          upsertConversation(result.conversation)
         }
       }
-    } catch {
+    } catch (error) {
+      console.error('Requête au chat IA échouée', error)
       toast.error('Erreur de communication avec l\'assistant')
     } finally {
       setIsLoading(false)
@@ -355,10 +354,10 @@ export function AIChat({ conversations: initialConversations, initialConversatio
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="mb-2">Bonjour ! Je peux vous aider à :</p>
                 <ul className="text-sm space-y-1">
-                  <li>"Crée une facture de 500€ pour Client X"</li>
-                  <li>"Fais un devis pour une prestation de conseil"</li>
-                  <li>"Combien j'ai facturé ce mois ?"</li>
-                  <li>"Quelles sont mes factures en retard ?"</li>
+                  <li>&quot;Crée une facture de 500€ pour Client X&quot;</li>
+                  <li>&quot;Fais un devis pour une prestation de conseil&quot;</li>
+                  <li>&quot;Combien j&apos;ai facturé ce mois ?&quot;</li>
+                  <li>&quot;Quelles sont mes factures en retard ?&quot;</li>
                 </ul>
                 <p className="text-xs mt-4 text-muted-foreground/70">
                   Je crée vos clients, factures et devis, et je réponds à vos questions sur votre activité.

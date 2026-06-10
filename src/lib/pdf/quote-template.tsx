@@ -208,6 +208,7 @@ export function QuoteTemplate({ quote, company }: QuoteTemplateProps) {
         <View style={styles.header}>
           <View>
             {company.logo_url && (
+              // eslint-disable-next-line jsx-a11y/alt-text -- Image de @react-pdf/renderer (pas un élément DOM, pas de prop alt)
               <Image src={company.logo_url} style={styles.logo} />
             )}
             <Text style={styles.companyName}>{company.name}</Text>
@@ -235,11 +236,11 @@ export function QuoteTemplate({ quote, company }: QuoteTemplateProps) {
             <Text style={styles.infoValue}>{quote.quote_number}</Text>
           </View>
           <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>DATE D'EMISSION</Text>
+            <Text style={styles.infoLabel}>DATE D&apos;EMISSION</Text>
             <Text style={styles.infoValue}>{formatDate(quote.issue_date)}</Text>
           </View>
           <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>VALABLE JUSQU'AU</Text>
+            <Text style={styles.infoLabel}>VALABLE JUSQU&apos;AU</Text>
             <Text style={styles.infoValue}>{formatDate(quote.validity_date)}</Text>
           </View>
         </View>

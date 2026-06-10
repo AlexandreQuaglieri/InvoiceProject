@@ -22,14 +22,14 @@ export async function buildInvoiceFacturX(
         const pngBuffer = await sharp(Buffer.from(await logoResponse.arrayBuffer())).png().toBuffer()
         companyWithLogo.logo_url = `data:image/png;base64,${pngBuffer.toString('base64')}`
       }
-    } catch {
+    } catch (e) {
+      // non bloquant : la facture part sans logo
+      console.error('[facturx] chargement du logo en échec, PDF généré sans logo', e)
       companyWithLogo.logo_url = null
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pdfBuffer = await renderToBuffer(InvoiceTemplate({ invoice: invoice as any, company: companyWithLogo }))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const xmlContent = generateFacturXXml(invoice as any, company)
+  const pdfBuffer = await renderToBuffer(InvoiceTemplate({ invoice, company: companyWithLogo }))
+  const xmlContent = generateFacturXXml(invoice, company)
   return embedFacturX(Buffer.from(pdfBuffer), xmlContent)
 }

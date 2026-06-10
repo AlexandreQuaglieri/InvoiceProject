@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/rate-limit'
+import { decryptSecretOrNull } from '@/lib/crypto'
 import * as svc from '@/lib/services'
 import type { InvoiceStatus, QuoteStatus } from '@/types/database'
 import sharp from 'sharp'
@@ -86,19 +88,7 @@ async function buildAttachmentBlocks(
   return blocks
 }
 
-// Rate limiting: 20 requêtes par utilisateur par minute
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(userId)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(userId, { count: 1, resetAt: now + 60_000 })
-    return true
-  }
-  if (entry.count >= 20) return false
-  entry.count++
-  return true
-}
+// Rate limiting : 20 requêtes par utilisateur par minute (persistant, src/lib/rate-limit.ts)
 
 const SYSTEM_PROMPT = `Tu es le copilote de Factur-IA, une application de facturation française. Tu n'es pas qu'un exécuteur d'actions : tu ACCOMPAGNES l'utilisateur — tu expliques, tu conseilles ET tu agis.
 
@@ -976,7 +966,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    if (!checkRateLimit(user.id)) {
+    if (!(await rateLimit('chat', user.id, { max: 20, windowSeconds: 60 }))) {
       return NextResponse.json(
         { error: 'Trop de requêtes. Veuillez patienter une minute.' },
         { status: 429 }
@@ -990,7 +980,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .single()
 
-    const apiKey = settings?.claude_api_key || process.env.ANTHROPIC_API_KEY
+    const apiKey = decryptSecretOrNull(settings?.claude_api_key) || process.env.ANTHROPIC_API_KEY
 
     if (!apiKey) {
       return NextResponse.json(

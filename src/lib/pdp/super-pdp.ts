@@ -4,6 +4,7 @@ import type {
   PdpLifecycleEvent,
   PdpInboundInvoice,
   PdpB2cTransaction,
+  PdpB2cPayment,
   PdpEReporting,
   PdpValidationResult,
 } from './types'
@@ -156,6 +157,19 @@ export function createSuperPdpProvider(getToken: TokenProvider): PdpProvider {
       })
       const data = await res.json()
       // L'API renvoie "Data" (D majuscule) ; on accepte les deux casses.
+      const created = ((data.data ?? data.Data ?? []) as Array<{ id?: number }>)[0]
+      return { id: Number(created?.id) }
+    },
+
+    // E-reporting des encaissements : POST /v1.beta/b2c_payments (corps { data: [payment] }).
+    async reportB2cPayment(payment: PdpB2cPayment): Promise<{ id: number }> {
+      const res = await call(`${API}/b2c_payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: [payment] }),
+      })
+      const data = await res.json()
+      // Même convention que b2c_transactions : l'API peut renvoyer "Data" (D majuscule).
       const created = ((data.data ?? data.Data ?? []) as Array<{ id?: number }>)[0]
       return { id: Number(created?.id) }
     },

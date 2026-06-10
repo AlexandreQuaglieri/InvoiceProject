@@ -26,12 +26,12 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 
 import {
-  getConversations,
   createConversation,
   updateConversation,
   type Conversation,
   type ConversationMessage,
 } from '@/actions/conversations'
+import { useLiveConversations, useLiveStoreActions } from '@/lib/realtime'
 
 interface ExecutedAction {
   type: string
@@ -50,8 +50,10 @@ interface Message {
 export function AICopilotPanel() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
-  const [loaded, setLoaded] = useState(false)
-  const [conversations, setConversations] = useState<Conversation[]>([])
+  // Conversations lues depuis le store live (Realtime + optimistic) ; les
+  // écritures font du write-through via upsertConversation.
+  const conversations = useLiveConversations()
+  const { upsertConversation } = useLiveStoreActions()
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -59,15 +61,6 @@ export function AICopilotPanel() {
   const [showConversations, setShowConversations] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    if (!loaded) {
-      getConversations().then((data) => {
-        setConversations(data)
-        setLoaded(true)
-      })
-    }
-  }, [loaded])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -139,27 +132,24 @@ export function AICopilotPanel() {
         }
       }
 
-      if (data.executedActions?.some((a: ExecutedAction) => a.success)) {
-        router.refresh()
-      }
+      // Les écritures de l'IA sont reflétées par Realtime : aucun refresh.
 
       if (currentConversationId) {
+        const conv = conversations.find((c) => c.id === currentConversationId)
+        if (conv) {
+          // Optimistic : updated_at inchangé, Realtime réconciliera la valeur DB.
+          upsertConversation({ ...conv, messages: updatedMessages as ConversationMessage[] })
+        }
         await updateConversation(currentConversationId, updatedMessages as ConversationMessage[])
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === currentConversationId
-              ? { ...c, messages: updatedMessages as ConversationMessage[], updated_at: new Date().toISOString() }
-              : c
-          )
-        )
       } else {
         const result = await createConversation(updatedMessages as ConversationMessage[])
         if (result.success && result.conversation) {
           setCurrentConversationId(result.conversation.id)
-          setConversations((prev) => [result.conversation!, ...prev])
+          upsertConversation(result.conversation)
         }
       }
-    } catch {
+    } catch (error) {
+      console.error('Requête au chat IA échouée', error)
       toast.error("Erreur de communication avec l'assistant")
     } finally {
       setIsLoading(false)

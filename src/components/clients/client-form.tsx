@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { clientSchema, type ClientFormData, clientTypes } from '@/lib/validations/client'
+import { clientSchema, type ClientFormData, type ClientFormInput } from '@/lib/validations/client'
 import type { Client } from '@/types/database'
 
 interface ClientFormProps {
@@ -35,8 +35,8 @@ interface ClientFormProps {
 export function ClientForm({ client, onSubmit, isLoading }: ClientFormProps) {
   const t = useTranslations()
 
-  const form = useForm<ClientFormData>({
-    resolver: zodResolver(clientSchema) as any,
+  const form = useForm<ClientFormInput, unknown, ClientFormData>({
+    resolver: zodResolver(clientSchema),
     defaultValues: {
       type: client?.type || 'professional',
       name: client?.name || '',

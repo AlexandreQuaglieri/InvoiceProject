@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { buildInvoiceFacturX } from '@/lib/facturx/build'
 import { superPdpForRequest, friendlyPdpError } from '@/lib/pdp'
+import { rateLimit } from '@/lib/rate-limit'
+import { resolveCompanyId, transmitInvoice, syncInvoiceLifecycle } from '@/lib/services'
 
-// Transmet une facture (Factur-X) en B2B via la PDP (Super PDP). Le secret OAuth
-// reste côté serveur. Réservé aux factures finalisées (pas les brouillons).
+// Transmet une facture (Factur-X) en B2B via la PDP (Super PDP). Boundary fin :
+// auth → rate-limit → résolution du contexte → service einvoicing.
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
@@ -14,50 +15,48 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
+  if (!(await rateLimit('transmit', user.id, { max: 10, windowSeconds: 60 }))) {
+    return NextResponse.json({ error: 'Trop de requêtes. Veuillez patienter une minute.' }, { status: 429 })
+  }
+
   const pdp = await superPdpForRequest(supabase, user.id)
   if (!pdp) {
     return NextResponse.json({ error: 'PDP non configurée sur la plateforme.' }, { status: 503 })
   }
 
-  const { data: company } = await supabase
-    .from('companies')
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
-  if (!company) return NextResponse.json({ error: 'Entreprise non configurée' }, { status: 400 })
-
-  const { data: invoice } = await supabase
-    .from('invoices')
-    .select('*, client:clients(*), items:invoice_items(*)')
-    .eq('id', id)
-    .eq('company_id', company.id)
-    .single()
-  if (!invoice) return NextResponse.json({ error: 'Facture non trouvée' }, { status: 404 })
-
-  if (invoice.status === 'draft') {
-    return NextResponse.json(
-      { error: "Impossible de transmettre un brouillon. Finalisez la facture d'abord." },
-      { status: 400 }
-    )
-  }
+  const companyId = await resolveCompanyId(supabase, user.id)
+  if (!companyId.ok) return NextResponse.json({ error: companyId.error }, { status: 400 })
 
   try {
-    const facturX = await buildInvoiceFacturX(invoice, company)
-    const result = await pdp.transmitInvoice({ facturX, invoiceNumber: invoice.number })
+    const result = await transmitInvoice(
+      supabase,
+      { userId: user.id, companyId: companyId.data },
+      pdp,
+      { invoiceId: id }
+    )
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
 
-    // Persiste la référence de dépôt PDP. Best-effort : si les colonnes pdp_* ne sont
-    // pas encore créées (migration non appliquée), l'erreur est ignorée et la
-    // transmission reste un succès.
-    await supabase
-      .from('invoices')
-      .update({ pdp_deposit_id: result.depositId, pdp_transmitted_at: result.transmittedAt })
-      .eq('id', invoice.id)
-      .eq('company_id', company.id)
+    // Synchronise le premier statut PDP hors chemin critique (best-effort observé).
+    if (!result.data.alreadyTransmitted) {
+      after(async () => {
+        try {
+          await syncInvoiceLifecycle(
+            supabase,
+            { userId: user.id, companyId: companyId.data },
+            pdp,
+            { invoiceId: id }
+          )
+        } catch (e) {
+          console.error('[einvoicing] sync post-transmission en échec', { invoiceId: id }, e)
+        }
+      })
+    }
 
     return NextResponse.json({
       success: true,
-      depositId: result.depositId,
-      transmittedAt: result.transmittedAt,
+      depositId: result.data.depositId,
+      transmittedAt: result.data.transmittedAt,
+      alreadyTransmitted: result.data.alreadyTransmitted,
     })
   } catch (error) {
     return NextResponse.json({ error: friendlyPdpError(error) }, { status: 500 })

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // Déconnecte la société de la PDP : efface les jetons OAuth → on repart d'un compte
 // non activé (utile pour basculer sandbox → production).
-export async function POST(_request: NextRequest) {
+export async function POST() {
   const supabase = await createClient()
   const {
     data: { user },

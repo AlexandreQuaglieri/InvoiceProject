@@ -5,6 +5,8 @@ import { InvoiceTemplate } from '@/lib/pdf/invoice-template'
 import { generateFacturXXml } from '@/lib/facturx/xml-generator'
 import { embedFacturX } from '@/lib/facturx/embed'
 import { deposerFluxFacturX } from '@/lib/chorus-pro/client'
+import { rateLimit } from '@/lib/rate-limit'
+import type { InvoiceWithRelations } from '@/types/database'
 import sharp from 'sharp'
 
 export async function POST(
@@ -35,6 +37,10 @@ export async function POST(
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
   }
 
+  if (!(await rateLimit('transmit', user.id, { max: 10, windowSeconds: 60 }))) {
+    return NextResponse.json({ error: 'Trop de requêtes. Veuillez patienter une minute.' }, { status: 429 })
+  }
+
   const { data: company } = await supabase
     .from('companies')
     .select('*')
@@ -50,7 +56,7 @@ export async function POST(
     .select('*, client:clients(*), items:invoice_items(*)')
     .eq('id', id)
     .eq('company_id', company.id)
-    .single()
+    .single<InvoiceWithRelations>()
 
   if (!invoice) {
     return NextResponse.json({ error: 'Facture non trouvée' }, { status: 404 })
@@ -65,7 +71,7 @@ export async function POST(
 
   try {
     // Générer le logo en base64 si présent
-    let companyWithLogo = { ...company }
+    const companyWithLogo = { ...company }
     if (company.logo_url) {
       try {
         const logoResponse = await fetch(company.logo_url)
@@ -80,9 +86,9 @@ export async function POST(
 
     // Générer le PDF Factur-X complet (PDF + XML embarqué)
     const pdfBuffer = await renderToBuffer(
-      InvoiceTemplate({ invoice: invoice as any, company: companyWithLogo })
+      InvoiceTemplate({ invoice, company: companyWithLogo })
     )
-    const xmlContent = generateFacturXXml(invoice as any, company)
+    const xmlContent = generateFacturXXml(invoice, company)
     const facturXBuffer = await embedFacturX(Buffer.from(pdfBuffer), xmlContent)
 
     const result = await deposerFluxFacturX(
