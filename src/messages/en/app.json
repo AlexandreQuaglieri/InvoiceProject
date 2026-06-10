@@ -37,7 +37,9 @@
     "settings": "Settings",
     "logout": "Logout",
     "locked": "Complete the Company step to unlock",
-    "activateEInvoicing": "Enable e-invoicing"
+    "activateEInvoicing": "Enable e-invoicing",
+    "activateEInvoicingLong": "Enable electronic invoicing",
+    "pdpRedirectNotice": "You will be redirected to Super PDP (superpdp.tech), our certified partner platform."
   },
   "auth": {
     "login": "Login",

@@ -37,7 +37,9 @@
     "settings": "Paramètres",
     "logout": "Déconnexion",
     "locked": "Terminez l'étape Entreprise pour débloquer",
-    "activateEInvoicing": "Activer la facturation élec."
+    "activateEInvoicing": "Activer la facturation élec.",
+    "activateEInvoicingLong": "Activer la facturation électronique",
+    "pdpRedirectNotice": "Vous serez redirigé vers Super PDP (superpdp.tech), notre plateforme agréée partenaire."
   },
   "auth": {
     "login": "Connexion",

@@ -138,13 +138,18 @@ export function AppSidebar({ pdpConnected = false }: { pdpConnected?: boolean })
       </SidebarContent>
       <SidebarFooter className="border-t p-4 space-y-3">
         {!pdpConnected && !locked && (
-          <a
-            href="/api/pdp/connect"
-            className="flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <Plug className="h-4 w-4" />
-            {t('activateEInvoicing')}
-          </a>
+          <div className="space-y-1.5">
+            <a
+              href="/api/pdp/connect"
+              className="flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Plug className="h-4 w-4" />
+              {t('activateEInvoicing')}
+            </a>
+            <p className="text-center text-[10px] leading-snug text-muted-foreground">
+              {t('pdpRedirectNotice')}
+            </p>
+          </div>
         )}
         <p className="text-xs text-muted-foreground text-center">
           {tCommon('appName')} v0.1.0

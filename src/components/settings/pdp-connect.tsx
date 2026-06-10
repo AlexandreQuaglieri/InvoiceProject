@@ -68,8 +68,9 @@ export function PdpConnect({ connection: initialConnection }: { connection: PdpC
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Vous serez redirigé vers Super PDP pour connecter le compte de votre société, puis
-              ramené ici automatiquement.
+              Vous serez redirigé vers <span className="font-medium text-foreground">Super PDP</span>{' '}
+              (superpdp.tech), notre plateforme agréée partenaire, pour connecter le compte de votre
+              société — puis ramené ici automatiquement.
             </p>
             <Button asChild>
               <a href="/api/pdp/connect">
