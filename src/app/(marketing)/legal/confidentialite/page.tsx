@@ -1,0 +1,24 @@
+// ⚠️ Brouillon généré — à faire relire (placeholders à compléter)
+import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
+import { LegalArticle, type LegalSection } from '@/components/marketing/legal-article'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('legal.privacy')
+  return { title: t('metaTitle') }
+}
+
+export default async function PrivacyPage() {
+  const t = await getTranslations('legal')
+  const sections = t.raw('privacy.sections') as LegalSection[]
+  const disclaimer = t.raw('common.disclaimer') as string
+
+  return (
+    <LegalArticle
+      title={t('privacy.title')}
+      updated={t('common.updated', { date: t('privacy.updated') })}
+      disclaimer={disclaimer || undefined}
+      sections={sections}
+    />
+  )
+}

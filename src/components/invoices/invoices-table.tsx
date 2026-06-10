@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -43,17 +43,15 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { EinvoicingBadge } from '@/components/invoices/einvoicing-badge'
 
 import {
   deleteInvoiceAction,
   updateInvoiceStatusAction,
   duplicateInvoiceAction,
 } from '@/actions/invoices'
+import { useLiveInvoices, useLiveStoreActions } from '@/lib/realtime'
 import type { InvoiceWithRelations, InvoiceStatus } from '@/types/database'
-
-interface InvoicesTableProps {
-  invoices: InvoiceWithRelations[]
-}
 
 const statusConfig: Record<InvoiceStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ComponentType<{ className?: string }> }> = {
   draft: { label: 'Brouillon', variant: 'secondary', icon: Clock },
@@ -63,11 +61,13 @@ const statusConfig: Record<InvoiceStatus, { label: string; variant: 'default' | 
   cancelled: { label: 'Annulée', variant: 'outline', icon: XCircle },
 }
 
-export function InvoicesTable({ invoices }: InvoicesTableProps) {
+export function InvoicesTable() {
   const t = useTranslations()
   const router = useRouter()
+  const invoices = useLiveInvoices()
+  const { upsertInvoice, removeInvoice } = useLiveStoreActions()
+  const [, startTransition] = useTransition()
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -80,48 +80,68 @@ export function InvoicesTable({ invoices }: InvoicesTableProps) {
     return new Intl.DateTimeFormat('fr-FR').format(new Date(date))
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteId) return
 
-    setIsDeleting(true)
-    try {
-      const result = await deleteInvoiceAction(deleteId)
-      if (result.success) {
-        toast.success('Facture supprimée')
-      } else {
-        toast.error(result.error || 'Erreur lors de la suppression')
-      }
-    } catch (error) {
-      toast.error('Erreur lors de la suppression')
-    } finally {
-      setIsDeleting(false)
+    const prev = invoices.find((invoice) => invoice.id === deleteId)
+    if (!prev) {
       setDeleteId(null)
+      return
     }
+
+    // Optimistic : retrait immédiat, rollback si le serveur refuse
+    removeInvoice(prev.id)
+    setDeleteId(null)
+    startTransition(async () => {
+      try {
+        const result = await deleteInvoiceAction(prev.id)
+        if (result.success) {
+          toast.success('Facture supprimée')
+        } else {
+          upsertInvoice(prev)
+          toast.error(result.error || 'Erreur lors de la suppression')
+        }
+      } catch (error) {
+        console.error('Suppression de la facture échouée', error)
+        upsertInvoice(prev)
+        toast.error('Erreur lors de la suppression')
+      }
+    })
   }
 
-  const handleStatusChange = async (id: string, status: InvoiceStatus) => {
-    try {
-      const result = await updateInvoiceStatusAction(id, status)
-      if (result.success) {
-        toast.success('Statut mis à jour')
-      } else {
-        toast.error(result.error || 'Erreur lors de la mise à jour')
+  const handleStatusChange = (invoice: InvoiceWithRelations, status: InvoiceStatus) => {
+    const prev = invoice
+    // Optimistic : NE PAS modifier updated_at (l'event Realtime, plus frais, doit gagner)
+    upsertInvoice({ ...invoice, status })
+    startTransition(async () => {
+      try {
+        const result = await updateInvoiceStatusAction(invoice.id, status)
+        if (result.success) {
+          toast.success('Statut mis à jour')
+        } else {
+          upsertInvoice(prev)
+          toast.error(result.error || 'Erreur lors de la mise à jour')
+        }
+      } catch (error) {
+        console.error('Mise à jour du statut de la facture échouée', error)
+        upsertInvoice(prev)
+        toast.error('Erreur lors de la mise à jour')
       }
-    } catch (error) {
-      toast.error('Erreur lors de la mise à jour')
-    }
+    })
   }
 
   const handleDuplicate = async (id: string) => {
     try {
       const result = await duplicateInvoiceAction(id)
       if (result.success && result.data) {
+        upsertInvoice(result.data)
         toast.success('Facture dupliquée')
         router.push(`/invoices/${result.data.id}`)
       } else {
         toast.error(result.error || 'Erreur lors de la duplication')
       }
     } catch (error) {
+      console.error('Duplication de la facture échouée', error)
       toast.error('Erreur lors de la duplication')
     }
   }
@@ -160,10 +180,13 @@ export function InvoicesTable({ invoices }: InvoicesTableProps) {
                 <TableCell>{formatDate(invoice.issue_date)}</TableCell>
                 <TableCell>{formatDate(invoice.due_date)}</TableCell>
                 <TableCell>
-                  <Badge variant={status.variant} className="gap-1">
-                    <StatusIcon className="h-3 w-3" />
-                    {status.label}
-                  </Badge>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Badge variant={status.variant} className="gap-1">
+                      <StatusIcon className="h-3 w-3" />
+                      {status.label}
+                    </Badge>
+                    <EinvoicingBadge invoice={invoice} />
+                  </div>
                 </TableCell>
                 <TableCell className="text-right font-medium">
                   {formatCurrency(invoice.total_ttc)}
@@ -201,7 +224,7 @@ export function InvoicesTable({ invoices }: InvoicesTableProps) {
 
                       {invoice.status === 'draft' && (
                         <DropdownMenuItem
-                          onClick={() => handleStatusChange(invoice.id, 'sent')}
+                          onClick={() => handleStatusChange(invoice, 'sent')}
                         >
                           <Send className="mr-2 h-4 w-4" />
                           Marquer comme envoyée
@@ -210,7 +233,7 @@ export function InvoicesTable({ invoices }: InvoicesTableProps) {
 
                       {(invoice.status === 'sent' || invoice.status === 'overdue') && (
                         <DropdownMenuItem
-                          onClick={() => handleStatusChange(invoice.id, 'paid')}
+                          onClick={() => handleStatusChange(invoice, 'paid')}
                         >
                           <CheckCircle className="mr-2 h-4 w-4" />
                           Marquer comme payée
@@ -219,7 +242,7 @@ export function InvoicesTable({ invoices }: InvoicesTableProps) {
 
                       {invoice.status !== 'cancelled' && invoice.status !== 'paid' && (
                         <DropdownMenuItem
-                          onClick={() => handleStatusChange(invoice.id, 'cancelled')}
+                          onClick={() => handleStatusChange(invoice, 'cancelled')}
                         >
                           <XCircle className="mr-2 h-4 w-4" />
                           Annuler
@@ -256,15 +279,14 @@ export function InvoicesTable({ invoices }: InvoicesTableProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>
+            <AlertDialogCancel>
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? t('common.loading') : t('common.delete')}
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

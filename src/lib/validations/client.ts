@@ -16,4 +16,6 @@ export const clientSchema = z.object({
   notes: z.string().optional(),
 })
 
-export type ClientFormData = z.infer<typeof clientSchema>
+export type ClientFormData = z.output<typeof clientSchema>
+// Type d'entrée du formulaire (avant application des défauts Zod, ex. `country`)
+export type ClientFormInput = z.input<typeof clientSchema>

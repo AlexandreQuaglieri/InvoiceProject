@@ -266,6 +266,7 @@ export function InvoiceTemplate({ invoice, company }: InvoiceTemplateProps) {
         <View style={styles.header}>
           <View>
             {company.logo_url && (
+              // eslint-disable-next-line jsx-a11y/alt-text -- Image de @react-pdf/renderer (pas un élément DOM, pas de prop alt)
               <Image
                 src={company.logo_url}
                 style={styles.logo}
@@ -296,11 +297,11 @@ export function InvoiceTemplate({ invoice, company }: InvoiceTemplateProps) {
             <Text style={styles.infoValue}>{invoice.number}</Text>
           </View>
           <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>DATE D'ÉMISSION</Text>
+            <Text style={styles.infoLabel}>DATE D&apos;ÉMISSION</Text>
             <Text style={styles.infoValue}>{formatDate(invoice.issue_date)}</Text>
           </View>
           <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>DATE D'ÉCHÉANCE</Text>
+            <Text style={styles.infoLabel}>DATE D&apos;ÉCHÉANCE</Text>
             <Text style={styles.infoValue}>{formatDate(invoice.due_date)}</Text>
           </View>
         </View>

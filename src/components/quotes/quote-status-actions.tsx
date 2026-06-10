@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Send, CheckCircle, XCircle, FileText, MoreHorizontal } from 'lucide-react'
@@ -25,15 +25,18 @@ import {
 } from '@/components/ui/alert-dialog'
 
 import { updateQuoteStatus, convertQuoteToInvoice } from '@/actions/quotes'
-import type { Quote, QuoteStatus } from '@/types/database'
+import { useLiveStoreActions } from '@/lib/realtime'
+import type { QuoteWithRelations, QuoteStatus } from '@/types/database'
 
 interface QuoteStatusActionsProps {
-  quote: Quote
+  quote: QuoteWithRelations
 }
 
 export function QuoteStatusActions({ quote }: QuoteStatusActionsProps) {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const { upsertQuote, upsertInvoice } = useLiveStoreActions()
+  const [isPending, startTransition] = useTransition()
+  const [isConverting, setIsConverting] = useState(false)
   const [confirmAction, setConfirmAction] = useState<{
     type: 'status'
     status: QuoteStatus
@@ -45,38 +48,50 @@ export function QuoteStatusActions({ quote }: QuoteStatusActionsProps) {
     description: string
   } | null>(null)
 
-  const handleStatusChange = async (status: QuoteStatus) => {
-    setIsLoading(true)
-    try {
-      const result = await updateQuoteStatus(quote.id, status)
-      if (result.success) {
-        toast.success('Statut mis à jour')
-        router.refresh()
-      } else {
-        toast.error(result.error || 'Erreur lors de la mise à jour')
+  const isLoading = isPending || isConverting
+
+  // Changement de statut optimiste : l'UI bouge tout de suite, rollback si erreur.
+  // NE PAS modifier updated_at (l'event Realtime, plus frais, doit gagner).
+  const handleStatusChange = (status: QuoteStatus) => {
+    const prev = quote
+    upsertQuote({ ...quote, status })
+    setConfirmAction(null)
+    startTransition(async () => {
+      try {
+        const result = await updateQuoteStatus(quote.id, status)
+        if (result.success) {
+          if (result.quote) upsertQuote(result.quote)
+          toast.success('Statut mis à jour')
+        } else {
+          upsertQuote(prev)
+          toast.error(result.error || 'Erreur lors de la mise à jour')
+        }
+      } catch (error) {
+        console.error('Mise à jour du statut du devis échouée', error)
+        upsertQuote(prev)
+        toast.error('Erreur lors de la mise à jour')
       }
-    } catch {
-      toast.error('Erreur lors de la mise à jour')
-    } finally {
-      setIsLoading(false)
-      setConfirmAction(null)
-    }
+    })
   }
 
+  // Conversion : write-through du devis converti et de la facture créée renvoyés par l'action.
   const handleConvert = async () => {
-    setIsLoading(true)
+    setIsConverting(true)
     try {
       const result = await convertQuoteToInvoice(quote.id)
       if (result.success && result.invoiceId) {
+        if (result.quote) upsertQuote(result.quote)
+        if (result.invoice) upsertInvoice(result.invoice)
         toast.success('Devis converti en facture')
         router.push(`/invoices/${result.invoiceId}`)
       } else {
         toast.error(result.error || 'Erreur lors de la conversion')
       }
-    } catch {
+    } catch (error) {
+      console.error('Conversion du devis en facture échouée', error)
       toast.error('Erreur lors de la conversion')
     } finally {
-      setIsLoading(false)
+      setIsConverting(false)
       setConfirmAction(null)
     }
   }

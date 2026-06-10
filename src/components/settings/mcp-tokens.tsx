@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { getMcpConnectorUrl } from '@/lib/base-url'
 import { Plus, Trash2, Copy, Key, ExternalLink, AlertTriangle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -43,9 +44,8 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  const mcpUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/api/mcp`
-    : 'https://invoice-project-lime.vercel.app/api/mcp'
+  // URL du connecteur MCP (source unique : src/lib/base-url.ts — le handler vit sur /mcp).
+  const mcpUrl = getMcpConnectorUrl()
 
   const handleCreate = async () => {
     if (!newTokenName.trim()) {
@@ -73,7 +73,8 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
       } else {
         toast.error(result.error || 'Erreur lors de la création')
       }
-    } catch {
+    } catch (error) {
+      console.error('Création du token MCP échouée', error)
       toast.error('Erreur lors de la création du token')
     } finally {
       setIsCreating(false)
@@ -92,7 +93,8 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
       } else {
         toast.error(result.error || 'Erreur lors de la suppression')
       }
-    } catch {
+    } catch (error) {
+      console.error('Suppression du token MCP échouée', error)
       toast.error('Erreur lors de la suppression')
     } finally {
       setIsDeleting(false)
@@ -133,7 +135,7 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
             <li>
               Dans Claude.ai : Profil → Paramètres → Connecteurs → Ajouter un connecteur personnalisé
             </li>
-            <li>Collez l'URL du serveur MCP</li>
+            <li>Collez l&apos;URL du serveur MCP</li>
             <li>Utilisez votre token comme Bearer token</li>
           </ol>
           <div className="mt-3 flex items-center gap-2">
@@ -179,7 +181,7 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
                 className="text-xs"
                 onClick={() => setGeneratedToken(null)}
               >
-                J'ai copié le token
+                J&apos;ai copié le token
               </Button>
             </AlertDescription>
           </Alert>
@@ -200,7 +202,7 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
                 <DialogHeader>
                   <DialogTitle>Créer un token API</DialogTitle>
                   <DialogDescription>
-                    Donnez un nom à ce token pour l'identifier (ex: "Mon Claude Desktop")
+                    Donnez un nom à ce token pour l&apos;identifier (ex: &quot;Mon Claude Desktop&quot;)
                   </DialogDescription>
                 </DialogHeader>
                 <Input

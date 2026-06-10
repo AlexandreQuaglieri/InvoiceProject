@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { Send, CheckCircle, XCircle, MoreHorizontal } from 'lucide-react'
@@ -25,36 +25,43 @@ import {
 } from '@/components/ui/alert-dialog'
 
 import { updateInvoiceStatusAction } from '@/actions/invoices'
-import type { Invoice, InvoiceStatus } from '@/types/database'
+import { useLiveStoreActions } from '@/lib/realtime'
+import type { InvoiceWithRelations, InvoiceStatus } from '@/types/database'
 
 interface InvoiceStatusActionsProps {
-  invoice: Invoice
+  invoice: InvoiceWithRelations
 }
 
 export function InvoiceStatusActions({ invoice }: InvoiceStatusActionsProps) {
   const t = useTranslations()
-  const [isLoading, setIsLoading] = useState(false)
+  const { upsertInvoice } = useLiveStoreActions()
+  const [isLoading, startTransition] = useTransition()
   const [confirmAction, setConfirmAction] = useState<{
     status: InvoiceStatus
     title: string
     description: string
   } | null>(null)
 
-  const handleStatusChange = async (status: InvoiceStatus) => {
-    setIsLoading(true)
-    try {
-      const result = await updateInvoiceStatusAction(invoice.id, status)
-      if (result.success) {
-        toast.success('Statut mis à jour')
-      } else {
-        toast.error(result.error || 'Erreur lors de la mise à jour')
+  const handleStatusChange = (status: InvoiceStatus) => {
+    const prev = invoice
+    // Optimistic : NE PAS modifier updated_at (l'event Realtime, plus frais, doit gagner)
+    upsertInvoice({ ...invoice, status })
+    setConfirmAction(null)
+    startTransition(async () => {
+      try {
+        const result = await updateInvoiceStatusAction(invoice.id, status)
+        if (result.success) {
+          toast.success('Statut mis à jour')
+        } else {
+          upsertInvoice(prev)
+          toast.error(result.error || 'Erreur lors de la mise à jour')
+        }
+      } catch (error) {
+        console.error('Mise à jour du statut de la facture échouée', error)
+        upsertInvoice(prev)
+        toast.error('Erreur lors de la mise à jour')
       }
-    } catch (error) {
-      toast.error('Erreur lors de la mise à jour')
-    } finally {
-      setIsLoading(false)
-      setConfirmAction(null)
-    }
+    })
   }
 
   const confirmStatusChange = (

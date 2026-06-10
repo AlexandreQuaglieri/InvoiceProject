@@ -44,7 +44,9 @@ export const companySchema = z.object({
   logo_url: z.string().optional(),
 })
 
-export type CompanyFormData = z.infer<typeof companySchema>
+export type CompanyFormData = z.output<typeof companySchema>
+// Type d'entrée du formulaire (avant application des défauts Zod, ex. `country`)
+export type CompanyFormInput = z.input<typeof companySchema>
 
 // Champs requis selon la forme juridique
 export const requiredFieldsByLegalForm: Record<string, string[]> = {

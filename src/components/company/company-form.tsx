@@ -32,13 +32,15 @@ import { Separator } from '@/components/ui/separator'
 import {
   companySchema,
   type CompanyFormData,
+  type CompanyFormInput,
   legalForms,
   vatRegimes,
   formsWithCapital,
   formsWithRcs,
 } from '@/lib/validations/company'
 import { createCompany, updateCompany } from '@/actions/company'
-import type { Company, LegalForm } from '@/types/database'
+import { useLiveStoreActions } from '@/lib/realtime'
+import type { Company } from '@/types/database'
 
 export interface CompanyFormRef {
   setFormValues: (data: Partial<CompanyFormData>) => void
@@ -46,17 +48,55 @@ export interface CompanyFormRef {
 
 interface CompanyFormProps {
   company: Company | null
+  // Mode embarqué (onboarding) : sections légères sans chrome Card redondant.
+  embedded?: boolean
+}
+
+// Section du formulaire : Card autonome par défaut, simple section titrée en
+// mode embarqué (le conteneur — panel d'onboarding — apporte déjà son cadre).
+function FormSection({
+  embedded,
+  title,
+  description,
+  children,
+}: {
+  embedded: boolean
+  title: string
+  description: string
+  children: React.ReactNode
+}) {
+  if (embedded) {
+    return (
+      <section className="space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold">{title}</h3>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+        {children}
+      </section>
+    )
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">{children}</CardContent>
+    </Card>
+  )
 }
 
 export const CompanyForm = forwardRef<CompanyFormRef, CompanyFormProps>(
-  function CompanyForm({ company }, ref) {
+  function CompanyForm({ company, embedded = false }, ref) {
   const t = useTranslations()
   const tLegal = useTranslations('legalForms')
   const tVat = useTranslations('vatRegimes')
+  const { setCompany } = useLiveStoreActions()
   const [isLoading, setIsLoading] = useState(false)
 
-  const form = useForm<CompanyFormData>({
-    resolver: zodResolver(companySchema) as any,
+  const form = useForm<CompanyFormInput, unknown, CompanyFormData>({
+    resolver: zodResolver(companySchema),
     defaultValues: {
       name: company?.name || '',
       trade_name: company?.trade_name || '',
@@ -83,9 +123,13 @@ export const CompanyForm = forwardRef<CompanyFormRef, CompanyFormProps>(
   // Exposer une méthode pour pré-remplir le formulaire depuis l'extérieur
   useImperativeHandle(ref, () => ({
     setFormValues: (data: Partial<CompanyFormData>) => {
-      Object.entries(data).forEach(([key, value]) => {
+      const entries = Object.entries(data) as [
+        keyof CompanyFormInput,
+        CompanyFormInput[keyof CompanyFormInput],
+      ][]
+      entries.forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          form.setValue(key as keyof CompanyFormData, value as any, {
+          form.setValue(key, value, {
             shouldValidate: true,
             shouldDirty: true,
           })
@@ -104,11 +148,15 @@ export const CompanyForm = forwardRef<CompanyFormRef, CompanyFormProps>(
       const result = company ? await updateCompany(data) : await createCompany(data)
 
       if (result.success) {
+        // Write-through : l'action renvoie la ligne complète, le store live
+        // reflète immédiatement la création/mise à jour (Realtime réconcilie).
+        if (result.data) setCompany(result.data)
         toast.success(company ? 'Entreprise mise à jour' : 'Entreprise créée')
       } else {
         toast.error(result.error || 'Une erreur est survenue')
       }
     } catch (error) {
+      console.error('Enregistrement de l\'entreprise échoué', error)
       toast.error('Une erreur est survenue')
     } finally {
       setIsLoading(false)
@@ -119,12 +167,11 @@ export const CompanyForm = forwardRef<CompanyFormRef, CompanyFormProps>(
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Informations légales */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('company.legalInfo')}</CardTitle>
-            <CardDescription>Raison sociale, SIRET, forme juridique...</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <FormSection
+          embedded={embedded}
+          title={t('company.legalInfo')}
+          description="Raison sociale, SIRET, forme juridique..."
+        >
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
@@ -310,16 +357,14 @@ export const CompanyForm = forwardRef<CompanyFormRef, CompanyFormProps>(
                 />
               </div>
             )}
-          </CardContent>
-        </Card>
+        </FormSection>
 
         {/* Coordonnées */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('company.contactInfo')}</CardTitle>
-            <CardDescription>Adresse, email, téléphone...</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <FormSection
+          embedded={embedded}
+          title={t('company.contactInfo')}
+          description="Adresse, email, téléphone..."
+        >
             <FormField
               control={form.control}
               name="address"
@@ -423,16 +468,14 @@ export const CompanyForm = forwardRef<CompanyFormRef, CompanyFormProps>(
                 )}
               />
             </div>
-          </CardContent>
-        </Card>
+        </FormSection>
 
         {/* Coordonnées bancaires */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('company.bankInfo')}</CardTitle>
-            <CardDescription>IBAN, BIC pour les paiements.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <FormSection
+          embedded={embedded}
+          title={t('company.bankInfo')}
+          description="IBAN, BIC pour les paiements."
+        >
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
@@ -462,8 +505,7 @@ export const CompanyForm = forwardRef<CompanyFormRef, CompanyFormProps>(
                 )}
               />
             </div>
-          </CardContent>
-        </Card>
+        </FormSection>
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isLoading}>

@@ -16,3 +16,9 @@ export function getBaseUrl(): string {
   // Domaine de production stable (comportement historique).
   return 'https://invoice-project-lime.vercel.app'
 }
+
+// URL du connecteur MCP à coller dans Claude.ai / ChatGPT — source unique
+// (le handler vit sur /mcp, cf. src/app/mcp/[transport]/route.ts, basePath '/mcp').
+export function getMcpConnectorUrl(): string {
+  return `${getBaseUrl()}/mcp`
+}

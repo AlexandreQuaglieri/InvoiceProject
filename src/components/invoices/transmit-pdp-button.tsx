@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { ShieldCheck, Send, Loader2 } from 'lucide-react'
+import { ShieldCheck, Send, Loader2, CheckCircle2 } from 'lucide-react'
+import { useLiveInvoice } from '@/lib/realtime'
 
 interface TransmitPdpButtonProps {
   invoiceId: string
@@ -11,6 +13,11 @@ interface TransmitPdpButtonProps {
 }
 
 export function TransmitPdpButton({ invoiceId, canTransmit }: TransmitPdpButtonProps) {
+  const t = useTranslations()
+  // Lecture du store live (Realtime) : dès que pdp_deposit_id est posé côté
+  // serveur, le bouton se désactive sans aucune actualisation.
+  const invoice = useLiveInvoice(invoiceId)
+  const alreadyTransmitted = Boolean(invoice?.pdp_deposit_id)
   const [validating, setValidating] = useState(false)
   const [transmitting, setTransmitting] = useState(false)
 
@@ -35,7 +42,8 @@ export function TransmitPdpButton({ invoiceId, canTransmit }: TransmitPdpButtonP
             .join('\n'),
         })
       }
-    } catch {
+    } catch (error) {
+      console.error('Vérification PDP échouée', error)
       toast.error('Impossible de contacter la PDP')
     } finally {
       setValidating(false)
@@ -51,8 +59,13 @@ export function TransmitPdpButton({ invoiceId, canTransmit }: TransmitPdpButtonP
         toast.error(data.error || 'Erreur lors de la transmission')
         return
       }
+      if (data.alreadyTransmitted) {
+        toast.info(t('einvoicing.alreadyTransmitted', { depositId: data.depositId }))
+        return
+      }
       toast.success(`Facture transmise via PDP\nDépôt n° ${data.depositId}`)
-    } catch {
+    } catch (error) {
+      console.error('Transmission PDP échouée', error)
       toast.error('Impossible de contacter la PDP')
     } finally {
       setTransmitting(false)
@@ -70,13 +83,22 @@ export function TransmitPdpButton({ invoiceId, canTransmit }: TransmitPdpButtonP
         Vérifier la conformité (e-invoicing)
       </Button>
       {canTransmit && (
-        <Button variant="outline" className="w-full" onClick={handleTransmit} disabled={transmitting}>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={handleTransmit}
+          disabled={transmitting || alreadyTransmitted}
+        >
           {transmitting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : alreadyTransmitted ? (
+            <CheckCircle2 className="mr-2 h-4 w-4" />
           ) : (
             <Send className="mr-2 h-4 w-4" />
           )}
-          Transmettre (PDP — facturation électronique)
+          {alreadyTransmitted
+            ? t('einvoicing.transmittedLabel')
+            : 'Transmettre (PDP — facturation électronique)'}
         </Button>
       )}
     </>

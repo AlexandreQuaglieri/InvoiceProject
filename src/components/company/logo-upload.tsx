@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { uploadLogo } from '@/actions/company'
+import { useLiveStoreActions } from '@/lib/realtime'
 
 interface LogoUploadProps {
   currentLogo: string | null
@@ -17,6 +18,7 @@ interface LogoUploadProps {
 
 export function LogoUpload({ currentLogo, companyId }: LogoUploadProps) {
   const t = useTranslations()
+  const { setCompany } = useLiveStoreActions()
   const [isLoading, setIsLoading] = useState(false)
   const [preview, setPreview] = useState<string | null>(currentLogo)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -41,6 +43,9 @@ export function LogoUpload({ currentLogo, companyId }: LogoUploadProps) {
       const result = await uploadLogo(formData)
 
       if (result.success) {
+        // Write-through : l'action renvoie l'entreprise mise à jour, le store
+        // live reflète immédiatement le nouveau logo (Realtime réconcilie).
+        if (result.data) setCompany(result.data)
         toast.success('Logo mis à jour')
         if (result.url) {
           setPreview(result.url)
@@ -50,6 +55,7 @@ export function LogoUpload({ currentLogo, companyId }: LogoUploadProps) {
         setPreview(currentLogo)
       }
     } catch (error) {
+      console.error('Upload du logo échoué', error)
       toast.error('Erreur lors de l\'upload')
       setPreview(currentLogo)
     } finally {
@@ -73,7 +79,7 @@ export function LogoUpload({ currentLogo, companyId }: LogoUploadProps) {
       <Card>
         <CardHeader>
           <CardTitle>{t('company.logo')}</CardTitle>
-          <CardDescription>Enregistrez d'abord votre entreprise pour ajouter un logo.</CardDescription>
+          <CardDescription>Enregistrez d&apos;abord votre entreprise pour ajouter un logo.</CardDescription>
         </CardHeader>
       </Card>
     )

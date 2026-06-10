@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createClient } from '@/lib/supabase/server'
 import { QuoteTemplate } from '@/lib/pdf/quote-template'
+import { rateLimit } from '@/lib/rate-limit'
+import type { QuoteWithRelations } from '@/types/database'
 import sharp from 'sharp'
 
 export async function GET(
@@ -17,6 +19,10 @@ export async function GET(
 
   if (!user) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
+  if (!(await rateLimit('pdf', user.id, { max: 30, windowSeconds: 60 }))) {
+    return NextResponse.json({ error: 'Trop de requêtes. Veuillez patienter une minute.' }, { status: 429 })
   }
 
   const { data: company, error: companyError } = await supabase
@@ -37,15 +43,15 @@ export async function GET(
       items:quote_items(*)
     `)
     .eq('id', id)
-    .eq('user_id', user.id)
-    .single()
+    .eq('company_id', company.id)
+    .single<QuoteWithRelations>()
 
   if (quoteError || !quote) {
     return NextResponse.json({ error: 'Devis non trouvé' }, { status: 404 })
   }
 
   try {
-    let companyWithLogo = { ...company }
+    const companyWithLogo = { ...company }
     if (company.logo_url) {
       try {
         const logoResponse = await fetch(company.logo_url)
@@ -60,7 +66,7 @@ export async function GET(
     }
 
     const pdfBuffer = await renderToBuffer(
-      QuoteTemplate({ quote: quote as any, company: companyWithLogo })
+      QuoteTemplate({ quote, company: companyWithLogo })
     )
 
     const fileName = `devis_${quote.quote_number.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`

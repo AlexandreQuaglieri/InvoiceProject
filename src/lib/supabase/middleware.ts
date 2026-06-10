@@ -37,7 +37,7 @@ export async function updateSession(request: NextRequest) {
 
   // Routes publiques (pas de redirection)
   const publicRoutes = ['/', '/login', '/auth/callback']
-  const publicPrefixes = ['/auth/', '/mcp/', '/oauth/', '/.well-known/', '/api/']
+  const publicPrefixes = ['/auth/', '/mcp/', '/oauth/', '/.well-known/', '/api/', '/legal/']
 
   const isPublicRoute = publicRoutes.some((route) => request.nextUrl.pathname === route) ||
     publicPrefixes.some((prefix) => request.nextUrl.pathname.startsWith(prefix))

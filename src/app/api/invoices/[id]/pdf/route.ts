@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { InvoiceTemplate } from '@/lib/pdf/invoice-template'
 import { generateFacturXXml } from '@/lib/facturx/xml-generator'
 import { embedFacturX } from '@/lib/facturx/embed'
+import { rateLimit } from '@/lib/rate-limit'
+import type { InvoiceWithRelations } from '@/types/database'
 import sharp from 'sharp'
 
 export async function GET(
@@ -20,6 +22,10 @@ export async function GET(
 
   if (!user) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
+  if (!(await rateLimit('pdf', user.id, { max: 30, windowSeconds: 60 }))) {
+    return NextResponse.json({ error: 'Trop de requêtes. Veuillez patienter une minute.' }, { status: 429 })
   }
 
   // Récupérer l'entreprise de l'utilisateur
@@ -46,7 +52,7 @@ export async function GET(
     `)
     .eq('id', id)
     .eq('company_id', company.id)
-    .single()
+    .single<InvoiceWithRelations>()
 
   if (invoiceError || !invoice) {
     return NextResponse.json({ error: 'Facture non trouvée' }, { status: 404 })
@@ -54,7 +60,7 @@ export async function GET(
 
   try {
     // Si l'entreprise a un logo, le convertir en base64 PNG pour react-pdf
-    let companyWithLogo = { ...company }
+    const companyWithLogo = { ...company }
     if (company.logo_url) {
       try {
         const logoResponse = await fetch(company.logo_url)
@@ -78,11 +84,11 @@ export async function GET(
 
     // Générer le PDF visuel
     const pdfBuffer = await renderToBuffer(
-      InvoiceTemplate({ invoice: invoice as any, company: companyWithLogo })
+      InvoiceTemplate({ invoice, company: companyWithLogo })
     )
 
     // Générer le XML Factur-X et l'embarquer dans le PDF (PDF/A-3)
-    const xmlContent = generateFacturXXml(invoice as any, company)
+    const xmlContent = generateFacturXXml(invoice, company)
     const facturXBuffer = await embedFacturX(Buffer.from(pdfBuffer), xmlContent)
 
     // Nom du fichier

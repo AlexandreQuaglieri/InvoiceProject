@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { toast } from 'sonner'
-import { Upload, FileText, Loader2, Sparkles, CheckCircle } from 'lucide-react'
+import { FileText, Loader2, Sparkles, CheckCircle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -44,7 +44,7 @@ export function DocumentExtractor({ onDataExtracted }: DocumentExtractorProps) {
 
       img.onload = () => {
         // Calculer le ratio de compression nécessaire
-        let quality = 0.8
+        const quality = 0.8
         let scale = 1
 
         // Si l'image est très grande, réduire la résolution
@@ -205,7 +205,7 @@ export function DocumentExtractor({ onDataExtracted }: DocumentExtractorProps) {
                 <Loader2 className="h-6 w-6 animate-spin" />
                 <span>Analyse en cours...</span>
                 <span className="text-xs text-muted-foreground">
-                  L'IA extrait les informations
+                  L&apos;IA extrait les informations
                 </span>
               </>
             ) : (

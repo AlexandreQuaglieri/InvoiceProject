@@ -119,7 +119,7 @@ export async function updateCompany(
 
 export async function uploadLogo(
   formData: FormData
-): Promise<{ success: boolean; error?: string; url?: string }> {
+): Promise<{ success: boolean; error?: string; url?: string; data?: Company }> {
   const supabase = await createClient()
 
   const {
@@ -195,10 +195,12 @@ export async function uploadLogo(
   } = supabase.storage.from('logos').getPublicUrl(fileName)
 
   // Mettre à jour l'entreprise avec l'URL du logo
-  const { error: updateError } = await supabase
+  const { data: updated, error: updateError } = await supabase
     .from('companies')
     .update({ logo_url: publicUrl })
     .eq('id', company.id)
+    .select()
+    .single()
 
   if (updateError) {
     console.error('Error updating logo URL:', updateError)
@@ -206,5 +208,5 @@ export async function uploadLogo(
   }
 
   revalidatePath('/company')
-  return { success: true, url: publicUrl }
+  return { success: true, url: publicUrl, data: updated }
 }

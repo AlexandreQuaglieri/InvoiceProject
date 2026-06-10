@@ -21,6 +21,9 @@ export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
 
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'converted'
 
+// Décision locale de l'acheteur sur une facture reçue (réception e-invoicing).
+export type InboundLocalStatus = 'new' | 'approved' | 'refused'
+
 export type ClientType = 'individual' | 'professional'
 
 export type DocumentType = 'kbis' | 'rib' | 'logo' | 'other'
@@ -34,6 +37,7 @@ export interface Database {
           id: string
           user_id: string
           claude_api_key: string | null
+          terms_accepted_at: string | null
           invoice_prefix: string
           invoice_next_number: number
           locale: string
@@ -57,6 +61,7 @@ export interface Database {
           id?: string
           user_id: string
           claude_api_key?: string | null
+          terms_accepted_at?: string | null
           invoice_prefix?: string
           invoice_next_number?: number
           locale?: string
@@ -80,6 +85,7 @@ export interface Database {
           id?: string
           user_id?: string
           claude_api_key?: string | null
+          terms_accepted_at?: string | null
           invoice_prefix?: string
           invoice_next_number?: number
           locale?: string
@@ -253,6 +259,13 @@ export interface Database {
           pdf_url: string | null
           pdp_deposit_id: string | null
           pdp_transmitted_at: string | null
+          pdp_status: string | null
+          pdp_status_text: string | null
+          pdp_status_at: string | null
+          pdp_ereport_id: string | null
+          pdp_ereported_at: string | null
+          pdp_payment_report_id: string | null
+          pdp_payment_reported_at: string | null
           created_at: string
           updated_at: string
         }
@@ -275,6 +288,13 @@ export interface Database {
           pdf_url?: string | null
           pdp_deposit_id?: string | null
           pdp_transmitted_at?: string | null
+          pdp_status?: string | null
+          pdp_status_text?: string | null
+          pdp_status_at?: string | null
+          pdp_ereport_id?: string | null
+          pdp_ereported_at?: string | null
+          pdp_payment_report_id?: string | null
+          pdp_payment_reported_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -297,6 +317,13 @@ export interface Database {
           pdf_url?: string | null
           pdp_deposit_id?: string | null
           pdp_transmitted_at?: string | null
+          pdp_status?: string | null
+          pdp_status_text?: string | null
+          pdp_status_at?: string | null
+          pdp_ereport_id?: string | null
+          pdp_ereported_at?: string | null
+          pdp_payment_report_id?: string | null
+          pdp_payment_reported_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -340,6 +367,62 @@ export interface Database {
           total_ttc?: number
           position?: number
           created_at?: string
+        }
+      }
+      inbound_invoices: {
+        Row: {
+          id: string
+          company_id: string
+          deposit_id: string
+          external_id: string | null
+          number: string | null
+          seller_name: string | null
+          seller_vat: string | null
+          total_with_vat: number | null
+          currency: string | null
+          issue_date: string | null
+          received_at: string
+          pdp_status: string | null
+          local_status: InboundLocalStatus
+          refusal_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          deposit_id: string
+          external_id?: string | null
+          number?: string | null
+          seller_name?: string | null
+          seller_vat?: string | null
+          total_with_vat?: number | null
+          currency?: string | null
+          issue_date?: string | null
+          received_at: string
+          pdp_status?: string | null
+          local_status?: InboundLocalStatus
+          refusal_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          deposit_id?: string
+          external_id?: string | null
+          number?: string | null
+          seller_name?: string | null
+          seller_vat?: string | null
+          total_with_vat?: number | null
+          currency?: string | null
+          issue_date?: string | null
+          received_at?: string
+          pdp_status?: string | null
+          local_status?: InboundLocalStatus
+          refusal_reason?: string | null
+          created_at?: string
+          updated_at?: string
         }
       }
       documents: {
@@ -403,6 +486,10 @@ export type InvoiceItemUpdate = Database['public']['Tables']['invoice_items']['U
 export type Document = Database['public']['Tables']['documents']['Row']
 export type DocumentInsert = Database['public']['Tables']['documents']['Insert']
 export type DocumentUpdate = Database['public']['Tables']['documents']['Update']
+
+export type InboundInvoice = Database['public']['Tables']['inbound_invoices']['Row']
+export type InboundInvoiceInsert = Database['public']['Tables']['inbound_invoices']['Insert']
+export type InboundInvoiceUpdate = Database['public']['Tables']['inbound_invoices']['Update']
 
 // Quote types
 export interface Quote {

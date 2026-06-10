@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           )
         }
-      } catch {
+      } catch (e) {
+        console.error('[oauth/register] redirect_uri illisible', { uri }, e)
         return NextResponse.json(
           { error: 'invalid_redirect_uri', error_description: `Invalid URL: ${uri}` },
           { status: 400 }

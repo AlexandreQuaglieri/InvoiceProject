@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslations } from 'next-intl'
@@ -47,7 +46,8 @@ const quoteSchema = z.object({
   items: z.array(quoteItemSchema).min(1, 'Au moins une ligne requise'),
 })
 
-export type QuoteFormData = z.infer<typeof quoteSchema>
+export type QuoteFormData = z.output<typeof quoteSchema>
+type QuoteFormInput = z.input<typeof quoteSchema>
 
 const vatRates = [0, 5.5, 10, 20]
 
@@ -64,8 +64,8 @@ export function QuoteForm({ quote, clients, onSubmit, isLoading }: QuoteFormProp
   // Date de validité par défaut : 30 jours
   const defaultValidityDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-  const form = useForm<QuoteFormData>({
-    resolver: zodResolver(quoteSchema) as any,
+  const form = useForm<QuoteFormInput, unknown, QuoteFormData>({
+    resolver: zodResolver(quoteSchema),
     defaultValues: {
       client_id: quote?.client_id || '',
       issue_date: quote?.issue_date || new Date().toISOString().split('T')[0],

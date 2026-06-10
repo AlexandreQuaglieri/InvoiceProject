@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Loader2, CheckCircle2 } from 'lucide-react'
+import { statusInfo } from '@/lib/einvoicing/status'
 
 interface LifecycleEvent {
   statusCode: string
@@ -15,6 +17,8 @@ interface LifecycleEvent {
 // Affiche le cycle de vie e-invoicing d'une facture transmise via la PDP.
 // Se charge au montage et propose un rafraîchissement (les statuts évoluent côté PDP).
 export function PdpLifecycle({ invoiceId }: { invoiceId: string }) {
+  const t = useTranslations()
+  const locale = useLocale()
   const [events, setEvents] = useState<LifecycleEvent[]>([])
   const [depositId, setDepositId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -28,8 +32,9 @@ export function PdpLifecycle({ invoiceId }: { invoiceId: string }) {
         setDepositId(data.depositId || null)
         setEvents(Array.isArray(data.events) ? data.events : [])
       }
-    } catch {
-      // silencieux
+    } catch (error) {
+      // silencieux côté UI, mais loggé
+      console.error('Récupération des événements PDP échouée', error)
     } finally {
       setLoading(false)
     }
@@ -40,13 +45,20 @@ export function PdpLifecycle({ invoiceId }: { invoiceId: string }) {
   }, [load])
 
   const formatDate = (d: string) =>
-    new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(d))
+    new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(d))
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-base">Cycle de vie (PDP)</CardTitle>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={load} disabled={loading}>
+        <CardTitle className="text-base">{t('einvoicing.lifecycle.title')}</CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={load}
+          disabled={loading}
+          aria-label={t('einvoicing.lifecycle.refresh')}
+        >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
@@ -56,26 +68,37 @@ export function PdpLifecycle({ invoiceId }: { invoiceId: string }) {
       </CardHeader>
       <CardContent>
         {depositId && (
-          <p className="mb-3 text-xs text-muted-foreground">Dépôt PDP n° {depositId}</p>
+          <p className="mb-3 text-xs text-muted-foreground">
+            {t('einvoicing.lifecycle.deposit', { depositId })}
+          </p>
         )}
         {events.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            {loading ? 'Chargement…' : 'Aucun événement pour le moment.'}
+            {loading ? t('einvoicing.lifecycle.loading') : t('einvoicing.lifecycle.empty')}
           </p>
         ) : (
           <ol className="space-y-3">
-            {events.map((e, i) => (
-              <li key={i} className="flex gap-3 text-sm">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
-                <div>
-                  <p className="font-medium">{e.statusText || e.statusCode}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(e.occurredAt)}
-                    {e.reason ? ` — ${e.reason}` : ''}
-                  </p>
-                </div>
-              </li>
-            ))}
+            {events.map((e, i) => {
+              const info = statusInfo(e.statusCode)
+              const label = info
+                ? t(`einvoicing.status.${info.labelKey}`)
+                : e.statusText || e.statusCode
+              return (
+                <li key={i} className="flex gap-3 text-sm">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                  <div>
+                    <p className="font-medium">{label}</p>
+                    {info && e.statusText && (
+                      <p className="text-xs text-muted-foreground">{e.statusText}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(e.occurredAt)}
+                      {e.reason ? ` — ${e.reason}` : ''}
+                    </p>
+                  </div>
+                </li>
+              )
+            })}
           </ol>
         )}
       </CardContent>

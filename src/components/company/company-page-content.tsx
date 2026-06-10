@@ -5,15 +5,12 @@ import { useTranslations } from 'next-intl'
 import { CompanyForm, type CompanyFormRef } from '@/components/company/company-form'
 import { LogoUpload } from '@/components/company/logo-upload'
 import { DocumentExtractor } from '@/components/company/document-extractor'
-import type { Company } from '@/types/database'
+import { useLiveCompany } from '@/lib/realtime'
 import type { CompanyFormData } from '@/lib/validations/company'
 
-interface CompanyPageContentProps {
-  company: Company | null
-}
-
-export function CompanyPageContent({ company }: CompanyPageContentProps) {
+export function CompanyPageContent() {
   const t = useTranslations()
+  const company = useLiveCompany()
   const formRef = useRef<CompanyFormRef>(null)
 
   const handleDataExtracted = (data: Partial<CompanyFormData>) => {

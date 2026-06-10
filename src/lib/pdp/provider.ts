@@ -3,6 +3,7 @@ import type {
   PdpLifecycleEvent,
   PdpInboundInvoice,
   PdpB2cTransaction,
+  PdpB2cPayment,
   PdpEReporting,
   PdpValidationResult,
 } from './types'
@@ -27,7 +28,8 @@ export interface PdpProvider {
   // Cycle de vie : récupérer l'historique des événements/statuts d'une facture.
   getLifecycle(depositId: string): Promise<PdpLifecycleEvent[]>
 
-  // Cycle de vie : pousser un statut (code PDP/AFNOR, ex. "fr:204" approuvée, "fr:208" refusée).
+  // Cycle de vie : pousser un statut (code AFNOR, ex. "fr:205" approuvée,
+  // "fr:210" refusée, "fr:212" encaissée — cf. OpenAPI status_code).
   pushStatus(depositId: string, statusCode: string, reason?: string): Promise<void>
 
   // Réception : lister les factures entrantes (métadonnées ; contenu via downloadInvoice).
@@ -35,6 +37,10 @@ export interface PdpProvider {
 
   // E-reporting : déclarer une transaction B2C (vente à un particulier).
   reportB2cTransaction(tx: PdpB2cTransaction): Promise<{ id: number }>
+
+  // E-reporting : déclarer un encaissement B2C (paiement reçu — obligatoire
+  // pour les prestations de services).
+  reportB2cPayment(payment: PdpB2cPayment): Promise<{ id: number }>
 
   // E-reporting : lister les périodes d'e-reporting.
   listEReportings(): Promise<PdpEReporting[]>

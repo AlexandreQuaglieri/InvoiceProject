@@ -7,13 +7,17 @@ const WALLET_API_KEY = process.env.WALLET_API_KEY || ''
 async function ingest(body: Record<string, unknown>): Promise<void> {
   if (!WALLET_API_KEY) return
   try {
-    await fetch(`${WALLET_URL}/api/v1/ingest`, {
+    const res = await fetch(`${WALLET_URL}/api/v1/ingest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${WALLET_API_KEY}` },
       body: JSON.stringify(body),
     })
-  } catch {
-    // best-effort : silencieux
+    if (!res.ok) {
+      // best-effort : on ne casse pas l'action utilisateur, mais on trace l'échec
+      console.error(`[wallet-sync] ingest ${body.table} a échoué (HTTP ${res.status})`)
+    }
+  } catch (e) {
+    console.error(`[wallet-sync] ingest ${body.table} injoignable`, e)
   }
 }
 

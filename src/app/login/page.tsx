@@ -2,12 +2,13 @@
 
 import { useTranslations } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { createClient } from '@/lib/supabase/client'
 import { useState, Suspense } from 'react'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ArrowLeft } from 'lucide-react'
 
 function LoginContent() {
   const t = useTranslations()
@@ -41,7 +42,14 @@ function LoginContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-muted">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-muted">
+      <Link
+        href="/"
+        className="absolute left-4 top-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        {t('auth.backToSite')}
+      </Link>
       <Card className="w-full max-w-md mx-4">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">{t('common.appName')}</CardTitle>
@@ -52,7 +60,7 @@ function LoginContent() {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <div className="font-medium">Erreur d'authentification</div>
+                <div className="font-medium">Erreur d&apos;authentification</div>
                 <div className="text-xs mt-1 break-all">{decodeURIComponent(error)}</div>
                 {errorDesc && <div className="text-xs opacity-70 mt-1">{decodeURIComponent(errorDesc)}</div>}
               </AlertDescription>
@@ -113,6 +121,17 @@ function LoginContent() {
             )}
           </Button>
           <p className="text-center text-sm text-muted-foreground">{t('auth.welcome')}</p>
+          <p className="text-center text-xs text-muted-foreground">
+            {t('auth.termsNotice')}{' '}
+            <Link href="/legal/cgu" className="underline hover:text-foreground">
+              {t('auth.termsCgu')}
+            </Link>{' '}
+            {t('auth.termsAnd')}{' '}
+            <Link href="/legal/confidentialite" className="underline hover:text-foreground">
+              {t('auth.termsPrivacy')}
+            </Link>
+            .
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 
 import { QuoteForm, type QuoteFormData } from './quote-form'
 import { updateQuote } from '@/actions/quotes'
+import { useLiveStoreActions } from '@/lib/realtime'
 import type { Client, QuoteWithRelations } from '@/types/database'
 
 interface EditQuoteFormProps {
@@ -15,6 +16,7 @@ interface EditQuoteFormProps {
 
 export function EditQuoteForm({ quote, clients }: EditQuoteFormProps) {
   const router = useRouter()
+  const { upsertQuote } = useLiveStoreActions()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (data: QuoteFormData) => {
@@ -34,12 +36,15 @@ export function EditQuoteForm({ quote, clients }: EditQuoteFormProps) {
         })),
       })
       if (result.success) {
+        // Write-through : le devis mis à jour entre immédiatement dans le store live.
+        if (result.quote) upsertQuote(result.quote)
         toast.success('Devis mis à jour')
         router.push(`/quotes/${quote.id}`)
       } else {
         toast.error(result.error || 'Une erreur est survenue')
       }
-    } catch {
+    } catch (error) {
+      console.error('Mise à jour du devis échouée', error)
       toast.error('Une erreur est survenue')
     } finally {
       setIsLoading(false)

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hashToken, generateAccessToken, generateRefreshToken } from '@/lib/mcp/oauth'
+import { rateLimit, clientIp } from '@/lib/rate-limit'
 import crypto from 'crypto'
 
 // OAuth 2.1 Token Endpoint
 export async function POST(request: NextRequest) {
   try {
+    if (!(await rateLimit('oauth-token', clientIp(request), { max: 30, windowSeconds: 60 }))) {
+      return errorResponse('temporarily_unavailable', 'Trop de requêtes. Veuillez patienter une minute.', 429)
+    }
+
     const contentType = request.headers.get('content-type') || ''
     let body: Record<string, string>
 

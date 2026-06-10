@@ -1,8 +1,11 @@
-import type { createClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { decryptSecret, decryptSecretOrNull, encryptSecret } from '@/lib/crypto'
 import type { PdpProvider } from './provider'
 import { createSuperPdpProvider, superPdpFromEnv, refreshAccessToken, type TokenProvider } from './super-pdp'
 
-type Db = Awaited<ReturnType<typeof createClient>>
+// Accepte le client SSR (RLS utilisateur) comme le client admin (cron) :
+// les requêtes sont toujours scopées explicitement par user_id.
+type Db = SupabaseClient
 
 export type PdpConnection = {
   connected: boolean
@@ -46,9 +49,10 @@ export async function superPdpForUser(supabase: Db, userId: string): Promise<Pdp
   const row = (data ?? {}) as Record<string, unknown>
   if (!row.pdp_access_token) return null
 
-  // État mutable local (mis à jour au refresh).
-  let accessToken = row.pdp_access_token as string
-  let refreshToken = (row.pdp_refresh_token as string | null) ?? null
+  // État mutable local (mis à jour au refresh). Déchiffré en mémoire,
+  // toujours chiffré au repos (src/lib/crypto.ts).
+  let accessToken = decryptSecret(row.pdp_access_token as string)
+  let refreshToken = decryptSecretOrNull(row.pdp_refresh_token as string | null)
   let expiresAt = row.pdp_token_expires_at ? new Date(row.pdp_token_expires_at as string).getTime() : 0
 
   const getToken: TokenProvider = async () => {
@@ -61,8 +65,8 @@ export async function superPdpForUser(supabase: Db, userId: string): Promise<Pdp
     await supabase
       .from('user_settings')
       .update({
-        pdp_access_token: accessToken,
-        pdp_refresh_token: refreshToken,
+        pdp_access_token: encryptSecret(accessToken),
+        pdp_refresh_token: refreshToken ? encryptSecret(refreshToken) : null,
         pdp_token_expires_at: new Date(expiresAt).toISOString(),
       })
       .eq('user_id', userId)

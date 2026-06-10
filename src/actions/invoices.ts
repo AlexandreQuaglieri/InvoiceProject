@@ -2,6 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
+import { superPdpForUser } from '@/lib/pdp'
+import { reportPaymentForInvoice } from '@/lib/services'
 import {
   invoiceSchema,
   type InvoiceFormData,
@@ -11,7 +14,7 @@ import {
 } from '@/lib/validations/invoice'
 import { getCompany } from './company'
 import { getUserSettings, updateUserSettings } from './settings'
-import type { Invoice, InvoiceItem, InvoiceWithRelations, InvoiceStatus, Client } from '@/types/database'
+import type { InvoiceWithRelations, InvoiceStatus, Client } from '@/types/database'
 import { walletSync, walletRemove } from '@/lib/wallet-sync'
 
 export async function getInvoices(filters?: {
@@ -83,7 +86,7 @@ export async function getInvoice(id: string): Promise<InvoiceWithRelations | nul
 
 export async function createInvoiceAction(
   formData: InvoiceFormData
-): Promise<{ success: boolean; error?: string; data?: Invoice }> {
+): Promise<{ success: boolean; error?: string; data?: InvoiceWithRelations }> {
   const supabase = await createClient()
 
   const company = await getCompany()
@@ -170,15 +173,26 @@ export async function createInvoiceAction(
     invoice_next_number: (settings?.invoice_next_number || 1) + 1,
   })
 
+  // Relire la facture complète (client + lignes) pour le store live côté client
+  const { data: fullInvoice, error: refetchError } = await supabase
+    .from('invoices')
+    .select('*, client:clients(*), items:invoice_items(*)')
+    .eq('id', invoice.id)
+    .single()
+
+  if (refetchError) {
+    console.error('Error refetching created invoice:', refetchError)
+  }
+
   await walletSync('invoices', invoice, company.user_id)
   revalidatePath('/invoices')
-  return { success: true, data: invoice }
+  return { success: true, data: (fullInvoice as InvoiceWithRelations | null) ?? undefined }
 }
 
 export async function updateInvoiceAction(
   id: string,
   formData: InvoiceFormData
-): Promise<{ success: boolean; error?: string; data?: Invoice }> {
+): Promise<{ success: boolean; error?: string; data?: InvoiceWithRelations }> {
   const supabase = await createClient()
 
   const company = await getCompany()
@@ -264,16 +278,27 @@ export async function updateInvoiceAction(
     return { success: false, error: 'Erreur lors de la mise à jour des lignes de facture' }
   }
 
+  // Relire la facture complète (client + lignes) pour le store live côté client
+  const { data: fullInvoice, error: refetchError } = await supabase
+    .from('invoices')
+    .select('*, client:clients(*), items:invoice_items(*)')
+    .eq('id', id)
+    .single()
+
+  if (refetchError) {
+    console.error('Error refetching updated invoice:', refetchError)
+  }
+
   await walletSync('invoices', invoice, company.user_id)
   revalidatePath('/invoices')
   revalidatePath(`/invoices/${id}`)
-  return { success: true, data: invoice }
+  return { success: true, data: (fullInvoice as InvoiceWithRelations | null) ?? undefined }
 }
 
 export async function updateInvoiceStatusAction(
   id: string,
   status: InvoiceStatus
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; data?: InvoiceWithRelations }> {
   const supabase = await createClient()
 
   const company = await getCompany()
@@ -303,10 +328,49 @@ export async function updateInvoiceStatusAction(
     return { success: false, error: 'Erreur lors de la mise à jour du statut' }
   }
 
+  // Relire la facture complète (client + lignes) pour le store live côté client
+  const { data: fullInvoice, error: refetchError } = await supabase
+    .from('invoices')
+    .select('*, client:clients(*), items:invoice_items(*)')
+    .eq('id', id)
+    .single()
+
+  if (refetchError) {
+    console.error('Error refetching invoice after status update:', refetchError)
+  }
+
   if (updated) await walletSync('invoices', updated, company.user_id)
+
+  // Conformité 2026 : déclare l'encaissement hors chemin critique (B2C →
+  // b2c_payments, B2B transmise → event fr:212 « Encaissée »). STRICTEMENT via
+  // le raccordement PDP de l'utilisateur (jamais le fallback éditeur : la
+  // déclaration doit partir du compte de SA société).
+  if (status === 'paid') {
+    after(async () => {
+      try {
+        const pdp = await superPdpForUser(supabase, company.user_id)
+        if (!pdp) {
+          console.info('[einvoicing] encaissement non déclaré (PDP non raccordée)', { invoiceId: id })
+          return
+        }
+        const result = await reportPaymentForInvoice(
+          supabase,
+          { userId: company.user_id, companyId: company.id },
+          pdp,
+          { invoiceId: id }
+        )
+        if (!result.ok) {
+          console.error('[einvoicing] report paiement échoué', { invoiceId: id }, result.error)
+        }
+      } catch (e) {
+        console.error('[einvoicing] report paiement échoué', { invoiceId: id }, e)
+      }
+    })
+  }
+
   revalidatePath('/invoices')
   revalidatePath(`/invoices/${id}`)
-  return { success: true }
+  return { success: true, data: (fullInvoice as InvoiceWithRelations | null) ?? undefined }
 }
 
 export async function deleteInvoiceAction(
@@ -352,7 +416,7 @@ export async function deleteInvoiceAction(
 
 export async function duplicateInvoiceAction(
   id: string
-): Promise<{ success: boolean; error?: string; data?: Invoice }> {
+): Promise<{ success: boolean; error?: string; data?: InvoiceWithRelations }> {
   const existingInvoice = await getInvoice(id)
   if (!existingInvoice) {
     return { success: false, error: 'Facture non trouvée' }
@@ -521,6 +585,29 @@ export async function getRecentInvoices(
   return (data || []) as InvoiceWithRelations[]
 }
 
+// Normalise en base les factures envoyées dont l'échéance est dépassée (sent → overdue).
+// Appelé par le layout (dashboard) avant le paint initial ; côté client, le statut
+// « en retard » est aussi dérivé en fonction pure (src/lib/stats.ts).
+export async function markOverdueInvoices(): Promise<void> {
+  const supabase = await createClient()
+
+  const company = await getCompany()
+  if (!company) return
+
+  const today = new Date().toISOString().split('T')[0]
+
+  const { error } = await supabase
+    .from('invoices')
+    .update({ status: 'overdue' })
+    .eq('company_id', company.id)
+    .eq('status', 'sent')
+    .lt('due_date', today)
+
+  if (error) {
+    console.error('[invoices] normalisation des factures en retard en échec', error)
+  }
+}
+
 // Récupérer les factures en retard
 export async function getOverdueInvoices(): Promise<InvoiceWithRelations[]> {
   const supabase = await createClient()
@@ -528,15 +615,7 @@ export async function getOverdueInvoices(): Promise<InvoiceWithRelations[]> {
   const company = await getCompany()
   if (!company) return []
 
-  const today = new Date().toISOString().split('T')[0]
-
-  // Mettre à jour les factures envoyées avec date échue -> overdue
-  await supabase
-    .from('invoices')
-    .update({ status: 'overdue' })
-    .eq('company_id', company.id)
-    .eq('status', 'sent')
-    .lt('due_date', today)
+  await markOverdueInvoices()
 
   const { data, error } = await supabase
     .from('invoices')

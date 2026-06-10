@@ -1,0 +1,228 @@
+{
+  "landing": {
+    "nav": {
+      "brand": "Factur-IA",
+      "links": {
+        "methods": "Methods",
+        "mcp": "Claude, ChatGPT & MCP",
+        "reform": "2026 reform",
+        "studio": "The studio"
+      },
+      "cta": "Create my free account"
+    },
+    "hero": {
+      "eyebrow": "2026-compliant · Free · No jargon",
+      "title": "Invoicing that writes itself.",
+      "subtitle": "Describe your work in one sentence — Factur-IA drafts the compliant invoice, sends it through the accredited platform, and follows up when people forget to pay you. <strong>You always keep the final say.</strong>",
+      "ctaPrimary": "Create my free account",
+      "ctaSecondary": "Am I affected by 2026?",
+      "note": "<strong>Free</strong> — no credit card, no commitment."
+    },
+    "heroDemo": {
+      "label": "Just say it",
+      "replay": "↻ Replay",
+      "replayTitle": "Replay the demo",
+      "pendingClient": "analyzing…",
+      "pendingLine": "…",
+      "pendingTotals": "computing…",
+      "doc": {
+        "brand": "Atelier Quatools",
+        "brandSub": "SAS with €5,000 capital",
+        "type": "INVOICE",
+        "number": "F-2026-007",
+        "issuer": "From",
+        "issuerName": "Atelier Quatools",
+        "issuerAddress": "14 rue des Lilas, 75011 Paris",
+        "issuerSiret": "SIRET 901 234 567 00018",
+        "billedTo": "Billed to",
+        "thDesc": "Description",
+        "thQty": "Qty",
+        "thUnit": "Unit (excl. VAT)",
+        "thVat": "VAT",
+        "thTotal": "Total excl. VAT",
+        "vatRate": "20%",
+        "totalHt": "Total excl. VAT",
+        "totalVat": "VAT 20%",
+        "totalTtc": "Total incl. VAT",
+        "footEmail": "contact@atelier-quatools.fr",
+        "footCompliance": "Factur-X · 2026 compliant",
+        "stamp": "2026 compliant"
+      },
+      "examples": [
+        {
+          "chip": "Logo redesign — €2,400",
+          "text": "Invoice for Studio Méridien: visual identity redesign, €2,400 excl. VAT",
+          "clientName": "Studio Méridien",
+          "clientL1": "8 quai de Valmy, 75010 Paris",
+          "clientL2": "SIRET 884 567 123 00024",
+          "desc": "Visual identity redesign",
+          "qty": 1,
+          "unitPrice": 2400
+        },
+        {
+          "chip": "30% deposit — showcase site",
+          "text": "30% deposit for Maison Bélier on the showcase website, €1,200 excl. VAT",
+          "clientName": "Maison Bélier",
+          "clientL1": "22 rue Oberkampf, 75011 Paris",
+          "clientL2": "SIRET 852 901 444 00031",
+          "desc": "30% deposit — showcase site",
+          "qty": 1,
+          "unitPrice": 1200
+        },
+        {
+          "chip": "Monthly maintenance — €450",
+          "text": "Atelier Nord: monthly website maintenance, €450 excl. VAT",
+          "clientName": "Atelier Nord",
+          "clientL1": "4 rue des Arts, 59000 Lille",
+          "clientL2": "SIRET 839 220 567 00012",
+          "desc": "Monthly maintenance",
+          "qty": 1,
+          "unitPrice": 450
+        }
+      ]
+    },
+    "methods": {
+      "eyebrow": "Three ways to invoice",
+      "title": "Say it. It's invoiced.",
+      "subtitle": "Pick your style — they all produce the same compliant Factur-X invoice, transmitted through the accredited platform.",
+      "ai": {
+        "title": "With AI",
+        "badge": "Recommended",
+        "tag": "For people with no time to waste.",
+        "body": "One sentence, a pasted email or a dropped PDF — the invoice writes itself. You review, you approve."
+      },
+      "mcp": {
+        "title": "Via Claude or ChatGPT",
+        "badge": "MCP",
+        "tag": "For those who optimize every second… and the proudly lazy.",
+        "body": "Connect Factur-IA to your AI assistant and invoice without even opening the app."
+      },
+      "manual": {
+        "title": "Manually",
+        "tag": "For the dinosaurs 🦕",
+        "body": "The good old form, field by field, with a live preview. We don't judge. (A little.)"
+      }
+    },
+    "mcp": {
+      "eyebrow": "Category claim",
+      "title": "The first invoicing tool you can drive from Claude — or ChatGPT.",
+      "subtitle": "Thanks to the MCP protocol, your AI assistant becomes your invoicing assistant. Secure OAuth connection — it never sees your password.",
+      "steps": {
+        "one": "Paste the connector URL into Claude, ChatGPT or any MCP-compatible assistant.",
+        "oneSub": "That's it, no token to manage.",
+        "two": "Authorize access by signing in to Factur-IA.",
+        "twoSub": "Revocable at any time.",
+        "three": "Dictate your invoices, quotes and reminders mid-conversation."
+      },
+      "claim": "“Nobody else can write that. We checked.”",
+      "compatLabel": "Speaks MCP with",
+      "compatNames": ["Claude", "ChatGPT", "Le Chat", "Copilot"],
+      "compatSoon": "… and whoever comes next",
+      "chat": {
+        "header": "claude.ai — conversation",
+        "user1": "Create a €2,400 excl. VAT invoice for Studio Méridien, visual identity redesign.",
+        "ai1": "Done! Invoice F-2026-007 (€2,880 incl. VAT) is drafted in Factur-IA — ready to be issued after your approval.",
+        "badge1": "invoice created",
+        "user2": "And chase Atelier Nord, their invoice is 8 days overdue.",
+        "ai2": "Polite reminder sent to Atelier Nord for invoice F-2026-003 (€960).",
+        "badge2": "reminder sent"
+      }
+    },
+    "doDont": {
+      "eyebrow": "Total transparency",
+      "title": "What it does. And what it will never do.",
+      "subtitle": "The market promises a lot. We prefer to be precise — it avoids nasty surprises at your 35th quote.",
+      "doesTitle": "What Factur-IA does for you",
+      "dontsTitle": "What it does <em>not</em> do",
+      "does": [
+        {
+          "title": "2026 compliance included",
+          "body": "Factur-X, transmission through an accredited platform, e-reporting. No hidden paid module."
+        },
+        {
+          "title": "Quote → invoice in one click",
+          "body": "Plus deposits, credit notes, legal mentions — everything is handled."
+        },
+        {
+          "title": "Automatic reminders",
+          "body": "Overdue invoices are tracked and politely chased. You keep the final say."
+        },
+        {
+          "title": "Data stored in France",
+          "body": "Encrypted, hosted in France, exportable at any time. It stays yours."
+        }
+      ],
+      "donts": [
+        {
+          "title": "Do your accounting",
+          "body": "Factur-IA is not your accountant — it just makes their life easier."
+        },
+        {
+          "title": "Decide for you",
+          "body": "The AI prepares, you approve. Your filings remain your responsibility."
+        },
+        {
+          "title": "Promise the impossible",
+          "body": "No “100% automatic accounting”. Beware of those who promise it."
+        },
+        {
+          "title": "Make coffee",
+          "body": "For that, do like everyone else: get an intern. ☕"
+        }
+      ]
+    },
+    "reform": {
+      "eyebrow": "2026 reform · no jargon",
+      "title": "E-invoicing, explained in three sentences.",
+      "point1": "From <strong>September 1st, 2026</strong>, every French business must be able to <strong>receive</strong> electronic invoices.",
+      "point2": "Large companies start <strong>issuing</strong> them in 2026; freelancers and SMBs follow in <strong>September 2027</strong>.",
+      "point3": "The <strong>PDF by email will no longer be enough</strong>: every invoice goes through an accredited platform, which forwards it to your client and to the tax administration.",
+      "myth": "<strong>“I don't charge VAT, so I'm not affected” — wrong.</strong> The VAT franchise (micro) does not exempt you: the reform targets all VAT-liable businesses, even those not collecting it. It's the most common mistake."
+    },
+    "quiz": {
+      "label": "30 seconds flat",
+      "title": "Am I affected?",
+      "q1": "You are…",
+      "q2": "You invoice…",
+      "who": {
+        "indep": "Freelancer / micro",
+        "tpe": "Small / medium business",
+        "grande": "Mid-size / large company"
+      },
+      "billing": {
+        "b2b": "Businesses",
+        "b2c": "Consumers",
+        "mix": "Both"
+      },
+      "reset": "Start over",
+      "verdict": {
+        "indep_b2b": "<strong>Yes — receiving in 2026, issuing in 2027.</strong> From September 1st, 2026, you must be able to receive electronic invoices — that applies to every French business. And from September 1st, 2027, your B2B invoices must be issued electronically through an accredited platform. PDF by email will no longer be enough. And yes, even under the VAT franchise (micro-entreprise): you are VAT-liable even without charging it, so you are affected.",
+        "indep_b2c": "<strong>Yes, in two steps.</strong> From September 1st, 2026, you must be able to receive electronic invoices — that applies to every French business. Your sales to consumers will go through e-reporting: you declare the transactions without sending each invoice. Electronic issuing becomes mandatory in September 2027. And yes, even under the VAT franchise (micro-entreprise): you are VAT-liable even without charging it, so you are affected.",
+        "indep_mix": "<strong>Yes — receiving in 2026, issuing in 2027.</strong> From September 1st, 2026, you must be able to receive electronic invoices — that applies to every French business. From September 1st, 2027, your B2B invoices must be issued through an accredited platform, and your sales to consumers will go through e-reporting. And yes, even under the VAT franchise (micro-entreprise): you are VAT-liable even without charging it, so you are affected.",
+        "tpe_b2b": "<strong>Yes — receiving in 2026, issuing in 2027.</strong> From September 1st, 2026, you must be able to receive electronic invoices — that applies to every French business. And from September 1st, 2027, your B2B invoices must be issued electronically through an accredited platform. PDF by email will no longer be enough.",
+        "tpe_b2c": "<strong>Yes, in two steps.</strong> From September 1st, 2026, you must be able to receive electronic invoices — that applies to every French business. Your sales to consumers will go through e-reporting: you declare the transactions without sending each invoice. Electronic issuing becomes mandatory in September 2027.",
+        "tpe_mix": "<strong>Yes — receiving in 2026, issuing in 2027.</strong> From September 1st, 2026, you must be able to receive electronic invoices — that applies to every French business. From September 1st, 2027, your B2B invoices must be issued through an accredited platform, and your sales to consumers will go through e-reporting.",
+        "grande_b2b": "<strong>Yes, starting in 2026.</strong> You must issue your invoices electronically from September 1st, 2026. From that date, you must also be able to receive electronic invoices — that applies to every French business.",
+        "grande_b2c": "<strong>Yes, starting in 2026.</strong> You must issue your electronic invoices from September 1st, 2026, and your sales to consumers will go through e-reporting: you declare the transactions to the administration. From that date, you must also be able to receive electronic invoices.",
+        "grande_mix": "<strong>Yes, starting in 2026.</strong> You must issue your invoices electronically from September 1st, 2026 — B2B through an accredited platform, consumer sales through e-reporting. From that date, you must also be able to receive electronic invoices."
+      }
+    },
+    "studio": {
+      "eyebrow": "Free · built by Quatools, an independent studio",
+      "title": "Free. But not unlimited — and that's on purpose.",
+      "body": "Factur-IA is built by <strong>Quatools</strong>, an independent studio. No fundraising, no growth at all costs: just a fast service and <strong>real human support</strong>.",
+      "cta": "Create my free account",
+      "note": "No credit card · no commitment · your data stays in France."
+    },
+    "footer": {
+      "brand": "Factur-IA",
+      "copyright": "© 2026 Quatools — independent studio",
+      "links": {
+        "cgu": "Terms",
+        "privacy": "Privacy",
+        "mentions": "Legal notice"
+      },
+      "quip": "Made with a keyboard and a spray can, in Paris. No pigeon was disturbed during development."
+    }
+  }
+}

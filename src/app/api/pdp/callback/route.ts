@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { encryptSecret } from '@/lib/crypto'
 import { exchangeAuthCode, SUPER_PDP_BASE } from '@/lib/pdp'
 
 function getOrigin(request: NextRequest): string {
@@ -40,13 +41,14 @@ export async function GET(request: NextRequest) {
         headers: { Authorization: `Bearer ${tokens.accessToken}` },
       })
       if (meRes.ok) company = await meRes.json()
-    } catch {
-      // non bloquant
+    } catch (e) {
+      // non bloquant : la connexion PDP reste valide sans les infos société
+      console.error('[pdp/callback] récupération de la société (companies/me) en échec', e)
     }
 
     const payload = {
-      pdp_access_token: tokens.accessToken,
-      pdp_refresh_token: tokens.refreshToken ?? null,
+      pdp_access_token: encryptSecret(tokens.accessToken),
+      pdp_refresh_token: tokens.refreshToken ? encryptSecret(tokens.refreshToken) : null,
       pdp_token_expires_at: new Date(Date.now() + tokens.expiresIn * 1000).toISOString(),
       pdp_company_number: (company.number as string | undefined) ?? null,
       pdp_company_name:
@@ -70,7 +72,8 @@ export async function GET(request: NextRequest) {
     const res = settings('connected')
     res.cookies.delete('pdp_oauth_state')
     return res
-  } catch {
+  } catch (e) {
+    console.error('[pdp/callback] échange du code OAuth en échec', { userId: user.id }, e)
     return settings('error')
   }
 }
