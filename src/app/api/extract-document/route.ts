@@ -64,7 +64,9 @@ RÈGLES IMPORTANTES:
 1. Retourne UNIQUEMENT un objet JSON valide, sans texte avant ou après
 2. Si une information n'est pas trouvée, ne l'inclus pas (pas de null)
 3. Pour le SIREN: 9 chiffres (ex: 520181520)
-4. Pour le SIRET: 14 chiffres = SIREN + NIC (si non visible, ne pas l'inclure)
+4. Pour le SIRET: 14 chiffres = SIREN + NIC. Cherche-le dans la section « Établissement principal » / « siège » du Kbis (souvent libellé SIRET ou « N° d'identification de l'établissement »). Si non visible, ne pas l'inclure.
+5. "vat_number": le n° de TVA intracommunautaire (format FRxx + SIREN) s'il figure dans le document. Sinon ne pas l'inclure (il sera calculé automatiquement).
+6. La FORME JURIDIQUE est presque toujours présente sur un Kbis (« Forme juridique : ... ») — fais l'effort de la trouver et de la mapper vers les valeurs autorisées ci-dessous.
 
 FORME JURIDIQUE - Utilise ces valeurs exactes:
 - "ei" = Entreprise Individuelle, personne physique immatriculée au RCS (comme sur ce type de Kbis)
@@ -91,6 +93,7 @@ FORMAT JSON:
   "legal_form": "ei",
   "siren": "520181520",
   "siret": "52018152000011",
+  "vat_number": "FR40520181520",
   "address": "161 Chemin de l'Estanet",
   "postal_code": "30840",
   "city": "Meynes",
@@ -99,6 +102,97 @@ FORMAT JSON:
 }
 
 Analyse le document et retourne le JSON:`
+
+// Filet quand le modèle renvoie la forme juridique en toutes lettres
+// (« Société par actions simplifiée ») au lieu du code de l'enum.
+function normalizeLegalForm(raw: string): string | null {
+  const value = raw.toLowerCase()
+  const allowed = ['auto_entrepreneur', 'ei', 'eurl', 'sarl', 'sasu', 'sas', 'sa', 'association', 'profession_liberale']
+  if (allowed.includes(value)) return value
+  if (value.includes('unipersonnelle') && value.includes('simplifi')) return 'sasu'
+  if (value.includes('par actions simplifi')) return 'sas'
+  if (value.includes('unipersonnelle') && value.includes('responsabilit')) return 'eurl'
+  if (value.includes('responsabilit') && value.includes('limit')) return 'sarl'
+  if (value.includes('anonyme')) return 'sa'
+  if (value.includes('micro') || value.includes('auto-entrepreneur')) return 'auto_entrepreneur'
+  if (value.includes('personne physique') || value.includes('entrepreneur individuel') || value.includes('individuelle')) return 'ei'
+  if (value.includes('association')) return 'association'
+  if (value.includes('lib')) return 'profession_liberale'
+  return null
+}
+
+// N° de TVA intracommunautaire français dérivé du SIREN (formule officielle) —
+// même calcul que la recherche d'entreprise (src/lib/services/company.ts).
+function vatNumberFromSiren(siren: string): string {
+  const key = (12 + 3 * (parseInt(siren, 10) % 97)) % 97
+  return `FR${key.toString().padStart(2, '0')}${siren}`
+}
+
+// Catégories juridiques INSEE (nature_juridique) → enum de l'application.
+function legalFormFromInsee(code: string | undefined): string | null {
+  if (!code) return null
+  if (code === '1000') return 'ei'
+  if (code === '5498') return 'eurl'
+  if (code === '5499') return 'sarl'
+  if (code === '5710') return 'sas'
+  if (code === '5720') return 'sasu'
+  if (code.startsWith('55') || code.startsWith('56')) return 'sa'
+  if (code.startsWith('92')) return 'association'
+  return null
+}
+
+// Complète la fiche extraite depuis la base officielle de l'État
+// (recherche-entreprises.api.gouv.fr — gratuite, à jour, sans clé).
+// On n'interroge que par SIREN/SIRET (jamais par nom seul : risque d'homonyme)
+// et on ne remplit QUE les champs manquants — le document reste prioritaire.
+async function enrichCompanyFromGouv(cleaned: Record<string, unknown>): Promise<void> {
+  const query = (cleaned.siren as string | undefined) ?? (cleaned.siret as string | undefined)
+  if (!query) return
+
+  try {
+    const response = await fetch(
+      `https://recherche-entreprises.api.gouv.fr/search?q=${encodeURIComponent(query)}&page=1&per_page=1`,
+      { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) }
+    )
+    if (!response.ok) return
+
+    const data = (await response.json()) as {
+      results?: Array<{
+        nom_complet?: string
+        nom_raison_sociale?: string
+        siren?: string
+        nature_juridique?: string
+        siege?: { siret?: string; adresse?: string; code_postal?: string; libelle_commune?: string }
+      }>
+    }
+    const company = data.results?.[0]
+    // Cohérence : le résultat doit porter le SIREN cherché.
+    if (!company || company.siren !== String(query).substring(0, 9)) return
+
+    const siege = company.siege ?? {}
+    if (!cleaned.name && (company.nom_complet || company.nom_raison_sociale)) {
+      cleaned.name = company.nom_complet || company.nom_raison_sociale
+    }
+    if (!cleaned.siret && siege.siret && siege.siret.length === 14) {
+      cleaned.siret = siege.siret
+    }
+    if (!cleaned.legal_form) {
+      const mapped = legalFormFromInsee(company.nature_juridique)
+      if (mapped) cleaned.legal_form = mapped
+    }
+    if (!cleaned.address && siege.adresse) {
+      // L'adresse du siège inclut CP + ville : on garde la partie voie si possible.
+      cleaned.address = siege.adresse
+        .replace(new RegExp(`\\s*${siege.code_postal ?? ''}\\s*${siege.libelle_commune ?? ''}\\s*$`, 'i'), '')
+        .trim() || siege.adresse
+    }
+    if (!cleaned.postal_code && siege.code_postal) cleaned.postal_code = siege.code_postal
+    if (!cleaned.city && siege.libelle_commune) cleaned.city = siege.libelle_commune
+  } catch (e) {
+    // Best-effort : l'extraction reste utilisable sans l'enrichissement.
+    console.error('[extract] enrichissement API gouv en échec', { query }, e)
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -293,10 +387,10 @@ export async function POST(request: NextRequest) {
     if (extractedData.name) cleanedData.name = String(extractedData.name).trim()
     if (extractedData.trade_name) cleanedData.trade_name = String(extractedData.trade_name).trim()
 
-    // Valider la forme juridique
-    const validLegalForms = ['auto_entrepreneur', 'ei', 'eurl', 'sarl', 'sasu', 'sas', 'sa', 'association', 'profession_liberale']
-    if (extractedData.legal_form && validLegalForms.includes(extractedData.legal_form.toLowerCase())) {
-      cleanedData.legal_form = extractedData.legal_form.toLowerCase()
+    // Valider la forme juridique (avec mapping des libellés en toutes lettres)
+    if (extractedData.legal_form) {
+      const normalized = normalizeLegalForm(String(extractedData.legal_form))
+      if (normalized) cleanedData.legal_form = normalized
     }
 
     // Nettoyer le SIRET (garder uniquement les chiffres)
@@ -317,6 +411,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (extractedData.vat_number) cleanedData.vat_number = String(extractedData.vat_number).trim()
+    // N° TVA absent du document mais SIREN connu → calcul automatique (formule officielle).
+    if (!cleanedData.vat_number && typeof cleanedData.siren === 'string') {
+      cleanedData.vat_number = vatNumberFromSiren(cleanedData.siren)
+    }
     if (extractedData.address) cleanedData.address = String(extractedData.address).trim()
 
     // Code postal (5 chiffres)
@@ -338,6 +436,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (extractedData.rcs) cleanedData.rcs = String(extractedData.rcs).trim()
+
+    // Complète les champs manquants depuis la base officielle de l'État
+    // (SIRET du siège, forme juridique, adresse) — le document reste prioritaire.
+    await enrichCompanyFromGouv(cleanedData)
+    if (!cleanedData.vat_number && typeof cleanedData.siren === 'string') {
+      cleanedData.vat_number = vatNumberFromSiren(cleanedData.siren)
+    }
 
     return NextResponse.json({
       success: true,
