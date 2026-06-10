@@ -93,7 +93,8 @@
       },
       "dropTitle": {
         "company": "Déposez votre Kbis",
-        "client": "Déposez un devis, une facture ou une carte de visite"
+        "client": "Déposez un devis, une facture ou une carte de visite",
+        "invoice": "Déposez un devis ou un document décrivant la prestation"
       },
       "dropHint": "PDF, PNG ou JPG · max 10 Mo",
       "orPaste": {

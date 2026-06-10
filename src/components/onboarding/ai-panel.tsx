@@ -143,6 +143,7 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
 
   const [phase, setPhase] = useState<Phase>('idle')
   const [text, setText] = useState('')
+  const [isDragging, setIsDragging] = useState(false)
   const [companyData, setCompanyData] = useState<Partial<CompanyFormData> | null>(null)
   const [clientDefaults, setClientDefaults] = useState<Client | null>(null)
   const [invoiceDefaults, setInvoiceDefaults] = useState<InvoiceWithRelations | null>(null)
@@ -207,9 +208,8 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
     }
   }
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
+  // Validation partagée clic / glisser-déposer.
+  const acceptFile = (file: File | undefined | null) => {
     if (!file) return
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       toast.error(t('ai.fileType'))
@@ -222,6 +222,18 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
     void analyze({ file })
   }
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    acceptFile(file)
+  }
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault()
+    setIsDragging(false)
+    acceptFile(event.dataTransfer.files?.[0])
+  }
+
   const restart = () => {
     setCompanyData(null)
     setClientDefaults(null)
@@ -229,7 +241,9 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
     setPhase('idle')
   }
 
-  const hasDropzone = step === 'company' || step === 'client'
+  // Dropzone sur toutes les étapes : Kbis (entreprise), email/carte (client),
+  // devis ou photo de prestation (facture) — l'extraction vision lit tout.
+  const hasDropzone = true
 
   return (
     <PanelShell
@@ -252,7 +266,18 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex w-full flex-col items-center gap-2.5 rounded-xl border-2 border-dashed border-border-strong/40 bg-muted/50 px-5 py-8 text-center transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                onDragOver={(event) => {
+                  event.preventDefault()
+                  setIsDragging(true)
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                aria-label={t(`ai.dropTitle.${step}`)}
+                className={`flex w-full flex-col items-center gap-2.5 rounded-xl border-2 border-dashed px-5 py-8 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                  isDragging
+                    ? 'border-border-strong bg-muted'
+                    : 'border-border-strong/40 bg-muted/50 hover:bg-muted'
+                }`}
               >
                 <span className="flex h-12 w-12 items-center justify-center rounded-xl border bg-background">
                   <FileUp className="h-5 w-5" aria-hidden="true" />

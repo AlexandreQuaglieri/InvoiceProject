@@ -93,7 +93,8 @@
       },
       "dropTitle": {
         "company": "Drop your Kbis",
-        "client": "Drop a quote, an invoice or a business card"
+        "client": "Drop a quote, an invoice or a business card",
+        "invoice": "Drop a quote or a document describing the work"
       },
       "dropHint": "PDF, PNG or JPG · max 10 MB",
       "orPaste": {

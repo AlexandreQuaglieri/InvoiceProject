@@ -18,6 +18,8 @@ import {
   UserPlus,
   PanelRightClose,
   PanelRightOpen,
+  Paperclip,
+  X,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -47,6 +49,14 @@ interface Message {
   executedActions?: ExecutedAction[]
 }
 
+// Pièce jointe envoyée à /api/chat (même contrat que le chat plein écran :
+// l'IA lit PDF et images — Kbis, devis, factures…).
+interface Attachment {
+  name: string
+  media_type: string
+  data: string
+}
+
 export function AICopilotPanel() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
@@ -57,10 +67,12 @@ export function AICopilotPanel() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
+  const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showConversations, setShowConversations] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -81,19 +93,54 @@ export function AICopilotPanel() {
     setShowConversations(false)
   }
 
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(((reader.result as string) || '').split(',')[1] || '')
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files) return
+    const accepted = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    const next: Attachment[] = []
+    for (const file of Array.from(files)) {
+      if (!accepted.includes(file.type)) {
+        toast.error(`Format non supporté : ${file.name} (PDF ou image)`)
+        continue
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name} dépasse 10 Mo`)
+        continue
+      }
+      next.push({ name: file.name, media_type: file.type, data: await fileToBase64(file) })
+    }
+    if (next.length) setAttachments((prev) => [...prev, ...next])
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removeAttachment = (idx: number) =>
+    setAttachments((prev) => prev.filter((_, i) => i !== idx))
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || isLoading) return
+    if ((!input.trim() && attachments.length === 0) || isLoading) return
+
+    const currentAttachments = attachments
+    const attachmentNote = currentAttachments.map((a) => `📎 ${a.name}`).join('\n')
+    const userContent = [input.trim(), attachmentNote].filter(Boolean).join('\n')
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: userContent,
     }
 
     const newMessages = [...messages, userMessage]
     setMessages(newMessages)
     setInput('')
+    setAttachments([])
     setIsLoading(true)
 
     try {
@@ -102,6 +149,7 @@ export function AICopilotPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          attachments: currentAttachments.length ? currentAttachments : undefined,
         }),
       })
 
@@ -374,8 +422,56 @@ export function AICopilotPanel() {
       </ScrollArea>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="border-t p-2.5 flex-shrink-0">
+      <form
+        onSubmit={handleSubmit}
+        className="border-t p-2.5 flex-shrink-0"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault()
+          void handleFiles(e.dataTransfer.files)
+        }}
+      >
+        {attachments.length > 0 && (
+          <div className="mb-1.5 flex flex-wrap gap-1">
+            {attachments.map((att, idx) => (
+              <span
+                key={`${att.name}-${idx}`}
+                className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[11px]"
+              >
+                <Paperclip className="h-3 w-3" aria-hidden="true" />
+                <span className="max-w-[140px] truncate">{att.name}</span>
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(idx)}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label={`Retirer ${att.name}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
         <div className="flex gap-1.5">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            onChange={(e) => void handleFiles(e.target.files)}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 flex-shrink-0"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            title="Joindre un document (PDF ou image)"
+          >
+            <Paperclip className="h-3.5 w-3.5" />
+          </Button>
           <Textarea
             ref={inputRef}
             value={input}
@@ -393,7 +489,7 @@ export function AICopilotPanel() {
             type="submit"
             size="icon"
             className="h-9 w-9 flex-shrink-0"
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || (!input.trim() && attachments.length === 0)}
           >
             {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           </Button>
