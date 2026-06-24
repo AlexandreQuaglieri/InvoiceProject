@@ -47,10 +47,12 @@ export async function ensureOrg(): Promise<string | null> {
   }
 }
 
-// Déclare les événements de l'app (idempotent). Renvoie un compte-rendu pour l'UI de setup.
-export async function registerSupportEvents(): Promise<{ ok: boolean; status: number; body: string }> {
+// Déclare les événements de l'app (idempotent). `app` = slug de l'app (requis par
+// /register, contrairement à /orgs qui le déduit de la clé). Renvoie un compte-rendu.
+export async function registerSupportEvents(app: string): Promise<{ ok: boolean; status: number; body: string }> {
   try {
     const res = await hubFetch('/api/notifications/register', {
+      app,
       events: [
         {
           slug: SUPPORT_EVENT,

@@ -27,21 +27,27 @@ export async function GET(request: Request) {
     )
   }
 
-  const events = await registerSupportEvents()
-
   const app = new URL(request.url).searchParams.get('app')?.trim() || process.env.NOTIFICATION_APP
-  const adminLink = app
-    ? buildAdminLinkUrl({ app, orgId, appUserId: user.id, email: user.email ?? undefined })
-    : null
 
   const esc = (s: string) =>
     s.replace(
       /[&<>"]/g,
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string
     )
-  const eventsLine = events.ok
-    ? `✅ Événement déclaré <code>${esc(events.body)}</code>`
-    : `⚠️ Événement non déclaré (HTTP ${esc(String(events.status))}) : <code>${esc(events.body)}</code>`
+
+  let eventsLine: string
+  if (app) {
+    const events = await registerSupportEvents(app)
+    eventsLine = events.ok
+      ? `✅ Événement déclaré <code>${esc(events.body)}</code>`
+      : `⚠️ Événement non déclaré (HTTP ${esc(String(events.status))}) : <code>${esc(events.body)}</code>`
+  } else {
+    eventsLine = `ℹ️ Ajoute <code>?app=…</code> ci-dessous pour déclarer l'événement.`
+  }
+
+  const adminLink = app
+    ? buildAdminLinkUrl({ app, orgId, appUserId: user.id, email: user.email ?? undefined })
+    : null
   const action = adminLink
     ? `<p style="margin-top:24px"><a href="${esc(adminLink)}" style="display:inline-block;background:#111;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600">Devenir admin de l'organisation →</a></p>
 <p style="color:#666;font-size:14px;margin-top:16px">Connecte-toi d'abord au hub (<a href="https://hub.quatools.fr">hub.quatools.fr</a>) dans cet onglet, puis clique. Lien valable 2&nbsp;min : recharge si besoin.</p>`
