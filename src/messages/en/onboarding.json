@@ -45,7 +45,7 @@
       },
       "dropHint": "PDF, PNG or JPG · max 10 MB",
       "orPaste": {
-        "company": "Or type the name or SIREN",
+        "company": "Or give me the details (name, SIRET, director…) and I'll handle the rest",
         "client": "Or paste the information"
       },
       "placeholder": {
