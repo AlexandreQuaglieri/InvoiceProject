@@ -50,6 +50,10 @@ interface CompanyFormProps {
   company: Company | null
   // Mode embarqué (onboarding) : sections légères sans chrome Card redondant.
   embedded?: boolean
+  // Valeurs de préremplissage (recherche / extraction IA). Appliquées DÈS le
+  // montage (defaultValues) — fiable pour les Select Radix, contrairement à une
+  // synchro impérative après montage qui rate la course de montage.
+  initialValues?: Partial<CompanyFormData>
 }
 
 // Section du formulaire : Card autonome par défaut, simple section titrée en
@@ -88,32 +92,34 @@ function FormSection({
 }
 
 export const CompanyForm = forwardRef<CompanyFormRef, CompanyFormProps>(
-  function CompanyForm({ company, embedded = false }, ref) {
+  function CompanyForm({ company, embedded = false, initialValues }, ref) {
   const t = useTranslations()
   const tLegal = useTranslations('legalForms')
   const tVat = useTranslations('vatRegimes')
   const { setCompany } = useLiveStoreActions()
   const [isLoading, setIsLoading] = useState(false)
 
+  // Préremplissage prioritaire sur la donnée existante (édition) puis le défaut.
+  const iv = initialValues ?? {}
   const form = useForm<CompanyFormInput, unknown, CompanyFormData>({
     resolver: zodResolver(companySchema),
     defaultValues: {
-      name: company?.name || '',
-      trade_name: company?.trade_name || '',
-      legal_form: company?.legal_form || 'auto_entrepreneur',
-      siret: company?.siret || '',
-      siren: company?.siren || '',
-      vat_number: company?.vat_number || '',
-      vat_regime: company?.vat_regime || 'franchise',
-      address: company?.address || '',
-      postal_code: company?.postal_code || '',
-      city: company?.city || '',
-      country: company?.country || 'France',
-      email: company?.email || '',
-      phone: company?.phone || '',
-      website: company?.website || '',
-      capital: company?.capital || undefined,
-      rcs: company?.rcs || '',
+      name: iv.name || company?.name || '',
+      trade_name: iv.trade_name || company?.trade_name || '',
+      legal_form: iv.legal_form || company?.legal_form || 'auto_entrepreneur',
+      siret: iv.siret || company?.siret || '',
+      siren: iv.siren || company?.siren || '',
+      vat_number: iv.vat_number || company?.vat_number || '',
+      vat_regime: iv.vat_regime || company?.vat_regime || 'franchise',
+      address: iv.address || company?.address || '',
+      postal_code: iv.postal_code || company?.postal_code || '',
+      city: iv.city || company?.city || '',
+      country: iv.country || company?.country || 'France',
+      email: iv.email || company?.email || '',
+      phone: iv.phone || company?.phone || '',
+      website: iv.website || company?.website || '',
+      capital: iv.capital || company?.capital || undefined,
+      rcs: iv.rcs || company?.rcs || '',
       rm: company?.rm || '',
       iban: company?.iban || '',
       bic: company?.bic || '',

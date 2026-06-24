@@ -7,7 +7,7 @@
 //    + invite à déposer un document officiel + fiche à compléter (l'IA continue
 //    d'aider). Le dépôt d'un document → extraction vision.
 //  - CLIENT : extraction IA (document ou texte libre).
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
@@ -28,7 +28,7 @@ import type { ExtractStep } from './types'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { CompanyForm, type CompanyFormRef } from '@/components/company/company-form'
+import { CompanyForm } from '@/components/company/company-form'
 import { ClientForm } from '@/components/clients/client-form'
 import { useLiveCompany } from '@/lib/realtime'
 import type { CompanyFormData } from '@/lib/validations/company'
@@ -104,14 +104,6 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
   const [pendingExtras, setPendingExtras] = useState<Partial<CompanyFormData>>({})
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const companyFormRef = useRef<CompanyFormRef>(null)
-
-  // Préremplissage du CompanyForm (review OU not found) une fois monté.
-  useEffect(() => {
-    if ((phase === 'review' || phase === 'notfound') && step === 'company' && companyData) {
-      companyFormRef.current?.setFormValues(companyData)
-    }
-  }, [phase, step, companyData])
 
   // Extraction IA d'un document/texte (Claude vision) — kind = step.
   // opts.fallback : appelée après une recherche infructueuse (étape entreprise)
@@ -373,7 +365,7 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
               </Button>
             </div>
           </div>
-          <CompanyForm ref={companyFormRef} company={company} embedded />
+          <CompanyForm company={company} initialValues={companyData ?? undefined} embedded />
         </div>
       )}
 
@@ -390,7 +382,9 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
             </Button>
           </div>
 
-          {step === 'company' && <CompanyForm ref={companyFormRef} company={company} embedded />}
+          {step === 'company' && (
+            <CompanyForm company={company} initialValues={companyData ?? undefined} embedded />
+          )}
           {step === 'client' && clientDefaults && (
             <ClientForm client={clientDefaults} onSubmit={submitClient} isLoading={isLoading} />
           )}
