@@ -55,7 +55,7 @@
       "analyze": "Analyze",
       "searchCta": "Search",
       "searching": "Searching for your company…",
-      "searchingHint": "Checking the official company registry (INSEE / SIRENE).",
+      "searchingHint": "Searching the official registry — and the web if the name is approximate.",
       "candidatesTitle": "Several companies match — pick yours:",
       "candidatesNone": "None match — fill in manually",
       "searchAgain": "Edit my search",

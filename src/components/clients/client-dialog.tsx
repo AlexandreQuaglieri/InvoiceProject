@@ -31,9 +31,12 @@ interface ClientDialogProps {
 // Candidat renvoyé par /api/company-search (base SIRENE).
 type CompanyCandidate = { siren: string; name: string; city: string | null; fields: Partial<CompanyFormData> }
 
-// Mappe une entreprise officielle (champs société) vers un client professionnel.
-// On n'emporte PAS l'email du compte (extras) : ici c'est l'email DU CLIENT.
-function candidateToClient(fields: Partial<CompanyFormData>): Client {
+// Mappe une entreprise officielle (champs société) + coordonnées trouvées sur le
+// web (email/tél DU CLIENT) vers un client professionnel.
+function candidateToClient(
+  fields: Partial<CompanyFormData>,
+  extras: Partial<CompanyFormData> = {}
+): Client {
   return {
     id: '',
     company_id: '',
@@ -45,8 +48,8 @@ function candidateToClient(fields: Partial<CompanyFormData>): Client {
     postal_code: fields.postal_code ?? '',
     city: fields.city ?? '',
     country: 'France',
-    email: null,
-    phone: null,
+    email: extras.email ?? null,
+    phone: extras.phone ?? null,
     notes: null,
     created_at: '',
     updated_at: '',
@@ -65,6 +68,7 @@ export function ClientDialog({ client, trigger }: ClientDialogProps) {
   const [aiQuery, setAiQuery] = useState('')
   const [aiPhase, setAiPhase] = useState<'idle' | 'searching' | 'candidates'>('idle')
   const [candidates, setCandidates] = useState<CompanyCandidate[]>([])
+  const [aiExtras, setAiExtras] = useState<Partial<CompanyFormData>>({})
 
   const resetAi = () => {
     setDraft(null)
@@ -72,6 +76,7 @@ export function ClientDialog({ client, trigger }: ClientDialogProps) {
     setAiQuery('')
     setAiPhase('idle')
     setCandidates([])
+    setAiExtras({})
   }
 
   const applyDraft = (data: Client) => {
@@ -87,18 +92,23 @@ export function ClientDialog({ client, trigger }: ClientDialogProps) {
     if (q.length < 3) return
     setAiPhase('searching')
     try {
-      const response = await fetch(`/api/company-search?q=${encodeURIComponent(q)}`)
-      const data = (await response.json()) as { candidates?: CompanyCandidate[] }
+      const response = await fetch(`/api/company-search?q=${encodeURIComponent(q)}&for=client`)
+      const data = (await response.json()) as {
+        candidates?: CompanyCandidate[]
+        extras?: Partial<CompanyFormData>
+      }
       const found = data.candidates ?? []
+      const ex = data.extras ?? {}
       if (found.length === 0) {
         toast.message(t('clients.aiFill.notFound'))
         setAiPhase('idle')
         return
       }
       if (found.length === 1) {
-        applyDraft(candidateToClient(found[0].fields))
+        applyDraft(candidateToClient(found[0].fields, ex))
         return
       }
+      setAiExtras(ex)
       setCandidates(found)
       setAiPhase('candidates')
     } catch (error) {
@@ -220,7 +230,7 @@ export function ClientDialog({ client, trigger }: ClientDialogProps) {
                     <li key={candidate.siren}>
                       <button
                         type="button"
-                        onClick={() => applyDraft(candidateToClient(candidate.fields))}
+                        onClick={() => applyDraft(candidateToClient(candidate.fields, aiExtras))}
                         className="flex w-full items-center gap-2.5 rounded-lg border bg-card px-3 py-2 text-left transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />

@@ -180,7 +180,7 @@
       "title": "Laissez l'IA remplir pour vous",
       "placeholder": "Nom ou SIREN du client…",
       "cta": "Chercher",
-      "hint": "Je récupère l'adresse, le SIRET et la TVA depuis le répertoire officiel (INSEE).",
+      "hint": "Je trouve votre client (même avec un nom approximatif) et récupère adresse, SIRET, TVA — et parfois l'email et le téléphone.",
       "candidatesTitle": "Plusieurs entreprises correspondent — choisissez :",
       "back": "Retour",
       "filled": "Fiche pré-remplie — vérifiez et ajoutez l'email du client.",

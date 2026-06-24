@@ -180,7 +180,7 @@
       "title": "Let the AI fill it in for you",
       "placeholder": "Client name or SIREN…",
       "cta": "Search",
-      "hint": "I'll fetch the address, SIRET and VAT from the official registry (INSEE).",
+      "hint": "I find your client (even from an approximate name) and fetch address, SIRET, VAT — and sometimes email and phone.",
       "candidatesTitle": "Several companies match — pick one:",
       "back": "Back",
       "filled": "Form pre-filled — review and add the client's email.",
