@@ -15,8 +15,8 @@
     },
     "headings": {
       "company": {
-        "title": "Let's start with your company",
-        "subtitle": "Drop your registration document — or any file with your details — and the assistant fills in your profile."
+        "title": "Drop your registration document",
+        "subtitle": "Sole trader: your SIRENE notice · Association: Journal Officiel extract. The assistant reads the document and fills in your profile."
       },
       "einvoicing": {
         "title": "Enable electronic invoicing",
@@ -36,7 +36,7 @@
         "client": "With AI — paste or import"
       },
       "subtitle": {
-        "company": "Drop your registration document, or paste its content — the assistant fills everything in.",
+        "company": "Drop the document or paste its content — the assistant fills everything in.",
         "client": "Paste the details or drop a document — a signed email is enough."
       },
       "dropTitle": {

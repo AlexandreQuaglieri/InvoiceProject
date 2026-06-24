@@ -15,8 +15,8 @@
     },
     "headings": {
       "company": {
-        "title": "Commençons par votre entreprise",
-        "subtitle": "Déposez votre Kbis — ou un document avec vos informations — et l'assistant remplit votre fiche."
+        "title": "Déposez votre Kbis",
+        "subtitle": "Micro-entreprise : votre avis SIRENE · Association : extrait du Journal Officiel. L'assistant lit le document et remplit votre fiche."
       },
       "einvoicing": {
         "title": "Activez la facturation électronique",
@@ -36,7 +36,7 @@
         "client": "Avec l'IA — coller ou importer"
       },
       "subtitle": {
-        "company": "Déposez votre Kbis, ou collez son contenu — l'assistant remplit tout.",
+        "company": "Déposez le document ou collez son contenu — l'assistant remplit tout.",
         "client": "Collez les coordonnées ou déposez un document — un email signé suffit."
       },
       "dropTitle": {

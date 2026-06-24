@@ -9,7 +9,7 @@
 // La page ne montre QUE l'étape en cours : aucune section annexe à parcourir.
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { ArrowRight, Check, CheckCircle2, Lock, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Check, CheckCircle2, ShieldCheck } from 'lucide-react'
 
 import { AiPanel } from './ai-panel'
 import { ManualPanel } from './manual-panel'
@@ -111,8 +111,6 @@ export function OnboardingFlow({ pdpConnected, onAccept }: OnboardingFlowProps) 
 
       {/* Dès l'entreprise créée : on peut terminer sans être forcé de créer client/facture. */}
       {done.company && <FinishBar onFinish={() => setFinishing(true)} />}
-
-      <Reassure />
     </div>
   )
 }
@@ -255,25 +253,3 @@ function Stepper({
   )
 }
 
-/* ===================== Réassurance ===================== */
-
-function Reassure() {
-  const t = useTranslations('onboarding')
-  const strong = (chunks: React.ReactNode) => (
-    <strong className="font-semibold text-foreground">{chunks}</strong>
-  )
-
-  return (
-    <footer className="mt-7 flex flex-wrap items-center gap-4 rounded-xl border bg-muted/40 px-4.5 py-3.5">
-      <span className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
-        <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span>{t.rich('reassure.compliance', { strong })}</span>
-      </span>
-      <span className="hidden h-4 w-px bg-border sm:block" aria-hidden="true" />
-      <span className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
-        <Lock className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span>{t.rich('reassure.data', { strong })}</span>
-      </span>
-    </footer>
-  )
-}
