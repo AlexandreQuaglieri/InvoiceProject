@@ -21,7 +21,13 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
   const pdp = await superPdpForRequest(supabase, user.id)
   if (!pdp) {
-    return NextResponse.json({ error: 'PDP non configurée sur la plateforme.' }, { status: 503 })
+    return NextResponse.json(
+      {
+        error:
+          'Raccordez votre société à la PDP avant de transmettre (Réglages → Facturation électronique).',
+      },
+      { status: 503 }
+    )
   }
 
   const companyId = await resolveCompanyId(supabase, user.id)

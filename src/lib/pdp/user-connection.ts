@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { decryptSecret, decryptSecretOrNull, encryptSecret } from '@/lib/crypto'
 import type { PdpProvider } from './provider'
-import { createSuperPdpProvider, superPdpFromEnv, refreshAccessToken, type TokenProvider } from './super-pdp'
+import { createSuperPdpProvider, refreshAccessToken, type TokenProvider } from './super-pdp'
 
 // Accepte le client SSR (RLS utilisateur) comme le client admin (cron) :
 // les requêtes sont toujours scopées explicitement par user_id.
@@ -76,11 +76,11 @@ export async function superPdpForUser(supabase: Db, userId: string): Promise<Pdp
   return createSuperPdpProvider(getToken)
 }
 
-// Provider pour une requête : la société de l'utilisateur si raccordée, sinon l'app
-// éditeur (variables d'env), sinon null. Permet une bascule multi-tenant sans casser
-// le fonctionnement sandbox existant.
+// Provider pour une requête utilisateur : STRICTEMENT la société raccordée par
+// l'utilisateur (jeton OAuth délégué). Plus de fallback sur le compte sandbox
+// éditeur : il portait une société FICTIVE dont le SIRET ne correspond pas aux
+// factures de l'utilisateur → rejet « le vendeur ne correspond pas » (et fuite
+// cross-tenant sur les lectures). Transmettre exige donc son propre raccordement.
 export async function superPdpForRequest(supabase: Db, userId: string): Promise<PdpProvider | null> {
-  const forUser = await superPdpForUser(supabase, userId)
-  if (forUser) return forUser
-  return superPdpFromEnv()
+  return superPdpForUser(supabase, userId)
 }
