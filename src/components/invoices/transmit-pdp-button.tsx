@@ -56,6 +56,18 @@ export function TransmitPdpButton({ invoiceId, canTransmit }: TransmitPdpButtonP
       const res = await fetch(`/api/invoices/${invoiceId}/transmit-pdp`, { method: 'POST' })
       const data = await res.json()
       if (!res.ok) {
+        // Problème de connexion à la PDP : on propose de (re)connecter, pas une erreur sèche.
+        if (data.needsReconnect || data.needsConnection) {
+          toast.error(data.error || 'Connexion à la PDP requise.', {
+            action: {
+              label: data.needsReconnect ? 'Reconnecter' : 'Connecter',
+              onClick: () => {
+                window.location.href = '/api/pdp/connect'
+              },
+            },
+          })
+          return
+        }
         toast.error(data.error || 'Erreur lors de la transmission')
         return
       }

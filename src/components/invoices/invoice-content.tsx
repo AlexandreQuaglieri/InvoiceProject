@@ -312,7 +312,7 @@ export function InvoiceContent({ invoiceId, pdpConnected }: InvoiceContentProps)
                 invoice.client?.type === 'individual' &&
                 pdpConnected && <EreportB2cButton invoiceId={invoice.id} />}
               {invoice.status !== 'draft' && !pdpConnected && (
-                <ActivatePdpButton className="w-full" />
+                <ActivatePdpButton className="w-full" label="Connecter à la PDP pour transmettre" />
               )}
               {invoice.status !== 'draft' && (
                 <TransmitChorusProButton invoiceId={invoice.id} />

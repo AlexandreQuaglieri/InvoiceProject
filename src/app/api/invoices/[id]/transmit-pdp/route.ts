@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { superPdpForRequest, friendlyPdpError } from '@/lib/pdp'
+import { superPdpForRequest, friendlyPdpError, isPdpAuthError } from '@/lib/pdp'
 import { rateLimit } from '@/lib/rate-limit'
 import { resolveCompanyId, transmitInvoice, syncInvoiceLifecycle } from '@/lib/services'
 
@@ -23,8 +23,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   if (!pdp) {
     return NextResponse.json(
       {
-        error:
-          'Raccordez votre société à la PDP avant de transmettre (Réglages → Facturation électronique).',
+        error: 'Connectez votre société à la PDP pour transmettre cette facture.',
+        needsConnection: true,
       },
       { status: 503 }
     )
@@ -65,6 +65,15 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       alreadyTransmitted: result.data.alreadyTransmitted,
     })
   } catch (error) {
+    if (isPdpAuthError(error)) {
+      return NextResponse.json(
+        {
+          error: 'Votre connexion à la PDP a expiré. Reconnectez votre compte Super PDP.',
+          needsReconnect: true,
+        },
+        { status: 401 }
+      )
+    }
     return NextResponse.json({ error: friendlyPdpError(error) }, { status: 500 })
   }
 }

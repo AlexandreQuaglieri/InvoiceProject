@@ -300,3 +300,12 @@ export function friendlyPdpError(error: unknown): string {
   const m = raw.match(/"message":"([^"]+)"/)
   return m ? m[1] : error instanceof Error ? error.message : 'Erreur PDP'
 }
+
+// Vrai si l'erreur traduit un problème d'AUTHENTIFICATION/connexion (token expiré,
+// refresh refusé) : l'utilisateur doit RECONNECTER son compte Super PDP.
+export function isPdpAuthError(error: unknown): boolean {
+  const raw = error instanceof Error ? error.message : String(error)
+  return /jeton OAuth échoué|authentification échouée|invalid_grant|invalid_token|\((401|403)\)/i.test(
+    raw
+  )
+}
