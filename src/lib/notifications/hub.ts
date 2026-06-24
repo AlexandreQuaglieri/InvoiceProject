@@ -20,23 +20,27 @@ export async function emitHubEvent(input: {
 }): Promise<void> {
   const base = process.env.NOTIFICATION_HUB_URL
   const apiKey = process.env.NOTIFICATION_API_KEY
+  // Intégration non configurée → on ne fait rien (silencieux). Seules HUB_URL +
+  // API_KEY sont requises : le hub déduit l'org de la clé (org_id optionnel,
+  // utile seulement pour une app multi-org type BAAS).
+  if (!base || !apiKey) return
   const orgId = input.orgId ?? process.env.NOTIFICATION_ORG_ID
-  // Intégration non configurée → on ne fait rien (silencieux).
-  if (!base || !apiKey || !orgId) return
 
   try {
+    const body: Record<string, unknown> = {
+      event: input.event,
+      recipients: input.recipients ?? [],
+      payload: input.payload,
+    }
+    if (orgId) body.org_id = orgId
+
     const res = await fetch(`${base.replace(/\/$/, '')}/api/notifications/emit`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        event: input.event,
-        org_id: orgId,
-        recipients: input.recipients ?? [],
-        payload: input.payload,
-      }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(8000),
     })
     if (!res.ok) {
