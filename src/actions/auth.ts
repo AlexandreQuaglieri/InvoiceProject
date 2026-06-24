@@ -24,6 +24,7 @@ function mapAuthError(error: ProviderError): AuthErrorCode {
   if (code === 'invalid_credentials' || code === 'invalid_grant') return 'invalid_credentials'
   if (code === 'email_not_confirmed') return 'email_not_confirmed'
   if (code === 'user_already_exists' || code === 'email_exists') return 'email_exists'
+  if (code === 'email_address_invalid' || code === 'validation_failed') return 'email_invalid'
   if (code === 'weak_password') return 'weak_password'
   if (code.includes('rate_limit') || code.includes('over_') || error?.status === 429) {
     return 'rate_limited'
@@ -31,6 +32,7 @@ function mapAuthError(error: ProviderError): AuthErrorCode {
 
   const msg = (error?.message ?? '').toLowerCase()
   if (msg.includes('already registered') || msg.includes('already been registered')) return 'email_exists'
+  if (msg.includes('email address') && msg.includes('invalid')) return 'email_invalid'
   if (msg.includes('invalid login') || msg.includes('invalid credentials')) return 'invalid_credentials'
   if (msg.includes('not confirmed')) return 'email_not_confirmed'
   if (msg.includes('rate limit')) return 'rate_limited'

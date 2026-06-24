@@ -93,6 +93,7 @@
       "invalid_input": "Informations invalides.",
       "invalid_credentials": "Email ou mot de passe incorrect.",
       "email_exists": "Un compte existe déjà avec cet email.",
+      "email_invalid": "Cet email n'est pas accepté. Utilisez une adresse réelle (évitez « example.com »).",
       "email_not_confirmed": "Confirmez votre email avant de vous connecter.",
       "rate_limited": "Trop de tentatives. Réessayez dans quelques minutes.",
       "weak_password": "Mot de passe trop faible (8 caractères minimum).",

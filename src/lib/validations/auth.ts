@@ -27,6 +27,7 @@ export type AuthErrorCode =
   | 'invalid_input'
   | 'invalid_credentials'
   | 'email_exists'
+  | 'email_invalid'
   | 'email_not_confirmed'
   | 'rate_limited'
   | 'weak_password'

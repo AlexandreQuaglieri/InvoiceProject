@@ -93,6 +93,7 @@
       "invalid_input": "Invalid information.",
       "invalid_credentials": "Incorrect email or password.",
       "email_exists": "An account already exists with this email.",
+      "email_invalid": "This email isn't accepted. Use a real address (avoid \"example.com\").",
       "email_not_confirmed": "Confirm your email before signing in.",
       "rate_limited": "Too many attempts. Try again in a few minutes.",
       "weak_password": "Password too weak (8 characters minimum).",
