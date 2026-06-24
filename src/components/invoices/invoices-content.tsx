@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { InvoiceDialog } from '@/components/invoices/invoice-dialog'
 import { InvoicesTable } from '@/components/invoices/invoices-table'
+import { NoClientsNotice } from '@/components/clients/no-clients-notice'
 import { useLiveCompany, useLiveClients, useLiveInvoices } from '@/lib/realtime'
 
 export function InvoicesContent() {
@@ -33,6 +34,21 @@ export function InvoicesContent() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  // Sans client, on ne peut pas facturer : on l'explique (au lieu d'un bouton grisé muet).
+  if (clients.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t('invoices.title')}</h1>
+          <p className="text-muted-foreground">
+            {invoices.length} facture{invoices.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <NoClientsNotice context="invoice" />
       </div>
     )
   }

@@ -169,7 +169,13 @@
     "vatNumber": "VAT number",
     "notes": "Notes",
     "importFromText": "Import from text",
-    "importPlaceholder": "Paste client information here (email, signature, business card...)"
+    "importPlaceholder": "Paste client information here (email, signature, business card...)",
+    "noClient": {
+      "title": "Create a client first",
+      "invoice": "You need at least one client to create an invoice.",
+      "quote": "You need at least one client to create a quote.",
+      "cta": "Create a client"
+    }
   },
   "company": {
     "title": "My Company",

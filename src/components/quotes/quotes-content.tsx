@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { QuoteDialog } from '@/components/quotes/quote-dialog'
 import { QuotesTable } from '@/components/quotes/quotes-table'
+import { NoClientsNotice } from '@/components/clients/no-clients-notice'
 import { useLiveCompany, useLiveClients, useLiveQuotes } from '@/lib/realtime'
 
 export function QuotesContent() {
@@ -35,6 +36,19 @@ export function QuotesContent() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  // Sans client, on ne peut pas créer de devis : on l'explique clairement.
+  if (clients.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t('quotes.title')}</h1>
+          <p className="text-muted-foreground">{quotes.length} devis</p>
+        </div>
+        <NoClientsNotice context="quote" />
       </div>
     )
   }

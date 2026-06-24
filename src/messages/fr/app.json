@@ -169,7 +169,13 @@
     "vatNumber": "N° TVA",
     "notes": "Notes",
     "importFromText": "Importer depuis du texte",
-    "importPlaceholder": "Collez ici les informations du client (email, signature, carte de visite...)"
+    "importPlaceholder": "Collez ici les informations du client (email, signature, carte de visite...)",
+    "noClient": {
+      "title": "Créez d'abord un client",
+      "invoice": "Vous avez besoin d'au moins un client pour créer une facture.",
+      "quote": "Vous avez besoin d'au moins un client pour créer un devis.",
+      "cta": "Créer un client"
+    }
   },
   "company": {
     "title": "Mon entreprise",
