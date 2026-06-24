@@ -35,12 +35,15 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const pathname = request.nextUrl.pathname
+
   // Routes publiques (pas de redirection)
-  const publicRoutes = ['/', '/login', '/auth/callback']
+  const publicRoutes = ['/', '/login', '/signup', '/forgot-password', '/auth/callback']
   const publicPrefixes = ['/auth/', '/mcp/', '/oauth/', '/.well-known/', '/api/', '/legal/']
 
-  const isPublicRoute = publicRoutes.some((route) => request.nextUrl.pathname === route) ||
-    publicPrefixes.some((prefix) => request.nextUrl.pathname.startsWith(prefix))
+  const isPublicRoute =
+    publicRoutes.some((route) => pathname === route) ||
+    publicPrefixes.some((prefix) => pathname.startsWith(prefix))
 
   if (!user && !isPublicRoute) {
     // Rediriger vers login si non authentifié
@@ -49,8 +52,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/')) {
-    // Rediriger vers dashboard si déjà connecté
+  // Pages d'entrée : un utilisateur déjà connecté est renvoyé au dashboard.
+  // /auth/reset-password est volontairement exclu (session de récupération active).
+  const authPages = new Set(['/', '/login', '/signup', '/forgot-password'])
+  if (user && authPages.has(pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

@@ -1,13 +1,16 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { sanitizeRedirect } from '@/lib/auth/redirect'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const error_param = searchParams.get('error')
   const error_description = searchParams.get('error_description')
-  const next = searchParams.get('next') ?? '/dashboard'
+  // Destination interne sanitisée (fix open-redirect) : un chemin relatif ou une
+  // URL de même origine uniquement, sinon /dashboard.
+  const next = sanitizeRedirect(searchParams.get('next'), origin)
 
   // Si Supabase renvoie une erreur directement
   if (error_param) {
@@ -42,13 +45,10 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.session) {
-      // Vérifier s'il y a un redirect OAuth MCP
-      const oauthRedirect = searchParams.get('oauth_redirect')
-      if (oauthRedirect) {
-        return NextResponse.redirect(oauthRedirect)
-      }
-
-      return NextResponse.redirect(`${origin}${next}`)
+      // Redirect OAuth MCP éventuel, sinon destination demandée — les deux
+      // sanitisés à la même origine (jamais de redirection externe).
+      const dest = sanitizeRedirect(searchParams.get('oauth_redirect'), origin, next)
+      return NextResponse.redirect(`${origin}${dest}`)
     }
 
     console.error('[AUTH CALLBACK] Exchange error:', error?.message, error?.status)
