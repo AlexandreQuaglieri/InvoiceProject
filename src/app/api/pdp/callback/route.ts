@@ -12,17 +12,31 @@ function getOrigin(request: NextRequest): string {
 // Retour du consentement Super PDP : échange le code, récupère la société, stocke les jetons.
 export async function GET(request: NextRequest) {
   const origin = getOrigin(request)
-  const settings = (status: string) => NextResponse.redirect(`${origin}/settings?tab=einvoicing&pdp=${status}`)
+  // `reason` rend l'échec diagnostiquable depuis l'URL (config | state | exchange).
+  const settings = (status: string, reason?: string) =>
+    NextResponse.redirect(
+      `${origin}/settings?tab=einvoicing&pdp=${status}${reason ? `&reason=${reason}` : ''}`
+    )
 
   const clientId = process.env.SUPER_PDP_CLIENT_ID
   const clientSecret = process.env.SUPER_PDP_CLIENT_SECRET
-  if (!clientId || !clientSecret) return settings('error')
+  if (!clientId || !clientSecret) return settings('error', 'config')
 
   const url = request.nextUrl
   const code = url.searchParams.get('code')
   const state = url.searchParams.get('state')
   const cookieState = request.cookies.get('pdp_oauth_state')?.value
-  if (!code || !state || !cookieState || state !== cookieState) return settings('error')
+  if (!code || !state || !cookieState || state !== cookieState) {
+    // Cause typique : cookie de state expiré (consentement Super PDP trop long)
+    // ou domaine de retour différent de celui qui a posé le cookie.
+    console.error('[pdp/callback] state CSRF invalide', {
+      hasCode: !!code,
+      hasState: !!state,
+      hasCookie: !!cookieState,
+      match: state === cookieState,
+    })
+    return settings('error', 'state')
+  }
 
   const supabase = await createClient()
   const {
@@ -74,6 +88,6 @@ export async function GET(request: NextRequest) {
     return res
   } catch (e) {
     console.error('[pdp/callback] échange du code OAuth en échec', { userId: user.id }, e)
-    return settings('error')
+    return settings('error', 'exchange')
   }
 }

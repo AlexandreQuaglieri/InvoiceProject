@@ -28,12 +28,13 @@ export async function GET(request: NextRequest) {
   const authorizeUrl = buildAuthorizeUrl({ clientId, redirectUri, state })
 
   const res = NextResponse.redirect(authorizeUrl)
-  // state anti-CSRF (vérifié au retour).
+  // state anti-CSRF (vérifié au retour). 1h : laisse le temps de créer/configurer
+  // son compte Super PDP pendant la redirection (sinon le token n'est pas sauvé).
   res.cookies.set('pdp_oauth_state', state, {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',
-    maxAge: 600,
+    maxAge: 3600,
     path: '/',
   })
   return res
