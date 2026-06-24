@@ -116,18 +116,19 @@ function mintLinkToken(payload: Record<string, unknown>, secret: string): string
 }
 
 // URL d'association admin pour l'org donnée, ou null si non configuré.
+// `app` = identifiant de l'app (pas un secret) — fourni par l'appelant.
 export function buildAdminLinkUrl(opts: {
+  app: string
   orgId: string
   appUserId: string
   email?: string
 }): string | null {
   const base = hubBase()
   const secret = process.env.NOTIFICATION_SIGNING_SECRET
-  const app = process.env.NOTIFICATION_APP
-  if (!base || !secret || !app) return null
+  if (!base || !secret || !opts.app) return null
   const token = mintLinkToken(
     {
-      app,
+      app: opts.app,
       app_user_id: opts.appUserId,
       scope: 'admin',
       org_id: opts.orgId,
