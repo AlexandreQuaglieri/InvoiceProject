@@ -175,6 +175,17 @@
       "invoice": "You need at least one client to create an invoice.",
       "quote": "You need at least one client to create a quote.",
       "cta": "Create a client"
+    },
+    "aiFill": {
+      "title": "Let the AI fill it in for you",
+      "placeholder": "Client name or SIREN…",
+      "cta": "Search",
+      "hint": "I'll fetch the address, SIRET and VAT from the official registry (INSEE).",
+      "candidatesTitle": "Several companies match — pick one:",
+      "back": "Back",
+      "filled": "Form pre-filled — review and add the client's email.",
+      "notFound": "Company not found — fill in the form below manually.",
+      "error": "Search failed. Please try again."
     }
   },
   "company": {

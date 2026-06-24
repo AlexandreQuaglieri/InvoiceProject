@@ -175,6 +175,17 @@
       "invoice": "Vous avez besoin d'au moins un client pour créer une facture.",
       "quote": "Vous avez besoin d'au moins un client pour créer un devis.",
       "cta": "Créer un client"
+    },
+    "aiFill": {
+      "title": "Laissez l'IA remplir pour vous",
+      "placeholder": "Nom ou SIREN du client…",
+      "cta": "Chercher",
+      "hint": "Je récupère l'adresse, le SIRET et la TVA depuis le répertoire officiel (INSEE).",
+      "candidatesTitle": "Plusieurs entreprises correspondent — choisissez :",
+      "back": "Retour",
+      "filled": "Fiche pré-remplie — vérifiez et ajoutez l'email du client.",
+      "notFound": "Entreprise introuvable — remplissez la fiche à la main ci-dessous.",
+      "error": "Recherche impossible. Réessayez."
     }
   },
   "company": {
