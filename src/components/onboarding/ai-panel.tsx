@@ -156,7 +156,7 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
   }
 
   return (
-    <PanelShell icon={Sparkles} title={t(`ai.title.${step}`)} subtitle={t(`ai.subtitle.${step}`)}>
+    <PanelShell>
       {phase === 'idle' && (
         <div className="flex flex-col gap-4">
           <input

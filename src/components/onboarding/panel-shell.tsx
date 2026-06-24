@@ -8,11 +8,11 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 
 interface PanelShellProps {
-  icon: LucideIcon
-  title: string
-  subtitle: string
-  // Optionnel : si le panneau EST le contenu de l'étape (parcours simplifié),
-  // il n'y a rien à « fermer » et le bouton est masqué.
+  // En-tête optionnel : sans `title`, le panneau n'affiche PAS d'entête (il EST
+  // le contenu de l'étape, le titre de l'étape suffit — parcours épuré).
+  icon?: LucideIcon
+  title?: string
+  subtitle?: string
   onClose?: () => void
   children: React.ReactNode
 }
@@ -22,27 +22,31 @@ export function PanelShell({ icon: Icon, title, subtitle, onClose, children }: P
 
   return (
     <div className="mt-4 overflow-hidden rounded-xl border bg-card shadow-soft motion-safe:animate-[panel-in_0.3s_ease-out]">
-      <div className="flex items-center gap-3 border-b px-5 py-4">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-muted">
-          <Icon className="h-4 w-4" aria-hidden="true" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold">{title}</h3>
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
+      {title && (
+        <div className="flex items-center gap-3 border-b px-5 py-4">
+          {Icon && (
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-muted">
+              <Icon className="h-4 w-4" aria-hidden="true" />
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold">{title}</h3>
+            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+          </div>
+          {onClose && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              aria-label={t('panel.close')}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          )}
         </div>
-        {onClose && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            aria-label={t('panel.close')}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-4 w-4" aria-hidden="true" />
-          </Button>
-        )}
-      </div>
+      )}
       <div className="p-5">{children}</div>
     </div>
   )
