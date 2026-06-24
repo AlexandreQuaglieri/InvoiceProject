@@ -1,3 +1,38 @@
+import { createHmac } from 'crypto'
+
+// Génère un lien d'association ADMIN vers le hub : l'app signe un token localement
+// (HMAC-SHA256 avec NOTIFICATION_SIGNING_SECRET) et l'utilisateur est redirigé vers
+// {HUB}/api/link-admin?token=… pour réclamer les droits admin de l'org. Doc hub.
+function mintLinkToken(payload: Record<string, unknown>, secret: string): string {
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url')
+  const sig = createHmac('sha256', secret).update(body).digest('base64url')
+  return `${body}.${sig}`
+}
+
+// URL d'association admin, ou null si l'intégration n'est pas configurée.
+export function buildAdminLinkUrl(opts: {
+  app: string
+  orgId: string
+  appUserId: string
+  email?: string
+}): string | null {
+  const base = process.env.NOTIFICATION_HUB_URL
+  const secret = process.env.NOTIFICATION_SIGNING_SECRET
+  if (!base || !secret) return null
+  const token = mintLinkToken(
+    {
+      app: opts.app,
+      app_user_id: opts.appUserId,
+      scope: 'admin',
+      org_id: opts.orgId,
+      ...(opts.email ? { email: opts.email } : {}),
+      exp: Math.floor(Date.now() / 1000) + 120,
+    },
+    secret
+  )
+  return `${base.replace(/\/$/, '')}/api/link-admin?token=${encodeURIComponent(token)}`
+}
+
 // Émission d'événements vers le hub de notification Quatools (hub.quatools.fr).
 //   POST {NOTIFICATION_HUB_URL}/api/notifications/emit
 //   Authorization: Bearer <NOTIFICATION_API_KEY>
