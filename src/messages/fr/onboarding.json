@@ -59,6 +59,10 @@
       "candidatesTitle": "Plusieurs entreprises correspondent — choisissez la vôtre :",
       "candidatesNone": "Aucune ne correspond — saisir à la main",
       "searchAgain": "Modifier ma recherche",
+      "notFound": {
+        "message": "Je n'ai pas trouvé votre entreprise dans le répertoire officiel (INSEE). Si elle est très récente, ou si vous avez un document officiel (Kbis, avis SIRENE, extrait du Journal Officiel), déposez-le et je le lis pour vous. Sinon, complétez la fiche ci-dessous — je vous guide.",
+        "upload": "Déposer un document officiel"
+      },
       "analyzing": {
         "company": "Lecture en cours…",
         "client": "Analyse des coordonnées…"

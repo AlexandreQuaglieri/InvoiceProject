@@ -59,6 +59,10 @@
       "candidatesTitle": "Several companies match — pick yours:",
       "candidatesNone": "None match — fill in manually",
       "searchAgain": "Edit my search",
+      "notFound": {
+        "message": "I couldn't find your company in the official registry (INSEE). If it's very recent, or if you have an official document (registration extract, SIRENE notice, Journal Officiel extract), drop it and I'll read it for you. Otherwise, complete the form below — I'll guide you.",
+        "upload": "Upload an official document"
+      },
       "analyzing": {
         "company": "Reading…",
         "client": "Analyzing details…"

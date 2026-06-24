@@ -1,15 +1,26 @@
 'use client'
 
 // Panneau « Avec l'IA » de l'étape en cours.
-//  - ENTREPRISE : l'assistant cherche pour vous. Texte (nom / SIREN / infos) →
-//    recherche base officielle (/api/company-search). 1 résultat → fiche
-//    préremplie ; plusieurs → sélecteur ; aucun → repli extraction IA (Kbis
-//    collé). Le dépôt d'un document → extraction vision (/api/extract-document).
+//  - ENTREPRISE : l'assistant cherche pour vous. Texte (nom / SIREN / phrase) →
+//    recherche base officielle (l'IA affine une phrase si besoin). Trouvé : fiche
+//    préremplie (1 résultat) ou sélecteur (homonymes). NON trouvé : message clair
+//    + invite à déposer un document officiel + fiche à compléter (l'IA continue
+//    d'aider). Le dépôt d'un document → extraction vision.
 //  - CLIENT : extraction IA (document ou texte libre).
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { ArrowLeft, Building2, CheckCircle2, ChevronRight, FileUp, Loader2, Search, Sparkles } from 'lucide-react'
+import {
+  ArrowLeft,
+  Building2,
+  CheckCircle2,
+  ChevronRight,
+  FileUp,
+  Loader2,
+  Search,
+  SearchX,
+  Sparkles,
+} from 'lucide-react'
 
 import { PanelShell } from './panel-shell'
 import { useOnboardingSubmit } from './use-onboarding-submit'
@@ -75,7 +86,7 @@ interface AiPanelProps {
   onManualFallback: () => void
 }
 
-type Phase = 'idle' | 'analyzing' | 'searching' | 'candidates' | 'review'
+type Phase = 'idle' | 'searching' | 'analyzing' | 'candidates' | 'review' | 'notfound'
 
 export function AiPanel({ step, onManualFallback }: AiPanelProps) {
   const t = useTranslations('onboarding')
@@ -88,21 +99,28 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
   const [companyData, setCompanyData] = useState<Partial<CompanyFormData> | null>(null)
   const [clientDefaults, setClientDefaults] = useState<Client | null>(null)
   const [candidates, setCandidates] = useState<CompanyCandidate[]>([])
+  // Infos comprises du texte (nom commercial, email du compte) à fusionner sur
+  // la fiche officielle choisie.
+  const [pendingExtras, setPendingExtras] = useState<Partial<CompanyFormData>>({})
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const companyFormRef = useRef<CompanyFormRef>(null)
 
-  // Préremplissage du CompanyForm via son mécanisme setFormValues existant,
-  // une fois le formulaire monté en phase review.
+  // Préremplissage du CompanyForm (review OU not found) une fois monté.
   useEffect(() => {
-    if (phase === 'review' && step === 'company' && companyData) {
+    if ((phase === 'review' || phase === 'notfound') && step === 'company' && companyData) {
       companyFormRef.current?.setFormValues(companyData)
     }
   }, [phase, step, companyData])
 
   // Extraction IA d'un document/texte (Claude vision) — kind = step.
-  const extract = async (input: { file?: File; text?: string }) => {
-    setPhase('analyzing')
+  // opts.fallback : appelée après une recherche infructueuse (étape entreprise)
+  // → la fiche est présentée en mode « non trouvé » (l'IA continue d'aider).
+  const extract = async (
+    input: { file?: File; text?: string },
+    opts?: { fallback?: boolean; extras?: Partial<CompanyFormData> }
+  ) => {
+    if (!opts?.fallback) setPhase('analyzing')
     try {
       const formData = new FormData()
       if (input.file) formData.append('file', input.file)
@@ -113,52 +131,69 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
       const result = (await response.json()) as { success?: boolean; data?: unknown; error?: string }
 
       if (!response.ok || !result.success || !result.data) {
+        if (opts?.fallback && step === 'company') {
+          // Recherche ET lecture infructueuses → fiche à compléter + invite document.
+          setCompanyData({ ...(opts.extras ?? {}) })
+          setPhase('notfound')
+          return
+        }
         toast.error(result.error || t('ai.extractError'))
         setPhase('idle')
         return
       }
 
       if (step === 'company') {
-        setCompanyData(result.data as Partial<CompanyFormData>)
+        setCompanyData({ ...(result.data as Partial<CompanyFormData>), ...(opts?.extras ?? {}) })
+        setPhase(opts?.fallback ? 'notfound' : 'review')
       } else {
         setClientDefaults(toClientDefaults(result.data as ClientExtract))
+        setPhase('review')
       }
-      setPhase('review')
     } catch (error) {
       console.error('Extraction IA (onboarding) échouée', error)
+      if (opts?.fallback && step === 'company') {
+        setCompanyData({ ...(opts.extras ?? {}) })
+        setPhase('notfound')
+        return
+      }
       toast.error(t('ai.extractError'))
       setPhase('idle')
     }
   }
 
-  // Recherche d'entreprise par nom / SIREN sur la base officielle.
+  // Recherche d'entreprise par nom / SIREN / phrase sur la base officielle.
   const searchCompany = async (query: string) => {
     setPhase('searching')
     try {
       const response = await fetch(`/api/company-search?q=${encodeURIComponent(query)}`)
-      const data = (await response.json()) as { candidates?: CompanyCandidate[] }
+      const data = (await response.json()) as {
+        candidates?: CompanyCandidate[]
+        extras?: Partial<CompanyFormData>
+      }
       const found = data.candidates ?? []
+      const extras = data.extras ?? {}
 
       if (found.length === 0) {
-        // Rien trouvé dans la base : peut-être un Kbis collé → extraction IA.
-        await extract({ text: query })
+        // Introuvable dans la base : l'IA lit le texte et propose un document.
+        await extract({ text: query }, { fallback: true, extras })
         return
       }
       if (found.length === 1) {
-        setCompanyData(found[0].fields)
+        setCompanyData({ ...found[0].fields, ...extras })
         setPhase('review')
         return
       }
+      setPendingExtras(extras)
       setCandidates(found)
       setPhase('candidates')
     } catch (error) {
       console.error('Recherche entreprise échouée', error)
-      await extract({ text: query })
+      await extract({ text: query }, { fallback: true })
     }
   }
 
   const pickCandidate = (candidate: CompanyCandidate) => {
-    setCompanyData(candidate.fields)
+    setCompanyData({ ...candidate.fields, ...pendingExtras })
     setPhase('review')
   }
 
@@ -200,6 +235,7 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
     setCompanyData(null)
     setClientDefaults(null)
     setCandidates([])
+    setPendingExtras({})
     setPhase('idle')
   }
 
@@ -208,15 +244,17 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
 
   return (
     <PanelShell>
+      {/* Toujours monté : permet « déposer un document » depuis l'état « non trouvé ». */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ALLOWED_FILE_TYPES.join(',')}
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {phase === 'idle' && (
         <div className="flex flex-col gap-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ALLOWED_FILE_TYPES.join(',')}
-            onChange={handleFileChange}
-            className="hidden"
-          />
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -309,6 +347,33 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
           <Button type="button" variant="ghost" size="sm" onClick={onManualFallback}>
             {t('ai.candidatesNone')}
           </Button>
+        </div>
+      )}
+
+      {phase === 'notfound' && (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-dashed bg-muted/40 px-4 py-3">
+            <p className="flex items-start gap-2 text-sm">
+              <SearchX className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span>{t('ai.notFound.message')}</span>
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileUp className="mr-2 h-4 w-4" aria-hidden="true" />
+                {t('ai.notFound.upload')}
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={restart}>
+                <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+                {t('ai.searchAgain')}
+              </Button>
+            </div>
+          </div>
+          <CompanyForm ref={companyFormRef} company={company} embedded />
         </div>
       )}
 
