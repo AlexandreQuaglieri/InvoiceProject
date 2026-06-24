@@ -7,13 +7,12 @@ import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { OAUTH_PROVIDERS, type OAuthProvider } from '@/lib/validations/auth'
-import { GoogleIcon, AppleIcon, MicrosoftIcon, DiscordIcon } from './provider-icons'
+import { GoogleIcon, MicrosoftIcon, DiscordIcon } from './provider-icons'
 
 type ProviderDef = { id: OAuthProvider; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }
 
 const ALL_PROVIDERS: ProviderDef[] = [
   { id: 'google', label: 'Google', Icon: GoogleIcon },
-  { id: 'apple', label: 'Apple', Icon: AppleIcon },
   { id: 'azure', label: 'Microsoft', Icon: MicrosoftIcon },
   { id: 'discord', label: 'Discord', Icon: DiscordIcon },
 ]

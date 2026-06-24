@@ -38,5 +38,5 @@ export type AuthResult =
   | { ok: false; error: AuthErrorCode }
 
 // Providers OAuth proposés à l'utilisateur final. 'azure' = Microsoft côté Supabase.
-export const OAUTH_PROVIDERS = ['google', 'apple', 'azure', 'discord'] as const
+export const OAUTH_PROVIDERS = ['google', 'azure', 'discord'] as const
 export type OAuthProvider = (typeof OAUTH_PROVIDERS)[number]

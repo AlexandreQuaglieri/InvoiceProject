@@ -306,15 +306,9 @@ secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 # Requis pour la connexion Google en local.
 skip_nonce_check = true
 
+# Apple non utilisé (retiré des méthodes proposées).
 [auth.external.apple]
-enabled = true
-client_id = "env(SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID)"
-# DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
-secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
-redirect_uri = ""
-url = ""
-skip_nonce_check = false
-email_optional = false
+enabled = false
 
 # Microsoft = provider `azure` côté Supabase.
 [auth.external.azure]
