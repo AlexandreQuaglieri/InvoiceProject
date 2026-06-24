@@ -3,7 +3,7 @@
 import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getUser } from './auth'
-import { emitHubEvent } from '@/lib/notifications/hub'
+import { emitHubEvent, ensureOrg, SUPPORT_EVENT } from '@/lib/notifications/hub'
 
 // Envoi d'un message d'assistance. Persisté en base (support_messages) : rien
 // n'est perdu. Le hub de notification relèvera ces messages ultérieurement.
@@ -40,9 +40,12 @@ export async function sendSupportMessage(input: {
   // ne sont pas posées.
   const subject = input.subject?.trim() || null
   const supportEmail = process.env.NOTIFICATION_SUPPORT_EMAIL
-  after(() =>
-    emitHubEvent({
-      event: 'facturia.support.message_created',
+  after(async () => {
+    const orgId = await ensureOrg()
+    if (!orgId) return
+    await emitHubEvent({
+      event: SUPPORT_EVENT,
+      orgId,
       recipients: supportEmail ? [{ email: supportEmail, name: 'Support Factur-IA' }] : [],
       payload: {
         subject,
@@ -51,7 +54,7 @@ export async function sendSupportMessage(input: {
         author_id: user.id,
       },
     })
-  )
+  })
 
   return { success: true }
 }
