@@ -36,8 +36,7 @@ export async function sendSupportMessage(input: {
   }
 
   // Notifie l'équipe via le hub (best-effort, hors chemin critique).
-  // Inerte tant que NOTIFICATION_HUB_URL / NOTIFICATION_API_KEY / NOTIFICATION_ORG_ID
-  // ne sont pas posées.
+  // Inerte tant que NOTIFICATION_HUB_URL / NOTIFICATION_API_KEY ne sont pas posées.
   const subject = input.subject?.trim() || null
   const supportEmail = process.env.NOTIFICATION_SUPPORT_EMAIL
   after(async () => {

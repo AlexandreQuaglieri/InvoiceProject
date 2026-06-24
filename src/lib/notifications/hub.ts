@@ -81,6 +81,16 @@ export async function registerSupportEvents(app: string): Promise<{ ok: boolean;
   }
 }
 
+// Auto-déclaration des events au démarrage de l'app (instrumentation). Lit le slug
+// dans NOTIFICATION_APP. Best-effort : aucune erreur ne remonte, juste un log.
+// → plus besoin de visiter une URL pour déclarer les events.
+export async function registerAppEvents(): Promise<void> {
+  const app = process.env.NOTIFICATION_APP
+  if (!app) return
+  const res = await registerSupportEvents(app)
+  if (!res.ok) console.error('[hub] auto-déclaration des events échouée', res.status, res.body)
+}
+
 export type HubRecipient = {
   app_user_id?: string
   email?: string
