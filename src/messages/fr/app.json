@@ -27,7 +27,7 @@
   "nav": {
     "menu": "Menu",
     "dashboard": "Tableau de bord",
-    "aiAssistant": "Assistant IA",
+    "aiAssistant": "Assistant facturation",
     "invoices": "Factures",
     "inbox": "Factures reçues",
     "ereporting": "E-reporting",
@@ -251,7 +251,7 @@
     "testApiKey": "Tester la clé"
   },
   "chat": {
-    "title": "Assistant IA",
+    "title": "Assistant facturation",
     "placeholder": "Ex: Crée une facture de 500€ pour Client X...",
     "send": "Envoyer",
     "thinking": "Réflexion en cours..."

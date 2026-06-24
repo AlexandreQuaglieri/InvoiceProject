@@ -283,7 +283,7 @@ export function FloatingChatWidget() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bot className="h-5 w-5 text-primary" />
-                <SheetTitle className="text-base font-semibold">Assistant IA</SheetTitle>
+                <SheetTitle className="text-base font-semibold">Assistant facturation</SheetTitle>
               </div>
               <div className="flex items-center gap-1">
                 {/* Sélecteur de conversation */}

@@ -253,7 +253,7 @@ export function AICopilotPanel() {
         </button>
         <div className="flex-1 flex items-center">
           <span className="text-xs text-muted-foreground [writing-mode:vertical-rl] rotate-180 select-none">
-            Assistant IA
+            Assistant facturation
           </span>
         </div>
       </div>
@@ -266,7 +266,7 @@ export function AICopilotPanel() {
       <div className="flex items-center justify-between px-3 py-2.5 border-b flex-shrink-0">
         <div className="flex items-center gap-2">
           <Bot className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">Assistant IA</span>
+          <span className="text-sm font-semibold">Assistant facturation</span>
         </div>
         <div className="flex items-center gap-1">
           {/* Sélecteur de conversation */}
@@ -332,7 +332,7 @@ export function AICopilotPanel() {
           {messages.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Bot className="h-8 w-8 mx-auto mb-3 opacity-30" />
-              <p className="text-xs font-medium mb-3">Sur ce document, je peux :</p>
+              <p className="text-xs font-medium mb-3">Je peux tout faire, demandez-moi.</p>
               <ul className="text-xs space-y-1.5 text-muted-foreground/70 text-left bg-muted/50 rounded-lg p-3">
                 <li>• Modifier les lignes et les prix</li>
                 <li>• Changer le client ou les dates</li>

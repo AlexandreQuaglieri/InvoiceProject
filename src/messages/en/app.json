@@ -27,7 +27,7 @@
   "nav": {
     "menu": "Menu",
     "dashboard": "Dashboard",
-    "aiAssistant": "AI Assistant",
+    "aiAssistant": "Billing assistant",
     "invoices": "Invoices",
     "inbox": "Received invoices",
     "ereporting": "E-reporting",
@@ -251,7 +251,7 @@
     "testApiKey": "Test key"
   },
   "chat": {
-    "title": "AI Assistant",
+    "title": "Billing assistant",
     "placeholder": "E.g.: Create an invoice for €500 for Client X...",
     "send": "Send",
     "thinking": "Thinking..."

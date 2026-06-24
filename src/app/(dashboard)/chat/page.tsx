@@ -13,7 +13,7 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
   return (
     <div className="flex flex-col h-[calc(100vh-theme(spacing.16))]">
       <div className="flex-shrink-0 pb-4">
-        <h1 className="text-3xl font-bold tracking-tight">Assistant IA</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Assistant facturation</h1>
         <p className="text-muted-foreground">
           Créez des factures et devis en langage naturel.
         </p>
