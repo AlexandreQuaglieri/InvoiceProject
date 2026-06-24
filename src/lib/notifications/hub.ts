@@ -55,8 +55,10 @@ export async function registerSupportEvents(): Promise<{ ok: boolean; status: nu
         {
           slug: SUPPORT_EVENT,
           label: 'Nouveau message support',
-          category: 'support',
-          supported_channels: ['email', 'discord'],
+          // category ∈ {billing, member, team, shop, system} (sinon l'admin ne l'affiche pas)
+          category: 'system',
+          // canaux ∈ {email, discord_webhook, discord_dm}
+          supported_channels: ['email', 'discord_webhook', 'discord_dm'],
           audiences: ['admin'],
           description: 'Un utilisateur a écrit via le bouton Assistance.',
           default_active: true,
