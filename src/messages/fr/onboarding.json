@@ -16,7 +16,7 @@
     "headings": {
       "company": {
         "title": "Déposez votre Kbis",
-        "subtitle": "Micro-entreprise : votre avis SIRENE · Association : extrait du Journal Officiel. L'assistant lit le document et remplit votre fiche."
+        "subtitle": "Donnez-moi le nom ou le SIREN, ou déposez un document (Kbis, avis SIRENE, extrait du Journal Officiel) — je cherche votre entreprise et remplis la fiche."
       },
       "einvoicing": {
         "title": "Activez la facturation électronique",
@@ -45,14 +45,20 @@
       },
       "dropHint": "PDF, PNG ou JPG · max 10 Mo",
       "orPaste": {
-        "company": "Ou collez le texte",
+        "company": "Ou tapez le nom ou le SIREN",
         "client": "Ou collez les informations"
       },
       "placeholder": {
-        "company": "Collez le contenu de votre Kbis, ou décrivez votre entreprise…",
+        "company": "Nom de l'entreprise, SIREN, ou collez le contenu de votre Kbis…",
         "client": "Collez un email, une signature, des coordonnées…"
       },
       "analyze": "Analyser",
+      "searchCta": "Rechercher",
+      "searching": "Recherche de votre entreprise…",
+      "searchingHint": "Je consulte l'annuaire officiel des entreprises (INSEE / base SIRENE).",
+      "candidatesTitle": "Plusieurs entreprises correspondent — choisissez la vôtre :",
+      "candidatesNone": "Aucune ne correspond — saisir à la main",
+      "searchAgain": "Modifier ma recherche",
       "analyzing": {
         "company": "Lecture en cours…",
         "client": "Analyse des coordonnées…"

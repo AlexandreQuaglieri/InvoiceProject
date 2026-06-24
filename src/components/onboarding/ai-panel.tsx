@@ -1,13 +1,15 @@
 'use client'
 
-// Panneau « Avec l'IA » : fichier (Kbis/PDF/image) ou texte libre →
-// POST /api/extract-document (kind = étape) → formulaire de l'étape PRÉREMPLI
-// que l'utilisateur vérifie puis soumet. Chemin UNIQUE et guidé du parcours
-// simplifié (l'IA d'abord, formulaire manuel en repli).
+// Panneau « Avec l'IA » de l'étape en cours.
+//  - ENTREPRISE : l'assistant cherche pour vous. Texte (nom / SIREN / infos) →
+//    recherche base officielle (/api/company-search). 1 résultat → fiche
+//    préremplie ; plusieurs → sélecteur ; aucun → repli extraction IA (Kbis
+//    collé). Le dépôt d'un document → extraction vision (/api/extract-document).
+//  - CLIENT : extraction IA (document ou texte libre).
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { CheckCircle2, FileUp, Loader2, Sparkles, ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Building2, CheckCircle2, ChevronRight, FileUp, Loader2, Search, Sparkles } from 'lucide-react'
 
 import { PanelShell } from './panel-shell'
 import { useOnboardingSubmit } from './use-onboarding-submit'
@@ -32,6 +34,14 @@ type ClientExtract = {
   city?: string
   siret?: string
   vat_number?: string
+}
+
+// Candidat renvoyé par /api/company-search (base SIRENE).
+type CompanyCandidate = {
+  siren: string
+  name: string
+  city: string | null
+  fields: Partial<CompanyFormData>
 }
 
 const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
@@ -65,7 +75,7 @@ interface AiPanelProps {
   onManualFallback: () => void
 }
 
-type Phase = 'idle' | 'analyzing' | 'review'
+type Phase = 'idle' | 'analyzing' | 'searching' | 'candidates' | 'review'
 
 export function AiPanel({ step, onManualFallback }: AiPanelProps) {
   const t = useTranslations('onboarding')
@@ -77,6 +87,7 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [companyData, setCompanyData] = useState<Partial<CompanyFormData> | null>(null)
   const [clientDefaults, setClientDefaults] = useState<Client | null>(null)
+  const [candidates, setCandidates] = useState<CompanyCandidate[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const companyFormRef = useRef<CompanyFormRef>(null)
@@ -89,7 +100,8 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
     }
   }, [phase, step, companyData])
 
-  const analyze = async (input: { file?: File; text?: string }) => {
+  // Extraction IA d'un document/texte (Claude vision) — kind = step.
+  const extract = async (input: { file?: File; text?: string }) => {
     setPhase('analyzing')
     try {
       const formData = new FormData()
@@ -98,11 +110,7 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
       formData.append('kind', step)
 
       const response = await fetch('/api/extract-document', { method: 'POST', body: formData })
-      const result = (await response.json()) as {
-        success?: boolean
-        data?: unknown
-        error?: string
-      }
+      const result = (await response.json()) as { success?: boolean; data?: unknown; error?: string }
 
       if (!response.ok || !result.success || !result.data) {
         toast.error(result.error || t('ai.extractError'))
@@ -123,7 +131,46 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
     }
   }
 
-  // Validation partagée clic / glisser-déposer.
+  // Recherche d'entreprise par nom / SIREN sur la base officielle.
+  const searchCompany = async (query: string) => {
+    setPhase('searching')
+    try {
+      const response = await fetch(`/api/company-search?q=${encodeURIComponent(query)}`)
+      const data = (await response.json()) as { candidates?: CompanyCandidate[] }
+      const found = data.candidates ?? []
+
+      if (found.length === 0) {
+        // Rien trouvé dans la base : peut-être un Kbis collé → extraction IA.
+        await extract({ text: query })
+        return
+      }
+      if (found.length === 1) {
+        setCompanyData(found[0].fields)
+        setPhase('review')
+        return
+      }
+      setCandidates(found)
+      setPhase('candidates')
+    } catch (error) {
+      console.error('Recherche entreprise échouée', error)
+      await extract({ text: query })
+    }
+  }
+
+  const pickCandidate = (candidate: CompanyCandidate) => {
+    setCompanyData(candidate.fields)
+    setPhase('review')
+  }
+
+  // Soumission du texte : entreprise = recherche ; client = extraction.
+  const submitText = () => {
+    const value = text.trim()
+    if (!value) return
+    if (step === 'company') void searchCompany(value)
+    else void extract({ text: value })
+  }
+
+  // Validation partagée clic / glisser-déposer → toujours extraction (document).
   const acceptFile = (file: File | undefined | null) => {
     if (!file) return
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
@@ -134,7 +181,7 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
       toast.error(t('ai.fileTooLarge'))
       return
     }
-    void analyze({ file })
+    void extract({ file })
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,8 +199,12 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
   const restart = () => {
     setCompanyData(null)
     setClientDefaults(null)
+    setCandidates([])
     setPhase('idle')
   }
+
+  const loadingLabel = phase === 'searching' ? t('ai.searching') : t(`ai.analyzing.${step}`)
+  const loadingHint = phase === 'searching' ? t('ai.searchingHint') : t(`ai.analyzingHint.${step}`)
 
   return (
     <PanelShell>
@@ -193,7 +244,7 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
             <Label htmlFor={`onboarding-ai-text-${step}`}>{t(`ai.orPaste.${step}`)}</Label>
             <Textarea
               id={`onboarding-ai-text-${step}`}
-              rows={5}
+              rows={step === 'company' ? 3 : 5}
               placeholder={t(`ai.placeholder.${step}`)}
               value={text}
               onChange={(event) => setText(event.target.value)}
@@ -204,21 +255,60 @@ export function AiPanel({ step, onManualFallback }: AiPanelProps) {
             <Button type="button" variant="ghost" size="sm" onClick={onManualFallback}>
               {t('ai.manualFallback')}
             </Button>
-            <Button type="button" onClick={() => void analyze({ text })} disabled={!text.trim()}>
-              <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
-              {t('ai.analyze')}
+            <Button type="button" onClick={submitText} disabled={!text.trim()}>
+              {step === 'company' ? (
+                <Search className="mr-2 h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
+              )}
+              {step === 'company' ? t('ai.searchCta') : t('ai.analyze')}
             </Button>
           </div>
         </div>
       )}
 
-      {phase === 'analyzing' && (
+      {(phase === 'analyzing' || phase === 'searching') && (
         <div className="flex flex-col gap-3 py-2" role="status">
           <div className="flex items-center gap-3">
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-            <span className="text-sm font-semibold">{t(`ai.analyzing.${step}`)}</span>
+            <span className="text-sm font-semibold">{loadingLabel}</span>
           </div>
-          <p className="text-xs text-muted-foreground">{t(`ai.analyzingHint.${step}`)}</p>
+          <p className="text-xs text-muted-foreground">{loadingHint}</p>
+        </div>
+      )}
+
+      {phase === 'candidates' && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2.5">
+            <span className="text-sm">{t('ai.candidatesTitle')}</span>
+            <Button type="button" variant="ghost" size="sm" onClick={restart}>
+              <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
+              {t('ai.searchAgain')}
+            </Button>
+          </div>
+          <ul className="space-y-2">
+            {candidates.map((candidate) => (
+              <li key={candidate.siren}>
+                <button
+                  type="button"
+                  onClick={() => pickCandidate(candidate)}
+                  className="flex w-full items-center gap-3 rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">{candidate.name}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {[candidate.city, `SIREN ${candidate.siren}`].filter(Boolean).join(' · ')}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <Button type="button" variant="ghost" size="sm" onClick={onManualFallback}>
+            {t('ai.candidatesNone')}
+          </Button>
         </div>
       )}
 

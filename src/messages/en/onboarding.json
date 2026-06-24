@@ -16,7 +16,7 @@
     "headings": {
       "company": {
         "title": "Drop your registration document",
-        "subtitle": "Sole trader: your SIRENE notice · Association: Journal Officiel extract. The assistant reads the document and fills in your profile."
+        "subtitle": "Give me the name or SIREN, or drop a document — I'll find your company in the official registry and fill in the form."
       },
       "einvoicing": {
         "title": "Enable electronic invoicing",
@@ -45,14 +45,20 @@
       },
       "dropHint": "PDF, PNG or JPG · max 10 MB",
       "orPaste": {
-        "company": "Or paste the text",
+        "company": "Or type the name or SIREN",
         "client": "Or paste the information"
       },
       "placeholder": {
-        "company": "Paste your registration document content, or describe your company…",
+        "company": "Company name, SIREN, or paste your registration document…",
         "client": "Paste an email, a signature, contact details…"
       },
       "analyze": "Analyze",
+      "searchCta": "Search",
+      "searching": "Searching for your company…",
+      "searchingHint": "Checking the official company registry (INSEE / SIRENE).",
+      "candidatesTitle": "Several companies match — pick yours:",
+      "candidatesNone": "None match — fill in manually",
+      "searchAgain": "Edit my search",
       "analyzing": {
         "company": "Reading…",
         "client": "Analyzing details…"
