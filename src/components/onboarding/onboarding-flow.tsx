@@ -6,23 +6,10 @@
 //   1. Entreprise   ✓ === company !== null              (IA : « donne-moi ton Kbis »)
 //   2. Facture élec ✓ === raccordement PDP (pdpConnected) (activable ou « plus tard »)
 //   3. Premier client ✓ === clients.length > 0           (IA + branche ton assistant LLM)
-// Toute écriture (formulaire, IA, MCP) fait avancer la page via Realtime/write-through.
+// La page ne montre QUE l'étape en cours : aucune section annexe à parcourir.
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import {
-  ArrowRight,
-  BarChart3,
-  BellRing,
-  Check,
-  CheckCircle2,
-  Coffee,
-  FileCheck,
-  Lock,
-  MessageSquare,
-  Scale,
-  ShieldCheck,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { ArrowRight, Check, CheckCircle2, Lock, ShieldCheck } from 'lucide-react'
 
 import { AiPanel } from './ai-panel'
 import { ManualPanel } from './manual-panel'
@@ -33,7 +20,7 @@ import { ONBOARDING_STEPS, type ExtractStep, type OnboardingStep } from './types
 import { useLiveClients, useLiveCompany } from '@/lib/realtime'
 import { ActivatePdpButton } from '@/components/invoices/activate-pdp-button'
 import { Button } from '@/components/ui/button'
-import { SAPigeon, SAPlane } from '@/components/brand/street-art'
+import { SAPlane } from '@/components/brand/street-art'
 import { cn } from '@/lib/utils'
 
 interface OnboardingFlowProps {
@@ -125,8 +112,6 @@ export function OnboardingFlow({ pdpConnected, onAccept }: OnboardingFlowProps) 
       {/* Dès l'entreprise créée : on peut terminer sans être forcé de créer client/facture. */}
       {done.company && <FinishBar onFinish={() => setFinishing(true)} />}
 
-      <DemoBlock />
-      <NotDoBlock />
       <Reassure />
     </div>
   )
@@ -267,103 +252,6 @@ function Stepper({
         )
       })}
     </div>
-  )
-}
-
-/* ===================== Ce que Factur-IA fait ===================== */
-
-const DEMO_ITEMS: ReadonlyArray<{ key: string; icon: LucideIcon }> = [
-  { key: 'compliance', icon: ShieldCheck },
-  { key: 'quotes', icon: FileCheck },
-  { key: 'assistant', icon: MessageSquare },
-  { key: 'reminders', icon: BellRing },
-]
-
-function DemoBlock() {
-  const t = useTranslations('onboarding')
-
-  return (
-    <section className="mt-11">
-      <div className="mb-4 flex items-center gap-2.5">
-        <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-          {t('demo.eyebrow')}
-        </span>
-        <span className="relative flex min-w-0 flex-1 items-center">
-          <span className="h-px flex-1 bg-border" />
-          <SAPigeon
-            size={54}
-            className="pointer-events-none absolute bottom-[calc(50%-3px)] right-8 text-foreground opacity-85"
-          />
-        </span>
-      </div>
-      <div className="grid grid-cols-1 gap-3.5 min-[520px]:grid-cols-2 min-[880px]:grid-cols-4">
-        {DEMO_ITEMS.map(({ key, icon: Icon }) => (
-          <div
-            key={key}
-            className="flex flex-col gap-2.5 rounded-xl border bg-card p-4 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-pop"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted">
-              <Icon className="h-4 w-4" aria-hidden="true" />
-            </span>
-            <h4 className="text-[13.5px] font-semibold">{t(`demo.items.${key}.title`)}</h4>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              {t(`demo.items.${key}.desc`)}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-/* ===================== Ce que Factur-IA ne fait PAS ===================== */
-
-const NOTDO_ITEMS: ReadonlyArray<{ key: string; icon: LucideIcon; fun?: boolean }> = [
-  { key: 'accounting', icon: BarChart3 },
-  { key: 'decide', icon: ShieldCheck },
-  { key: 'legal', icon: Scale },
-  { key: 'coffee', icon: Coffee, fun: true },
-]
-
-function NotDoBlock() {
-  const t = useTranslations('onboarding')
-
-  return (
-    <section className="mt-8">
-      <div className="mb-4 flex items-center gap-2.5">
-        <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
-          {t.rich('notdo.eyebrow', {
-            em: (chunks) => (
-              <em className="italic text-foreground underline underline-offset-[3px]">{chunks}</em>
-            ),
-          })}
-        </span>
-        <span className="h-px flex-1 bg-border" />
-      </div>
-      <div className="grid grid-cols-1 gap-3.5 min-[520px]:grid-cols-2 min-[880px]:grid-cols-4">
-        {NOTDO_ITEMS.map(({ key, icon: Icon, fun }) => (
-          <div
-            key={key}
-            className={cn(
-              'flex flex-col gap-2.5 rounded-xl border bg-muted/40 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft',
-              fun && 'border-dashed bg-muted/25'
-            )}
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg border bg-background">
-              <Icon className="h-4 w-4" aria-hidden="true" />
-            </span>
-            <h4 className="text-[13.5px] font-semibold">{t(`notdo.items.${key}.title`)}</h4>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              {t(`notdo.items.${key}.desc`)}
-            </p>
-          </div>
-        ))}
-      </div>
-      <p className="mt-4 flex items-start gap-2 rounded-xl border border-dashed px-4 py-3 text-xs leading-relaxed text-muted-foreground">
-        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span>{t('notdo.note')}</span>
-      </p>
-    </section>
   )
 }
 
