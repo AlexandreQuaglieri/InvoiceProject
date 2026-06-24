@@ -1,7 +1,9 @@
 'use server'
 
+import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getUser } from './auth'
+import { emitHubEvent } from '@/lib/notifications/hub'
 
 // Envoi d'un message d'assistance. Persisté en base (support_messages) : rien
 // n'est perdu. Le hub de notification relèvera ces messages ultérieurement.
@@ -32,5 +34,24 @@ export async function sendSupportMessage(input: {
     console.error('[support] envoi message en échec', error)
     return { success: false, error: "Impossible d'envoyer le message. Réessayez." }
   }
+
+  // Notifie l'équipe via le hub (best-effort, hors chemin critique).
+  // Inerte tant que NOTIFICATION_HUB_URL / NOTIFICATION_API_KEY / NOTIFICATION_ORG_ID
+  // ne sont pas posées.
+  const subject = input.subject?.trim() || null
+  const supportEmail = process.env.NOTIFICATION_SUPPORT_EMAIL
+  after(() =>
+    emitHubEvent({
+      event: 'facturia.support.message_created',
+      recipients: supportEmail ? [{ email: supportEmail, name: 'Support Factur-IA' }] : [],
+      payload: {
+        subject,
+        message,
+        author_email: user.email ?? null,
+        author_id: user.id,
+      },
+    })
+  )
+
   return { success: true }
 }
