@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { ArrowLeft, Building2, ChevronRight, Loader2, Pencil, Plus, Search, Sparkles } from 'lucide-react'
+import { ArrowLeft, Building2, ChevronRight, Loader2, Pencil, Plus, Search } from 'lucide-react'
 
 import {
   Dialog,
@@ -182,10 +182,7 @@ export function ClientDialog({ client, trigger }: ClientDialogProps) {
             manuel reste entièrement disponible en dessous. */}
         {!client && (
           <div className="space-y-3 rounded-xl border bg-muted/40 p-3">
-            <p className="flex items-center gap-1.5 text-sm font-medium">
-              <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" />
-              {t('clients.aiFill.title')}
-            </p>
+            <p className="text-sm font-medium">{t('clients.aiFill.title')}</p>
             <form
               onSubmit={(event) => {
                 event.preventDefault()

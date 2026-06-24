@@ -177,7 +177,7 @@
       "cta": "Créer un client"
     },
     "aiFill": {
-      "title": "Laissez l'IA remplir pour vous",
+      "title": "Je cherche pour vous",
       "placeholder": "Nom ou SIREN du client…",
       "cta": "Chercher",
       "hint": "Je trouve votre client (même avec un nom approximatif) et récupère adresse, SIRET, TVA — et parfois l'email et le téléphone.",
