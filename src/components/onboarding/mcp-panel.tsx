@@ -9,14 +9,14 @@ import { toast } from 'sonner'
 import { Check, Copy, Plug, Zap } from 'lucide-react'
 
 import { PanelShell } from './panel-shell'
-import type { OnboardingStep } from './types'
+import type { ExtractStep } from './types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getMcpConnectorUrl } from '@/lib/base-url'
 
 interface McpPanelProps {
-  step: OnboardingStep
-  onClose: () => void
+  step: ExtractStep
+  onClose?: () => void
 }
 
 export function McpPanel({ step, onClose }: McpPanelProps) {

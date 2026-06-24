@@ -1,40 +1,33 @@
 'use client'
 
-// Porte d'entrée du dashboard : état 100 % DÉRIVÉ du store live (charte règle 1).
-// - une étape manque → parcours d'onboarding ;
-// - tout est fait mais CGU non acceptées → écran de complétion (consent gate),
-//   acceptation OPTIMISTE : bascule immédiate, rollback + toast si échec ;
-// - sinon → dashboard.
+// Porte d'entrée du dashboard.
+// - CGU non acceptées → parcours d'onboarding (qui gère lui-même ses 3 étapes
+//   ET l'écran de complétion/consentement comme état terminal).
+// - CGU acceptées → dashboard.
+// L'acceptation des CGU est le SIGNAL UNIQUE de complétion (l'écran de
+// complétion n'est atteignable qu'une fois l'entreprise créée — voir FinishBar).
+// Acceptation OPTIMISTE : bascule immédiate, rollback + toast si échec.
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import { OnboardingFlow } from './onboarding-flow'
-import { OnboardingCompletion } from './completion'
 import { DashboardContent } from '@/components/dashboard/dashboard-content'
 import { acceptTerms } from '@/actions/settings'
-import { useLiveClients, useLiveCompany, useLiveInvoices } from '@/lib/realtime'
 
 interface DashboardGateProps {
   termsAcceptedAt: string | null
+  // Raccordement PDP (user_settings.pdp_connected_at), hors store live.
+  pdpConnected: boolean
 }
 
-export function DashboardGate({ termsAcceptedAt }: DashboardGateProps) {
+export function DashboardGate({ termsAcceptedAt, pdpConnected }: DashboardGateProps) {
   const t = useTranslations('onboarding')
-  const company = useLiveCompany()
-  const clients = useLiveClients()
-  const invoices = useLiveInvoices()
 
   // Acceptation en session (optimiste) — seul state local, non dérivable.
   const [accepted, setAccepted] = useState(false)
 
-  const companyDone = company !== null
-  const clientDone = clients.length > 0
-  const invoiceDone = invoices.length > 0
-  const allDone = companyDone && clientDone && invoiceDone
-
   const handleAccept = async () => {
-    // Optimiste : on bascule sur le dashboard immédiatement, rollback si échec.
     setAccepted(true)
     try {
       const result = await acceptTerms()
@@ -49,13 +42,9 @@ export function DashboardGate({ termsAcceptedAt }: DashboardGateProps) {
     }
   }
 
-  if (!allDone) {
-    return <OnboardingFlow />
+  if (termsAcceptedAt !== null || accepted) {
+    return <DashboardContent />
   }
 
-  if (termsAcceptedAt === null && !accepted) {
-    return <OnboardingCompletion onAccept={() => void handleAccept()} />
-  }
-
-  return <DashboardContent />
+  return <OnboardingFlow pdpConnected={pdpConnected} onAccept={() => void handleAccept()} />
 }

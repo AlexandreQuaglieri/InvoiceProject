@@ -1,51 +1,56 @@
 'use client'
 
-// Écran de complétion : récap 100 % DÉRIVÉ du store live (entreprise, premier
-// client, première facture) + consent gate CGU/confidentialité. L'acceptation
-// optimiste est gérée par le dashboard-gate via onAccept().
+// Écran de complétion : récap DÉRIVÉ (entreprise, facture électronique, premier
+// client) + consent gate CGU/confidentialité. L'acceptation optimiste est gérée
+// par le dashboard-gate via onAccept(). Aucune étape n'est forcée : un état non
+// fait s'affiche en « à faire plus tard », pas en erreur.
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Check, ChevronRight, LayoutDashboard } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { useLiveClients, useLiveCompany, useLiveInvoices } from '@/lib/realtime'
+import { useLiveClients, useLiveCompany } from '@/lib/realtime'
 import { SAParachute, SARat } from '@/components/brand/street-art'
 import { cn } from '@/lib/utils'
 
 interface OnboardingCompletionProps {
   onAccept: () => void
+  eInvoicingActive: boolean
 }
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
-
-export function OnboardingCompletion({ onAccept }: OnboardingCompletionProps) {
+export function OnboardingCompletion({ onAccept, eInvoicingActive }: OnboardingCompletionProps) {
   const t = useTranslations('onboarding')
   const company = useLiveCompany()
   const clients = useLiveClients()
-  const invoices = useLiveInvoices()
   const [consent, setConsent] = useState(false)
 
-  // Premier client / première facture = les plus anciens (dérivé, jamais stocké).
+  // Premier client = le plus ancien (dérivé, jamais stocké).
   const firstClient = useMemo(
     () => [...clients].sort((a, b) => a.created_at.localeCompare(b.created_at))[0] ?? null,
     [clients]
   )
-  const firstInvoice = useMemo(
-    () => [...invoices].sort((a, b) => a.created_at.localeCompare(b.created_at))[0] ?? null,
-    [invoices]
-  )
 
-  const recap: Array<{ key: string; label: string; detail: string | null }> = [
-    { key: 'company', label: company?.name ?? '', detail: t('completion.recap.company') },
-    { key: 'client', label: firstClient?.name ?? '', detail: t('completion.recap.client') },
+  const recap: Array<{ key: string; label: string; detail: string; done: boolean }> = [
     {
-      key: 'invoice',
-      label: firstInvoice
-        ? `${firstInvoice.number} · ${formatCurrency(firstInvoice.total_ttc)}`
-        : '',
-      detail: t('completion.recap.invoice'),
+      key: 'company',
+      label: company?.name ?? '',
+      detail: t('completion.recap.company'),
+      done: company !== null,
+    },
+    {
+      key: 'einvoicing',
+      label: eInvoicingActive
+        ? t('completion.recap.einvoicingOn')
+        : t('completion.recap.einvoicingOff'),
+      detail: t('completion.recap.einvoicing'),
+      done: eInvoicingActive,
+    },
+    {
+      key: 'client',
+      label: firstClient?.name ?? t('completion.recap.clientNone'),
+      detail: t('completion.recap.client'),
+      done: firstClient !== null,
     },
   ]
 
@@ -79,8 +84,15 @@ export function OnboardingCompletion({ onAccept }: OnboardingCompletionProps) {
             key={row.key}
             className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-soft"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <Check className="h-3.5 w-3.5" aria-hidden="true" />
+            <span
+              className={cn(
+                'flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                row.done
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border-[1.5px] border-dashed border-border-strong/60 text-muted-foreground'
+              )}
+            >
+              {row.done ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : null}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13.5px] font-semibold">{row.label}</span>

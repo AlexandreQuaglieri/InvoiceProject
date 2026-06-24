@@ -2,161 +2,119 @@
   "onboarding": {
     "welcome": {
       "title": "Welcome 👋",
-      "subtitle": "Set up your account in 3 steps to issue your first 2026-compliant invoice. It takes less than 2 minutes."
+      "subtitle": "3 steps to get ready: your company, 2026 e-invoicing, then your first client. Under 2 minutes — the assistant handles the rest."
     },
     "stepper": {
       "label": "Setup progress",
       "done": "Step completed",
       "steps": {
         "company": { "kicker": "Step 1", "title": "Company" },
-        "client": { "kicker": "Step 2", "title": "Client" },
-        "invoice": { "kicker": "Step 3", "title": "1st invoice" }
+        "einvoicing": { "kicker": "Step 2", "title": "E-invoicing" },
+        "client": { "kicker": "Step 3", "title": "First client" }
       }
     },
     "headings": {
       "company": {
-        "title": "How do you want to set up your company?",
-        "subtitle": "Pick a method — you can adjust everything later."
+        "title": "Let's start with your company",
+        "subtitle": "Drop your registration document — or any file with your details — and the assistant fills in your profile."
+      },
+      "einvoicing": {
+        "title": "Enable electronic invoicing",
+        "subtitle": "Mandatory from 2026. A one-time connection, then everything is automatic."
       },
       "client": {
-        "title": "Add your first client",
-        "subtitle": "The AI method is the fastest: a signed email is enough."
-      },
-      "invoice": {
-        "title": "Create your first invoice",
-        "subtitle": "2026-compliant (Factur-X) whichever method you choose."
+        "title": "You're all set 🎉",
+        "subtitle": "Create your first client — or drive Factur-IA straight from your assistant (ChatGPT, Claude)."
       }
     },
-    "methods": {
-      "ai": {
-        "title": "With AI",
-        "badge": "Recommended",
-        "tag": "For those who have no time to waste.",
-        "time": "~40 s",
-        "desc": {
-          "company": "Drop your Kbis — or chat with the assistant. Your company profile fills itself in.",
-          "client": "Paste an email or a quote, drop a PDF, or simply ask the assistant.",
-          "invoice": "Describe the work in one sentence, the AI drafts the 2026-compliant invoice."
-        },
-        "cta": {
-          "company": "Drop or chat",
-          "client": "Paste, import or chat",
-          "invoice": "Describe my invoice"
-        }
-      },
-      "mcp": {
-        "title": "Via Claude or ChatGPT",
-        "badge": "MCP",
-        "tag": "For those who optimise every second… and the self-confessed lazy ones.",
-        "time": "~2 min the 1st time",
-        "desc": {
-          "company": "Connect Factur-IA to your AI assistant and dictate everything from the chat.",
-          "client": "Ask your AI assistant to add your clients from the chat.",
-          "invoice": "Dictate your invoice to your AI assistant, it is created in Factur-IA."
-        },
-        "cta": {
-          "company": "Connect my assistant",
-          "client": "Connect my assistant",
-          "invoice": "Connect my assistant"
-        }
-      },
-      "manual": {
-        "title": "Manually",
-        "tag": "For dinosaurs 🦕",
-        "time": "~3 min",
-        "desc": {
-          "company": "The good old form, field by field.",
-          "client": "Type in the details one by one.",
-          "invoice": "Build the invoice line by line."
-        },
-        "cta": {
-          "company": "Fill in the form",
-          "client": "Fill in the form",
-          "invoice": "Create the invoice"
-        }
-      }
-    },
-    "hint": "Tip: start with AI — it is the fastest. The other methods remain available at any time.",
     "panel": {
       "close": "Close"
     },
     "ai": {
       "title": {
         "company": "With AI — drop or paste",
-        "client": "With AI — paste or import",
-        "invoice": "With AI — natural language"
+        "client": "With AI — paste or import"
       },
       "subtitle": {
-        "company": "Drop your Kbis, or paste its content — the assistant fills everything in.",
-        "client": "Paste the contact details or drop a document — a signed email is enough.",
-        "invoice": "Provide the client, the work and the amount."
+        "company": "Drop your registration document, or paste its content — the assistant fills everything in.",
+        "client": "Paste the details or drop a document — a signed email is enough."
       },
       "dropTitle": {
-        "company": "Drop your Kbis",
-        "client": "Drop a quote, an invoice or a business card",
-        "invoice": "Drop a quote or a document describing the work"
+        "company": "Drop your registration document or any company file",
+        "client": "Drop a quote, an invoice or a business card"
       },
       "dropHint": "PDF, PNG or JPG · max 10 MB",
       "orPaste": {
         "company": "Or paste the text",
-        "client": "Or paste the information",
-        "invoice": "Describe the work"
+        "client": "Or paste the information"
       },
       "placeholder": {
-        "company": "Paste the text of your Kbis…",
-        "client": "Paste an email, a signature…",
-        "invoice": "Describe your work: \"Logo redesign for Studio Méridien, €2,400 excl. VAT\""
+        "company": "Paste your registration document content, or describe your company…",
+        "client": "Paste an email, a signature, contact details…"
       },
-      "analyze": "Analyse",
-      "generate": "Generate the invoice",
+      "analyze": "Analyze",
       "analyzing": {
         "company": "Reading…",
-        "client": "Analysing contact details…",
-        "invoice": "Drafting the invoice…"
+        "client": "Analyzing details…"
       },
       "analyzingHint": {
-        "company": "Recognising legal fields: company name, SIRET, VAT…",
-        "client": "Extracting name, email and address…",
-        "invoice": "Formatting line items and computing VAT…"
+        "company": "Recognizing legal fields: company name, registration number, VAT…",
+        "client": "Extracting name, email and address…"
       },
       "reviewBanner": {
-        "company": "Document analysed — review then confirm.",
-        "client": "Contact details extracted — review then confirm.",
-        "invoice": "Draft generated — review then confirm."
+        "company": "Document analyzed — review then confirm.",
+        "client": "Details extracted — review then confirm."
       },
       "restart": "Start over",
-      "manualFallback": "Fill in by hand",
+      "manualFallback": "Fill in manually",
       "fileTooLarge": "File is too large (max 10 MB)",
       "fileType": "Unsupported format. Use PDF, PNG, JPG or WebP.",
-      "extractError": "Analysis failed. Try again or fill in by hand.",
-      "noItems": "No invoice line detected — specify the work and the amount."
+      "extractError": "Analysis failed. Try again or fill in manually.",
+      "noItems": "No invoice line detected — specify the service and amount."
+    },
+    "einvoicing": {
+      "title": "Electronic invoicing (PDP)",
+      "subtitle": "Connect your company to the certified Super PDP platform, once.",
+      "benefits": {
+        "compliance": "Compliant with the 2026 reform: your Factur-X invoices are sent through a certified PDP.",
+        "receive": "Receive and handle your incoming supplier invoices in one place.",
+        "automatic": "Lifecycle, e-reporting and payments declared automatically."
+      },
+      "activate": "Enable electronic invoicing",
+      "later": "Later",
+      "laterHint": "You can enable it anytime from your settings."
+    },
+    "client": {
+      "or": "or connect your assistant"
     },
     "mcp": {
       "title": "Via Claude or ChatGPT (MCP)",
-      "subtitle": "Drive Factur-IA from the chat of your AI assistant.",
-      "step1": "Copy the URL of the Factur-IA MCP server.",
+      "subtitle": "Drive Factur-IA by chat from your AI assistant.",
+      "step1": "Copy Factur-IA's MCP server URL.",
       "copy": "Copy URL",
       "copied": "URL copied to clipboard",
       "copyError": "Could not copy the URL",
       "step2": "Add the connector in your assistant:",
-      "step2Sub": "Claude — Settings → Connectors · ChatGPT — Settings → Apps & connectors. Paste the URL, that is all — no token to enter.",
+      "step2Sub": "Claude — Settings → Connectors · ChatGPT — Settings → Apps & connectors. Paste the URL, that's it — no token to enter.",
       "step3": "Sign in via OAuth with your Factur-IA account in the window that opens.",
-      "step3Sub": "Secure access, limited to your account — revocable at any time.",
-      "step4": "Ask your assistant, in natural language:",
+      "step3Sub": "Secure access, limited to your account — revocable anytime.",
+      "step4": "Ask your assistant, in plain language:",
       "ask": {
-        "company": "\"Create my company in Factur-IA: Atelier Quatools, SAS, SIRET 901 234 567 00018.\"",
-        "client": "\"Add the client Studio Méridien, contact@studio-meridien.fr.\"",
-        "invoice": "\"Create an invoice of €2,400 excl. VAT for Studio Méridien.\""
+        "company": "\"Create my company in Factur-IA: Atelier Quatools, SAS, reg. no. 901 234 567 00018.\"",
+        "client": "\"Add the client Studio Méridien, contact@studio-meridien.fr.\""
       },
-      "realtime": "As soon as it is done in Claude, this page moves forward automatically."
+      "realtime": "As soon as it's done in your assistant, this page moves forward automatically."
     },
     "manual": {
       "title": {
         "company": "Manually — company profile",
-        "client": "Manually — client record",
-        "invoice": "Manually — new invoice"
+        "client": "Manually — client profile"
       },
       "subtitle": "Fill in the fields, you can change everything later."
+    },
+    "finish": {
+      "hint": "No rush? You can complete the rest whenever you want.",
+      "cta": "Finish and go to my dashboard"
     },
     "toasts": {
       "clientCreated": "Client created",
@@ -168,7 +126,7 @@
       "items": {
         "compliance": {
           "title": "2026 compliance",
-          "desc": "Factur-X invoices transmitted via PDP, e-reporting included."
+          "desc": "Factur-X invoices sent via PDP, e-reporting included."
         },
         "quotes": {
           "title": "Quote → Invoice",
@@ -176,11 +134,11 @@
         },
         "assistant": {
           "title": "AI assistant",
-          "desc": "Create invoices, quotes and clients in natural language. It backs you up along the way."
+          "desc": "Create invoices, quotes and clients in plain language. It supports you through your steps."
         },
         "reminders": {
           "title": "Tracking & reminders",
-          "desc": "Dashboard for revenue, unpaid and overdue invoices."
+          "desc": "Dashboard of revenue, unpaid and overdue invoices."
         }
       }
     },
@@ -189,22 +147,22 @@
       "items": {
         "accounting": {
           "title": "Keep your books",
-          "desc": "Factur-IA is not your accountant. Bookkeeping and the balance sheet remain their job."
+          "desc": "Factur-IA is not your accountant. Bookkeeping and financial statements remain their job."
         },
         "decide": {
           "title": "Decide for you",
-          "desc": "Your tax and social declarations (VAT, URSSAF) remain your responsibility — check before sending."
+          "desc": "Your tax and social filings (VAT, social contributions) remain your responsibility — check before sending."
         },
         "legal": {
           "title": "Guarantee the legal side",
-          "desc": "The AI prepares, you validate. You remain responsible for the accuracy of the invoiced data."
+          "desc": "AI prepares, you validate. You remain responsible for the accuracy of the billed data."
         },
         "coffee": {
-          "title": "Make the coffee ☕",
+          "title": "Make coffee ☕",
           "desc": "For that, do like everyone else: get an intern. ☕"
         }
       },
-      "note": "In short: Factur-IA saves you time, but replaces neither your accountant nor your judgement. You stay in control."
+      "note": "In short: Factur-IA saves you time, but replaces neither your accountant nor your judgment. You stay in control."
     },
     "reassure": {
       "compliance": "<strong>2026 compliance</strong> — Factur-X & e-reporting ready",
@@ -212,16 +170,19 @@
     },
     "completion": {
       "title": "All set 🎉",
-      "subtitle": "Your Factur-IA account is configured and compliant with 2026 e-invoicing.",
+      "subtitle": "Your Factur-IA account is configured. Welcome!",
       "recap": {
         "company": "Company",
+        "einvoicing": "Electronic invoicing",
+        "einvoicingOn": "Enabled",
+        "einvoicingOff": "To enable later",
         "client": "First client",
-        "invoice": "First invoice"
+        "clientNone": "To create whenever you want"
       },
-      "consent": "I accept the <cgu>Terms of Use</cgu> (including the terms of service) and the <privacy>privacy policy</privacy>",
-      "cta": "See my dashboard",
+      "consent": "I accept the <cgu>Terms</cgu> (including the terms of service) and the <privacy>privacy policy</privacy>",
+      "cta": "Go to my dashboard",
       "ctaHint": "Accept the terms to continue",
-      "acceptError": "Could not record your acceptance. Please try again."
+      "acceptError": "Could not save your acceptance. Please try again."
     }
   }
 }

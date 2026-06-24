@@ -1,7 +1,10 @@
-// Types partagés du parcours d'onboarding. Les étapes sont 100 % dérivées du
-// store live (charte règle 1) : company ✓ === useLiveCompany() !== null, etc.
-export type OnboardingStep = 'company' | 'client' | 'invoice'
+// Types partagés du parcours d'onboarding. Les étapes sont 100 % dérivées
+// (charte règle 1) : entreprise ✓ === useLiveCompany() !== null ; facture
+// électronique ✓ === raccordement PDP (user_settings.pdp_connected_at) ;
+// premier client ✓ === useLiveClients().length > 0.
+export type OnboardingStep = 'company' | 'einvoicing' | 'client'
 
-export type OnboardingMethod = 'ai' | 'mcp' | 'manual'
+// Étapes guidées par l'IA (extraction d'un document : kind = step côté API).
+export type ExtractStep = 'company' | 'client'
 
-export const ONBOARDING_STEPS: readonly OnboardingStep[] = ['company', 'client', 'invoice']
+export const ONBOARDING_STEPS: readonly OnboardingStep[] = ['company', 'einvoicing', 'client']

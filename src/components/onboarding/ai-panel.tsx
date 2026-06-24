@@ -2,27 +2,26 @@
 
 // Panneau « Avec l'IA » : fichier (Kbis/PDF/image) ou texte libre →
 // POST /api/extract-document (kind = étape) → formulaire de l'étape PRÉREMPLI
-// que l'utilisateur vérifie puis soumet (mêmes patterns que les dialogs).
+// que l'utilisateur vérifie puis soumet. Chemin UNIQUE et guidé du parcours
+// simplifié (l'IA d'abord, formulaire manuel en repli).
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { ArrowLeft, CheckCircle2, FileUp, Loader2, Sparkles } from 'lucide-react'
+import { CheckCircle2, FileUp, Loader2, Sparkles, ArrowLeft } from 'lucide-react'
 
 import { PanelShell } from './panel-shell'
 import { useOnboardingSubmit } from './use-onboarding-submit'
-import type { OnboardingStep } from './types'
+import type { ExtractStep } from './types'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { CompanyForm, type CompanyFormRef } from '@/components/company/company-form'
 import { ClientForm } from '@/components/clients/client-form'
-import { InvoiceForm } from '@/components/invoices/invoice-form'
-import { useLiveClients, useLiveCompany } from '@/lib/realtime'
+import { useLiveCompany } from '@/lib/realtime'
 import type { CompanyFormData } from '@/lib/validations/company'
-import type { Client, InvoiceWithRelations } from '@/types/database'
+import type { Client } from '@/types/database'
 
-// Formes renvoyées par /api/extract-document selon `kind` (données nettoyées
-// côté serveur — cleanClientData / cleanInvoiceData / extraction Kbis).
+// Forme renvoyée par /api/extract-document?kind=client (données nettoyées serveur).
 type ClientExtract = {
   name?: string
   type?: 'individual' | 'professional'
@@ -35,21 +34,8 @@ type ClientExtract = {
   vat_number?: string
 }
 
-type InvoiceExtractItem = {
-  description: string
-  quantity: number
-  unit_price: number
-  vat_rate: number
-}
-
-type InvoiceExtract = {
-  client_name?: string
-  notes?: string
-  items?: InvoiceExtractItem[]
-}
-
 const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 Mo (copy de la dropzone)
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 Mo
 
 // Valeurs initiales typées pour ClientForm (qui lit un Client complet) : seuls
 // les champs du formulaire comptent, les métadonnées restent vides.
@@ -73,80 +59,24 @@ function toClientDefaults(data: ClientExtract): Client {
   }
 }
 
-// Valeurs initiales typées pour InvoiceForm : lignes extraites + client
-// présélectionné si le nom matche (les totaux sont recalculés par le form/DB).
-function toInvoiceDefaults(
-  extract: InvoiceExtract,
-  matchedClient: Client | undefined
-): InvoiceWithRelations {
-  const today = new Date().toISOString().split('T')[0]
-  const due = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  return {
-    id: '',
-    company_id: '',
-    client_id: matchedClient?.id ?? '',
-    number: '',
-    status: 'draft',
-    issue_date: today,
-    due_date: due,
-    paid_at: null,
-    payment_terms: null,
-    notes: extract.notes ?? null,
-    discount_type: null,
-    discount_value: 0,
-    total_ht: 0,
-    total_vat: 0,
-    total_ttc: 0,
-    pdf_url: null,
-    pdp_deposit_id: null,
-    pdp_transmitted_at: null,
-    pdp_status: null,
-    pdp_status_text: null,
-    pdp_status_at: null,
-    pdp_ereport_id: null,
-    pdp_ereported_at: null,
-    pdp_payment_report_id: null,
-    pdp_payment_reported_at: null,
-    created_at: '',
-    updated_at: '',
-    client: matchedClient ?? toClientDefaults({}),
-    items: (extract.items ?? []).map((item, index) => ({
-      id: '',
-      invoice_id: '',
-      description: item.description,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      vat_rate: item.vat_rate,
-      total_ht: 0,
-      total_vat: 0,
-      total_ttc: 0,
-      position: index,
-      created_at: '',
-    })),
-  }
-}
-
 interface AiPanelProps {
-  step: OnboardingStep
-  onClose: () => void
-  // Fallback « Remplir à la main » : bascule sur le panneau manuel.
+  step: ExtractStep
+  // Repli « Remplir à la main » : bascule sur le panneau manuel de l'étape.
   onManualFallback: () => void
 }
 
 type Phase = 'idle' | 'analyzing' | 'review'
 
-export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
+export function AiPanel({ step, onManualFallback }: AiPanelProps) {
   const t = useTranslations('onboarding')
   const company = useLiveCompany()
-  const clients = useLiveClients()
-  const { isLoading, submitClient, submitInvoice } = useOnboardingSubmit()
+  const { isLoading, submitClient } = useOnboardingSubmit()
 
   const [phase, setPhase] = useState<Phase>('idle')
   const [text, setText] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const [companyData, setCompanyData] = useState<Partial<CompanyFormData> | null>(null)
   const [clientDefaults, setClientDefaults] = useState<Client | null>(null)
-  const [invoiceDefaults, setInvoiceDefaults] = useState<InvoiceWithRelations | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const companyFormRef = useRef<CompanyFormRef>(null)
@@ -158,12 +88,6 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
       companyFormRef.current?.setFormValues(companyData)
     }
   }, [phase, step, companyData])
-
-  const matchClient = (name?: string): Client | undefined => {
-    if (!name) return undefined
-    const needle = name.trim().toLowerCase()
-    return clients.find((client) => client.name.trim().toLowerCase() === needle)
-  }
 
   const analyze = async (input: { file?: File; text?: string }) => {
     setPhase('analyzing')
@@ -181,7 +105,6 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
       }
 
       if (!response.ok || !result.success || !result.data) {
-        // Rate-limit / clé API / analyse impossible : on affiche l'erreur API.
         toast.error(result.error || t('ai.extractError'))
         setPhase('idle')
         return
@@ -189,16 +112,8 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
 
       if (step === 'company') {
         setCompanyData(result.data as Partial<CompanyFormData>)
-      } else if (step === 'client') {
-        setClientDefaults(toClientDefaults(result.data as ClientExtract))
       } else {
-        const extract = result.data as InvoiceExtract
-        if (!extract.items || extract.items.length === 0) {
-          toast.error(t('ai.noItems'))
-          setPhase('idle')
-          return
-        }
-        setInvoiceDefaults(toInvoiceDefaults(extract, matchClient(extract.client_name)))
+        setClientDefaults(toClientDefaults(result.data as ClientExtract))
       }
       setPhase('review')
     } catch (error) {
@@ -237,64 +152,48 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
   const restart = () => {
     setCompanyData(null)
     setClientDefaults(null)
-    setInvoiceDefaults(null)
     setPhase('idle')
   }
 
-  // Dropzone sur toutes les étapes : Kbis (entreprise), email/carte (client),
-  // devis ou photo de prestation (facture) — l'extraction vision lit tout.
-  const hasDropzone = true
-
   return (
-    <PanelShell
-      icon={Sparkles}
-      title={t(`ai.title.${step}`)}
-      subtitle={t(`ai.subtitle.${step}`)}
-      onClose={onClose}
-    >
+    <PanelShell icon={Sparkles} title={t(`ai.title.${step}`)} subtitle={t(`ai.subtitle.${step}`)}>
       {phase === 'idle' && (
         <div className="flex flex-col gap-4">
-          {hasDropzone && (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ALLOWED_FILE_TYPES.join(',')}
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(event) => {
-                  event.preventDefault()
-                  setIsDragging(true)
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                aria-label={t(`ai.dropTitle.${step}`)}
-                className={`flex w-full flex-col items-center gap-2.5 rounded-xl border-2 border-dashed px-5 py-8 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                  isDragging
-                    ? 'border-border-strong bg-muted'
-                    : 'border-border-strong/40 bg-muted/50 hover:bg-muted'
-                }`}
-              >
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl border bg-background">
-                  <FileUp className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <span className="text-sm font-semibold">{t(`ai.dropTitle.${step}`)}</span>
-                <span className="font-mono text-[11px] text-muted-foreground">
-                  {t('ai.dropHint')}
-                </span>
-              </button>
-            </>
-          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ALLOWED_FILE_TYPES.join(',')}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(event) => {
+              event.preventDefault()
+              setIsDragging(true)
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            aria-label={t(`ai.dropTitle.${step}`)}
+            className={`flex w-full flex-col items-center gap-2.5 rounded-xl border-2 border-dashed px-5 py-8 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              isDragging
+                ? 'border-border-strong bg-muted'
+                : 'border-border-strong/40 bg-muted/50 hover:bg-muted'
+            }`}
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl border bg-background">
+              <FileUp className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="text-sm font-semibold">{t(`ai.dropTitle.${step}`)}</span>
+            <span className="font-mono text-[11px] text-muted-foreground">{t('ai.dropHint')}</span>
+          </button>
 
           <div className="space-y-2">
             <Label htmlFor={`onboarding-ai-text-${step}`}>{t(`ai.orPaste.${step}`)}</Label>
             <Textarea
               id={`onboarding-ai-text-${step}`}
-              rows={step === 'invoice' ? 3 : 5}
+              rows={5}
               placeholder={t(`ai.placeholder.${step}`)}
               value={text}
               onChange={(event) => setText(event.target.value)}
@@ -307,7 +206,7 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
             </Button>
             <Button type="button" onClick={() => void analyze({ text })} disabled={!text.trim()}>
               <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
-              {step === 'invoice' ? t('ai.generate') : t('ai.analyze')}
+              {t('ai.analyze')}
             </Button>
           </div>
         </div>
@@ -339,15 +238,6 @@ export function AiPanel({ step, onClose, onManualFallback }: AiPanelProps) {
           {step === 'company' && <CompanyForm ref={companyFormRef} company={company} embedded />}
           {step === 'client' && clientDefaults && (
             <ClientForm client={clientDefaults} onSubmit={submitClient} isLoading={isLoading} />
-          )}
-          {step === 'invoice' && invoiceDefaults && (
-            <InvoiceForm
-              invoice={invoiceDefaults}
-              clients={clients}
-              onSubmit={submitInvoice}
-              isLoading={isLoading}
-              embedded
-            />
           )}
         </div>
       )}

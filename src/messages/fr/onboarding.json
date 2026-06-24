@@ -2,127 +2,68 @@
   "onboarding": {
     "welcome": {
       "title": "Bienvenue 👋",
-      "subtitle": "Configurez votre compte en 3 étapes pour émettre votre première facture conforme 2026. Comptez moins de 2 minutes."
+      "subtitle": "3 étapes pour être prêt : votre entreprise, la facturation électronique 2026, puis votre premier client. Moins de 2 minutes — l'assistant s'occupe du reste."
     },
     "stepper": {
       "label": "Progression de la configuration",
       "done": "Étape terminée",
       "steps": {
         "company": { "kicker": "Étape 1", "title": "Entreprise" },
-        "client": { "kicker": "Étape 2", "title": "Client" },
-        "invoice": { "kicker": "Étape 3", "title": "1ère facture" }
+        "einvoicing": { "kicker": "Étape 2", "title": "Facture électronique" },
+        "client": { "kicker": "Étape 3", "title": "Premier client" }
       }
     },
     "headings": {
       "company": {
-        "title": "Comment voulez-vous configurer votre entreprise ?",
-        "subtitle": "Choisissez une méthode — vous pourrez tout ajuster plus tard."
+        "title": "Commençons par votre entreprise",
+        "subtitle": "Déposez votre Kbis — ou un document avec vos informations — et l'assistant remplit votre fiche."
+      },
+      "einvoicing": {
+        "title": "Activez la facturation électronique",
+        "subtitle": "Obligatoire dès 2026. Un raccordement unique, puis tout devient automatique."
       },
       "client": {
-        "title": "Ajoutez votre premier client",
-        "subtitle": "La méthode IA va le plus vite : un email signé suffit."
-      },
-      "invoice": {
-        "title": "Créez votre première facture",
-        "subtitle": "Conforme 2026 (Factur-X) quelle que soit la méthode."
+        "title": "Vous êtes prêt 🎉",
+        "subtitle": "Créez votre premier client — ou pilotez Factur-IA directement depuis votre assistant (ChatGPT, Claude)."
       }
     },
-    "methods": {
-      "ai": {
-        "title": "Avec l'IA",
-        "badge": "Recommandé",
-        "tag": "Pour ceux qui n'ont pas de temps à perdre.",
-        "time": "~40 s",
-        "desc": {
-          "company": "Déposez votre Kbis — ou discutez avec l'assistant. Votre fiche se remplit toute seule.",
-          "client": "Collez un email ou un devis, déposez un PDF, ou demandez simplement à l'assistant.",
-          "invoice": "Décrivez la prestation en une phrase, l'IA rédige la facture conforme 2026."
-        },
-        "cta": {
-          "company": "Déposer ou discuter",
-          "client": "Coller, importer ou discuter",
-          "invoice": "Décrire ma facture"
-        }
-      },
-      "mcp": {
-        "title": "Via Claude ou ChatGPT",
-        "badge": "MCP",
-        "tag": "Pour ceux qui optimisent chaque seconde… et les flemmards assumés.",
-        "time": "~2 min la 1re fois",
-        "desc": {
-          "company": "Connectez Factur-IA à votre assistant IA et dictez tout depuis le chat.",
-          "client": "Demandez à votre assistant IA d'ajouter vos clients depuis le chat.",
-          "invoice": "Dictez votre facture à votre assistant IA, elle se crée dans Factur-IA."
-        },
-        "cta": {
-          "company": "Connecter mon assistant",
-          "client": "Connecter mon assistant",
-          "invoice": "Connecter mon assistant"
-        }
-      },
-      "manual": {
-        "title": "Manuellement",
-        "tag": "Pour les dinosaures 🦕",
-        "time": "~3 min",
-        "desc": {
-          "company": "Le bon vieux formulaire, champ par champ.",
-          "client": "Saisissez les coordonnées une à une.",
-          "invoice": "Composez la facture ligne par ligne."
-        },
-        "cta": {
-          "company": "Remplir le formulaire",
-          "client": "Remplir le formulaire",
-          "invoice": "Créer la facture"
-        }
-      }
-    },
-    "hint": "Astuce : commencez par l'IA — c'est le plus rapide. Les autres méthodes restent disponibles à tout moment.",
     "panel": {
       "close": "Fermer"
     },
     "ai": {
       "title": {
         "company": "Avec l'IA — déposez ou collez",
-        "client": "Avec l'IA — coller ou importer",
-        "invoice": "Avec l'IA — langage naturel"
+        "client": "Avec l'IA — coller ou importer"
       },
       "subtitle": {
         "company": "Déposez votre Kbis, ou collez son contenu — l'assistant remplit tout.",
-        "client": "Collez les coordonnées ou déposez un document — un email signé suffit.",
-        "invoice": "Indiquez le client, la prestation et le montant."
+        "client": "Collez les coordonnées ou déposez un document — un email signé suffit."
       },
       "dropTitle": {
-        "company": "Déposez votre Kbis",
-        "client": "Déposez un devis, une facture ou une carte de visite",
-        "invoice": "Déposez un devis ou un document décrivant la prestation"
+        "company": "Déposez votre Kbis ou un document d'entreprise",
+        "client": "Déposez un devis, une facture ou une carte de visite"
       },
       "dropHint": "PDF, PNG ou JPG · max 10 Mo",
       "orPaste": {
         "company": "Ou collez le texte",
-        "client": "Ou collez les informations",
-        "invoice": "Décrivez la prestation"
+        "client": "Ou collez les informations"
       },
       "placeholder": {
-        "company": "Collez le texte de votre Kbis…",
-        "client": "Collez un email, une signature…",
-        "invoice": "Décrivez votre prestation : « Refonte de logo pour Studio Méridien, 2 400 € HT »"
+        "company": "Collez le contenu de votre Kbis, ou décrivez votre entreprise…",
+        "client": "Collez un email, une signature, des coordonnées…"
       },
       "analyze": "Analyser",
-      "generate": "Générer la facture",
       "analyzing": {
         "company": "Lecture en cours…",
-        "client": "Analyse des coordonnées…",
-        "invoice": "Rédaction de la facture…"
+        "client": "Analyse des coordonnées…"
       },
       "analyzingHint": {
         "company": "Reconnaissance des champs légaux : raison sociale, SIRET, TVA…",
-        "client": "Extraction du nom, de l'email et de l'adresse…",
-        "invoice": "Mise en forme des lignes et calcul de la TVA…"
+        "client": "Extraction du nom, de l'email et de l'adresse…"
       },
       "reviewBanner": {
         "company": "Document analysé — vérifiez puis validez.",
-        "client": "Coordonnées extraites — vérifiez puis validez.",
-        "invoice": "Brouillon généré — vérifiez puis validez."
+        "client": "Coordonnées extraites — vérifiez puis validez."
       },
       "restart": "Recommencer",
       "manualFallback": "Remplir à la main",
@@ -130,6 +71,21 @@
       "fileType": "Format non supporté. Utilisez PDF, PNG, JPG ou WebP.",
       "extractError": "L'analyse a échoué. Réessayez ou remplissez à la main.",
       "noItems": "Aucune ligne de facture détectée — précisez la prestation et le montant."
+    },
+    "einvoicing": {
+      "title": "Facturation électronique (PDP)",
+      "subtitle": "Raccordez votre société à la plateforme agréée Super PDP, en une fois.",
+      "benefits": {
+        "compliance": "Conforme à la réforme 2026 : vos factures Factur-X sont transmises via une PDP agréée.",
+        "receive": "Recevez et traitez vos factures fournisseurs entrantes au même endroit.",
+        "automatic": "Cycle de vie, e-reporting et encaissements déclarés automatiquement."
+      },
+      "activate": "Activer la facturation électronique",
+      "later": "Plus tard",
+      "laterHint": "Vous pourrez l'activer à tout moment depuis vos paramètres."
+    },
+    "client": {
+      "or": "ou reliez votre assistant"
     },
     "mcp": {
       "title": "Via Claude ou ChatGPT (MCP)",
@@ -145,18 +101,20 @@
       "step4": "Demandez à votre assistant, en langage naturel :",
       "ask": {
         "company": "« Crée mon entreprise dans Factur-IA : Atelier Quatools, SAS, SIRET 901 234 567 00018. »",
-        "client": "« Ajoute le client Studio Méridien, contact@studio-meridien.fr. »",
-        "invoice": "« Crée une facture de 2 400 € HT pour Studio Méridien. »"
+        "client": "« Ajoute le client Studio Méridien, contact@studio-meridien.fr. »"
       },
-      "realtime": "Dès que c'est fait dans Claude, cette page avance automatiquement."
+      "realtime": "Dès que c'est fait dans votre assistant, cette page avance automatiquement."
     },
     "manual": {
       "title": {
         "company": "Manuellement — fiche entreprise",
-        "client": "Manuellement — fiche client",
-        "invoice": "Manuellement — nouvelle facture"
+        "client": "Manuellement — fiche client"
       },
       "subtitle": "Remplissez les champs, vous pourrez tout modifier plus tard."
+    },
+    "finish": {
+      "hint": "Pas pressé ? Vous pourrez compléter le reste quand vous voulez.",
+      "cta": "Terminer et voir mon tableau de bord"
     },
     "toasts": {
       "clientCreated": "Client créé",
@@ -212,11 +170,14 @@
     },
     "completion": {
       "title": "Tout est prêt 🎉",
-      "subtitle": "Votre compte Factur-IA est configuré et conforme à la facturation électronique 2026.",
+      "subtitle": "Votre compte Factur-IA est configuré. Bienvenue !",
       "recap": {
         "company": "Entreprise",
+        "einvoicing": "Facturation électronique",
+        "einvoicingOn": "Activée",
+        "einvoicingOff": "À activer plus tard",
         "client": "Premier client",
-        "invoice": "Première facture"
+        "clientNone": "À créer quand vous voulez"
       },
       "consent": "J'accepte les <cgu>CGU</cgu> (incluant les conditions de service) et la <privacy>politique de confidentialité</privacy>",
       "cta": "Voir mon tableau de bord",

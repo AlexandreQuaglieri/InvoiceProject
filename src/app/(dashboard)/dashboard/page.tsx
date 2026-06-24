@@ -6,5 +6,10 @@ import { DashboardGate } from '@/components/onboarding/dashboard-gate'
 
 export default async function DashboardPage() {
   const settings = await getUserSettings()
-  return <DashboardGate termsAcceptedAt={settings?.terms_accepted_at ?? null} />
+  return (
+    <DashboardGate
+      termsAcceptedAt={settings?.terms_accepted_at ?? null}
+      pdpConnected={settings?.pdp_connected_at != null}
+    />
+  )
 }

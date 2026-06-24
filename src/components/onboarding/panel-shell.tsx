@@ -11,7 +11,9 @@ interface PanelShellProps {
   icon: LucideIcon
   title: string
   subtitle: string
-  onClose: () => void
+  // Optionnel : si le panneau EST le contenu de l'étape (parcours simplifié),
+  // il n'y a rien à « fermer » et le bouton est masqué.
+  onClose?: () => void
   children: React.ReactNode
 }
 
@@ -28,16 +30,18 @@ export function PanelShell({ icon: Icon, title, subtitle, onClose, children }: P
           <h3 className="text-sm font-semibold">{title}</h3>
           <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          aria-label={t('panel.close')}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <X className="h-4 w-4" aria-hidden="true" />
-        </Button>
+        {onClose && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label={t('panel.close')}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        )}
       </div>
       <div className="p-5">{children}</div>
     </div>

@@ -1,69 +1,78 @@
 'use client'
 
-// Parcours d'onboarding 3 étapes. L'avancement est 100 % DÉRIVÉ du store live
-// (charte règle 1) : entreprise ✓ === company !== null, client ✓ === 1er client,
-// facture ✓ === 1re facture. Toute écriture (formulaire, IA, MCP/Claude) fait
-// avancer la page via Realtime/write-through, sans refresh.
+// Parcours d'onboarding SIMPLIFIÉ — IA-first, un seul chemin guidé par étape
+// (plus de choix « IA / MCP / manuel » qui perdait l'utilisateur). Avancement
+// 100 % DÉRIVÉ (charte règle 1) :
+//   1. Entreprise   ✓ === company !== null              (IA : « donne-moi ton Kbis »)
+//   2. Facture élec ✓ === raccordement PDP (pdpConnected) (activable ou « plus tard »)
+//   3. Premier client ✓ === clients.length > 0           (IA + branche ton assistant LLM)
+// Toute écriture (formulaire, IA, MCP) fait avancer la page via Realtime/write-through.
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
+  ArrowRight,
   BarChart3,
   BellRing,
   Check,
+  CheckCircle2,
   Coffee,
   FileCheck,
   Lock,
   MessageSquare,
-  PenLine,
-  Plug,
   Scale,
   ShieldCheck,
-  Sparkles,
-  Zap,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-import { MethodCard } from './method-card'
 import { AiPanel } from './ai-panel'
-import { McpPanel } from './mcp-panel'
 import { ManualPanel } from './manual-panel'
-import { ONBOARDING_STEPS, type OnboardingMethod, type OnboardingStep } from './types'
-import { useLiveClients, useLiveCompany, useLiveInvoices } from '@/lib/realtime'
+import { McpPanel } from './mcp-panel'
+import { PanelShell } from './panel-shell'
+import { OnboardingCompletion } from './completion'
+import { ONBOARDING_STEPS, type ExtractStep, type OnboardingStep } from './types'
+import { useLiveClients, useLiveCompany } from '@/lib/realtime'
+import { ActivatePdpButton } from '@/components/invoices/activate-pdp-button'
+import { Button } from '@/components/ui/button'
 import { SAPigeon, SAPlane } from '@/components/brand/street-art'
 import { cn } from '@/lib/utils'
 
-const METHOD_ICONS: Record<OnboardingMethod, LucideIcon> = {
-  ai: Sparkles,
-  mcp: Plug,
-  manual: PenLine,
+interface OnboardingFlowProps {
+  // Raccordement PDP (user_settings.pdp_connected_at) — hors store live, fourni
+  // par le RSC. Une connexion PDP passe par un redirect : le RSC se rerend.
+  pdpConnected: boolean
+  // Acceptation des CGU (gérée optimiste par le dashboard-gate).
+  onAccept: () => void
 }
 
-export function OnboardingFlow() {
+export function OnboardingFlow({ pdpConnected, onAccept }: OnboardingFlowProps) {
   const t = useTranslations('onboarding')
   const company = useLiveCompany()
   const clients = useLiveClients()
-  const invoices = useLiveInvoices()
 
   // États dérivés — jamais stockés.
   const done: Record<OnboardingStep, boolean> = {
     company: company !== null,
+    einvoicing: pdpConnected,
     client: clients.length > 0,
-    invoice: invoices.length > 0,
   }
-  const currentStep: OnboardingStep = !done.company ? 'company' : !done.client ? 'client' : 'invoice'
 
-  // Panneau ouvert : mémorisé avec son étape pour se refermer tout seul quand
-  // l'étape avance (sélection dérivée, pas d'effet de synchronisation).
-  const [openPanel, setOpenPanel] = useState<{
-    step: OnboardingStep
-    method: OnboardingMethod
-  } | null>(null)
-  const selectedMethod = openPanel?.step === currentStep ? openPanel.method : null
+  // États de session (non dérivables) : repli manuel, e-invoicing reporté, fin anticipée.
+  const [manualStep, setManualStep] = useState<ExtractStep | null>(null)
+  const [skipEInvoicing, setSkipEInvoicing] = useState(false)
+  const [finishing, setFinishing] = useState(false)
 
-  const toggleMethod = (method: OnboardingMethod) => {
-    setOpenPanel(selectedMethod === method ? null : { step: currentStep, method })
+  const currentStep: OnboardingStep | null = !done.company
+    ? 'company'
+    : !done.einvoicing && !skipEInvoicing
+      ? 'einvoicing'
+      : !done.client
+        ? 'client'
+        : null
+
+  // Terminal : tout est fait, ou l'utilisateur choisit de terminer maintenant.
+  if (finishing || currentStep === null) {
+    return <OnboardingCompletion onAccept={onAccept} eInvoicingActive={done.einvoicing} />
   }
-  const closePanel = () => setOpenPanel(null)
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -81,7 +90,7 @@ export function OnboardingFlow() {
 
       <Stepper done={done} currentStep={currentStep} />
 
-      {/* Étape courante */}
+      {/* Étape courante — un seul chemin guidé */}
       <section aria-labelledby="onboarding-step-heading">
         <div className="mb-4 mt-2">
           <h2 id="onboarding-step-heading" className="text-lg font-semibold tracking-tight">
@@ -92,64 +101,101 @@ export function OnboardingFlow() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 min-[880px]:grid-cols-[1.25fr_1fr_1fr]">
-          <MethodCard
-            icon={METHOD_ICONS.ai}
-            title={t('methods.ai.title')}
-            badge={{ label: t('methods.ai.badge'), variant: 'solid' }}
-            tag={t('methods.ai.tag')}
-            description={t(`methods.ai.desc.${currentStep}`)}
-            time={t('methods.ai.time')}
-            cta={t(`methods.ai.cta.${currentStep}`)}
-            hero
-            selected={selectedMethod === 'ai'}
-            onSelect={() => toggleMethod('ai')}
-          />
-          <MethodCard
-            icon={METHOD_ICONS.mcp}
-            title={t('methods.mcp.title')}
-            badge={{ label: t('methods.mcp.badge'), variant: 'ghost' }}
-            tag={t('methods.mcp.tag')}
-            description={t(`methods.mcp.desc.${currentStep}`)}
-            time={t('methods.mcp.time')}
-            cta={t(`methods.mcp.cta.${currentStep}`)}
-            selected={selectedMethod === 'mcp'}
-            onSelect={() => toggleMethod('mcp')}
-          />
-          <MethodCard
-            icon={METHOD_ICONS.manual}
-            title={t('methods.manual.title')}
-            tag={t('methods.manual.tag')}
-            description={t(`methods.manual.desc.${currentStep}`)}
-            time={t('methods.manual.time')}
-            cta={t(`methods.manual.cta.${currentStep}`)}
-            selected={selectedMethod === 'manual'}
-            onSelect={() => toggleMethod('manual')}
-          />
-        </div>
+        {currentStep === 'company' &&
+          (manualStep === 'company' ? (
+            <ManualPanel step="company" onClose={() => setManualStep(null)} />
+          ) : (
+            <AiPanel step="company" onManualFallback={() => setManualStep('company')} />
+          ))}
 
-        {/* Panneau de la méthode choisie — un seul ouvert à la fois */}
-        {selectedMethod === 'ai' && (
-          <AiPanel
-            step={currentStep}
-            onClose={closePanel}
-            onManualFallback={() => setOpenPanel({ step: currentStep, method: 'manual' })}
-          />
-        )}
-        {selectedMethod === 'mcp' && <McpPanel step={currentStep} onClose={closePanel} />}
-        {selectedMethod === 'manual' && <ManualPanel step={currentStep} onClose={closePanel} />}
+        {currentStep === 'einvoicing' && <EInvoicingStep onSkip={() => setSkipEInvoicing(true)} />}
 
-        {!selectedMethod && (
-          <p className="mx-auto mt-5 flex w-fit items-center gap-2 rounded-full border bg-card px-3.5 py-2 text-[13px] text-muted-foreground">
-            <Zap className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>{t('hint')}</span>
-          </p>
+        {currentStep === 'client' && (
+          <div className="space-y-4">
+            {manualStep === 'client' ? (
+              <ManualPanel step="client" onClose={() => setManualStep(null)} />
+            ) : (
+              <AiPanel step="client" onManualFallback={() => setManualStep('client')} />
+            )}
+            <ConnectAssistant />
+          </div>
         )}
       </section>
+
+      {/* Dès l'entreprise créée : on peut terminer sans être forcé de créer client/facture. */}
+      {done.company && <FinishBar onFinish={() => setFinishing(true)} />}
 
       <DemoBlock />
       <NotDoBlock />
       <Reassure />
+    </div>
+  )
+}
+
+/* ===================== Étape 2 — Facture électronique ===================== */
+
+function EInvoicingStep({ onSkip }: { onSkip: () => void }) {
+  const t = useTranslations('onboarding')
+  const benefits = ['compliance', 'receive', 'automatic'] as const
+
+  return (
+    <PanelShell
+      icon={ShieldCheck}
+      title={t('einvoicing.title')}
+      subtitle={t('einvoicing.subtitle')}
+    >
+      <div className="space-y-5">
+        <ul className="space-y-2.5">
+          {benefits.map((key) => (
+            <li key={key} className="flex items-start gap-2.5 text-sm">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <span>{t(`einvoicing.benefits.${key}`)}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <ActivatePdpButton label={t('einvoicing.activate')} />
+          <Button type="button" variant="ghost" onClick={onSkip}>
+            {t('einvoicing.later')}
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground">{t('einvoicing.laterHint')}</p>
+      </div>
+    </PanelShell>
+  )
+}
+
+/* ===================== Étape 3 — Brancher l'assistant ===================== */
+
+function ConnectAssistant() {
+  const t = useTranslations('onboarding')
+  return (
+    <div>
+      <div className="my-1 flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">
+          {t('client.or')}
+        </span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+      <McpPanel step="client" />
+    </div>
+  )
+}
+
+/* ===================== Barre « Terminer » ===================== */
+
+function FinishBar({ onFinish }: { onFinish: () => void }) {
+  const t = useTranslations('onboarding')
+  return (
+    <div className="mt-6 flex flex-col items-center gap-2 rounded-xl border border-dashed bg-muted/30 px-4 py-3 sm:flex-row sm:justify-between">
+      <p className="text-[13px] text-muted-foreground">{t('finish.hint')}</p>
+      <Button type="button" variant="outline" onClick={onFinish} className="shrink-0">
+        {t('finish.cta')}
+        <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+      </Button>
     </div>
   )
 }
