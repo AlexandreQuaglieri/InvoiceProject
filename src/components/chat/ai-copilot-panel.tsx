@@ -20,12 +20,15 @@ import {
   PanelRightOpen,
   Paperclip,
   X,
+  LifeBuoy,
+  Phone,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
+import { SupportDialog } from '@/components/support/support-dialog'
 
 import {
   createConversation,
@@ -34,6 +37,10 @@ import {
   type ConversationMessage,
 } from '@/actions/conversations'
 import { useLiveConversations, useLiveStoreActions } from '@/lib/realtime'
+
+// Contact humain configurable via env publiques (l'utilisateur pose ses vraies
+// coordonnées sur Vercel, sans rien coder). Le téléphone n'apparaît que s'il est défini.
+const SUPPORT_PHONE = process.env.NEXT_PUBLIC_SUPPORT_PHONE || ''
 
 interface ExecutedAction {
   type: string
@@ -262,6 +269,27 @@ export function AICopilotPanel() {
 
   return (
     <div className="flex-shrink-0 w-[340px] border-l flex flex-col bg-background overflow-hidden">
+      {/* Contact humain : rassure qu'une vraie personne est là, en plus de l'assistant */}
+      <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <LifeBuoy className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          Un humain, si besoin
+        </span>
+        <div className="flex items-center gap-1.5">
+          {SUPPORT_PHONE && (
+            <a
+              href={`tel:${SUPPORT_PHONE.replace(/\s/g, '')}`}
+              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              title={`Appeler ${SUPPORT_PHONE}`}
+            >
+              <Phone className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>{SUPPORT_PHONE}</span>
+            </a>
+          )}
+          <SupportDialog />
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b flex-shrink-0">
         <div className="flex items-center gap-2">

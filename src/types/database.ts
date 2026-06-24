@@ -32,6 +32,35 @@ export type DocumentType = 'kbis' | 'rib' | 'logo' | 'other'
 export interface Database {
   public: {
     Tables: {
+      support_messages: {
+        Row: {
+          id: string
+          user_id: string | null
+          email: string | null
+          subject: string | null
+          message: string
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          email?: string | null
+          subject?: string | null
+          message: string
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          email?: string | null
+          subject?: string | null
+          message?: string
+          status?: string
+          created_at?: string
+        }
+      }
       user_settings: {
         Row: {
           id: string
