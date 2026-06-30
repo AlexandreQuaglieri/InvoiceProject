@@ -51,6 +51,32 @@ export async function ensureOrg(): Promise<string | null> {
   }
 }
 
+// Niveau 2 (marque blanche) : une org PAR entreprise cliente. Idempotent par
+// external_id `company-<id>` ; mémoïsé par process. → l'entreprise administre SON
+// org (identité d'envoi propre) et configure les mails à SES clients.
+const companyOrgCache = new Map<string, string>()
+export async function ensureCompanyOrg(companyId: string, companyName: string): Promise<string | null> {
+  const cached = companyOrgCache.get(companyId)
+  if (cached) return cached
+  try {
+    const res = await hubFetch('/api/notifications/orgs', {
+      external_id: `company-${companyId}`,
+      name: companyName || 'Entreprise',
+    })
+    if (!res) return null
+    if (!res.ok) {
+      console.error('[hub] org entreprise en échec', res.status, await res.text())
+      return null
+    }
+    const data = (await res.json()) as { org_id?: string }
+    if (data.org_id) companyOrgCache.set(companyId, data.org_id)
+    return data.org_id ?? null
+  } catch (e) {
+    console.error('[hub] org entreprise en échec', e)
+    return null
+  }
+}
+
 type HubEventDef = {
   slug: string
   label: string
@@ -100,7 +126,8 @@ export const APP_EVENTS: HubEventDef[] = [
     audiences: ['admin'],
     description: 'Une facture a été finalisée / envoyée au client.',
     default_active: true,
-    payload_schema: { number: 'string', total_ttc: 'number', client_name: 'string', client_email: 'string', due_date: 'string' },
+    // seller_name : nom de l'entreprise émettrice (pour le mail client, Niveau 2).
+    payload_schema: { number: 'string', total_ttc: 'number', seller_name: 'string', client_name: 'string', client_email: 'string', due_date: 'string' },
   },
   {
     slug: 'facturia.invoice.paid',
@@ -142,7 +169,8 @@ export const APP_EVENTS: HubEventDef[] = [
     audiences: ['admin'],
     description: 'Un devis a été envoyé au client.',
     default_active: true,
-    payload_schema: { quote_number: 'string', total: 'number', client_name: 'string', client_email: 'string', validity_date: 'string' },
+    // seller_name : nom de l'entreprise émettrice (pour le mail client, Niveau 2).
+    payload_schema: { quote_number: 'string', total: 'number', seller_name: 'string', client_name: 'string', client_email: 'string', validity_date: 'string' },
   },
   {
     slug: 'facturia.quote.accepted',

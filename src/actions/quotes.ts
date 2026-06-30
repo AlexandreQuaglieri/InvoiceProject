@@ -11,7 +11,7 @@ import type {
 import { walletSync, walletRemove } from '@/lib/wallet-sync'
 import { getNextQuoteNumber } from '@/lib/services/core'
 import { after } from 'next/server'
-import { notifyQuoteStatus, notifyQuoteConverted } from '@/lib/notifications/events'
+import { notifyQuoteStatus, notifyQuoteConverted, notifyClientQuoteSent } from '@/lib/notifications/events'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Résout l'utilisateur authentifié et son entreprise (scoping company_id, charte règle 5).
@@ -351,6 +351,8 @@ export async function updateQuoteStatus(
 
   // Notification (best-effort) : envoyé / accepté / refusé / expiré.
   if (fullQuote) after(() => notifyQuoteStatus(supabase, ctx.companyId, fullQuote))
+  // Niveau 2 (marque blanche) : prévient le CLIENT à l'envoi du devis.
+  if (status === 'sent' && fullQuote) after(() => notifyClientQuoteSent(supabase, ctx.companyId, fullQuote))
   return { success: true, quote: fullQuote }
 }
 

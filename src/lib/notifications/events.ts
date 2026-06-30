@@ -6,7 +6,7 @@
 // Le Niveau 2 (entreprise → SON client, « une facture vous a été envoyée », marque
 // blanche) viendra avec 1 org par entreprise et n'est PAS géré ici.
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ensureOrg, emitHubEvent, type HubRecipient } from './hub'
+import { ensureOrg, ensureCompanyOrg, emitHubEvent, type HubRecipient } from './hub'
 import type { InvoiceWithRelations, QuoteWithRelations, Client, InboundInvoice } from '@/types/database'
 
 type Db = SupabaseClient
@@ -221,4 +221,81 @@ export async function notifyPdpConnected(
     pdp_company_number: info.companyNumber ?? '',
     pdp_env: info.env ?? '',
   })
+}
+
+// ===================================================================
+// NIVEAU 2 — entreprise → SON client (marque blanche)
+// Émis vers l'org PROPRE de l'entreprise (1 org/entreprise), destinataire = le
+// CLIENT de la facture/devis. L'entreprise administre son org + son identité
+// d'envoi et configure le mail. No-op si le client n'a pas d'email.
+// ===================================================================
+
+async function companyName(supabase: Db, companyId: string): Promise<string> {
+  const { data } = await supabase.from('companies').select('name').eq('id', companyId).maybeSingle()
+  return (data as { name: string } | null)?.name ?? 'Entreprise'
+}
+
+export async function notifyClientInvoiceSent(
+  supabase: Db,
+  companyId: string,
+  invoice: InvoiceWithRelations
+): Promise<void> {
+  try {
+    if (!process.env.NOTIFICATION_HUB_URL || !process.env.NOTIFICATION_API_KEY) return
+    const clientEmail = invoice.client?.email
+    if (!clientEmail) return
+    const name = await companyName(supabase, companyId)
+    const orgId = await ensureCompanyOrg(companyId, name)
+    if (!orgId) return
+    await emitHubEvent({
+      event: 'facturia.invoice.sent',
+      orgId,
+      recipients: [{ email: clientEmail, name: invoice.client?.name ?? undefined }],
+      payload: {
+        number: invoice.number,
+        total_ttc: invoice.total_ttc,
+        seller_name: name,
+        client_name: invoice.client?.name ?? '',
+        due_date: invoice.due_date,
+      },
+    })
+  } catch (e) {
+    console.error('[notify] facture envoyée au client en échec', e)
+  }
+}
+
+export async function notifyClientQuoteSent(
+  supabase: Db,
+  companyId: string,
+  quote: QuoteWithRelations
+): Promise<void> {
+  try {
+    if (!process.env.NOTIFICATION_HUB_URL || !process.env.NOTIFICATION_API_KEY) return
+    const clientEmail = quote.client?.email
+    if (!clientEmail) return
+    const name = await companyName(supabase, companyId)
+    const orgId = await ensureCompanyOrg(companyId, name)
+    if (!orgId) return
+    await emitHubEvent({
+      event: 'facturia.quote.sent',
+      orgId,
+      recipients: [{ email: clientEmail, name: quote.client?.name ?? undefined }],
+      payload: {
+        quote_number: quote.quote_number,
+        total: quote.total,
+        seller_name: name,
+        client_name: quote.client?.name ?? '',
+        validity_date: quote.validity_date,
+      },
+    })
+  } catch (e) {
+    console.error('[notify] devis envoyé au client en échec', e)
+  }
+}
+
+// Lien d'association admin pour l'org PROPRE de l'entreprise (le propriétaire
+// administre ses notifications clients). Retourne l'org_id + le lien, ou null.
+export async function ensureCompanyOrgId(supabase: Db, companyId: string): Promise<string | null> {
+  const name = await companyName(supabase, companyId)
+  return ensureCompanyOrg(companyId, name)
 }

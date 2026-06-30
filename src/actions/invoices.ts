@@ -16,7 +16,7 @@ import { getCompany } from './company'
 import { getUserSettings, updateUserSettings } from './settings'
 import type { InvoiceWithRelations, InvoiceStatus, Client } from '@/types/database'
 import { walletSync, walletRemove } from '@/lib/wallet-sync'
-import { notifyInvoiceStatus } from '@/lib/notifications/events'
+import { notifyInvoiceStatus, notifyClientInvoiceSent } from '@/lib/notifications/events'
 
 export async function getInvoices(filters?: {
   status?: InvoiceStatus
@@ -347,6 +347,8 @@ export async function updateInvoiceStatusAction(
   if (fullInvoice) {
     const inv = fullInvoice as InvoiceWithRelations
     after(() => notifyInvoiceStatus(supabase, company.id, inv))
+    // Niveau 2 (marque blanche) : prévient le CLIENT à l'envoi de la facture.
+    if (status === 'sent') after(() => notifyClientInvoiceSent(supabase, company.id, inv))
   }
 
   // Conformité 2026 : déclare l'encaissement hors chemin critique (B2C →
