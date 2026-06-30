@@ -6,6 +6,8 @@ import { clientSchema, type ClientFormData } from '@/lib/validations/client'
 import { getCompany } from './company'
 import type { Client } from '@/types/database'
 import { walletSync, walletRemove } from '@/lib/wallet-sync'
+import { after } from 'next/server'
+import { notifyClientCreated } from '@/lib/notifications/events'
 
 export async function getClients(search?: string): Promise<Client[]> {
   const supabase = await createClient()
@@ -85,6 +87,8 @@ export async function createClientAction(
   }
 
   if (data) await walletSync('clients', data, company.user_id)
+  // Notification (best-effort) : nouveau client créé.
+  if (data) after(() => notifyClientCreated(supabase, company.id, data as Client))
   revalidatePath('/clients')
   return { success: true, data }
 }

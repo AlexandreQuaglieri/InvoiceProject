@@ -12,6 +12,12 @@ import type { PdpB2cTransaction, PdpB2cPayment, PdpLifecycleEvent } from '@/lib/
 import { buildInvoiceFacturX } from '@/lib/facturx/build'
 import { PUSHABLE_CODES } from '@/lib/einvoicing/status'
 import type { Company, InboundInvoice, InvoiceWithRelations } from '@/types/database'
+import {
+  notifyPdpTransmitted,
+  notifyPdpStatus,
+  notifyInboundReceived,
+  notifyInboundDecision,
+} from '@/lib/notifications/events'
 
 export { TERMINAL_PDP_CODES } from '@/lib/einvoicing/status'
 
@@ -84,6 +90,9 @@ export async function transmitInvoice(
     }, updateError)
   }
 
+  // Notification best-effort (propriétaire du compte) : facture transmise.
+  await notifyPdpTransmitted(supabase, ctx.companyId, invoice, result.depositId, result.transmittedAt)
+
   return ok({ depositId: result.depositId, transmittedAt: result.transmittedAt, alreadyTransmitted: false })
 }
 
@@ -139,6 +148,17 @@ export async function syncInvoiceLifecycle(
       // (ex. migration pdp_status pas encore appliquée).
       console.error('[einvoicing] persistance du statut PDP en échec', { invoiceId: row.id }, updateError)
     }
+
+    // Notification best-effort : le statut PDP a changé (acceptée / refusée /
+    // encaissée / rejetée). No-op si le code n'est pas notable.
+    await notifyPdpStatus(
+      supabase,
+      ctx.companyId,
+      row.id,
+      latest.statusCode,
+      latest.statusText ?? null,
+      latest.occurredAt
+    )
   }
 
   return ok({ transmitted: true, depositId: row.pdp_deposit_id, events: sorted })
@@ -325,6 +345,13 @@ export async function syncInbound(
     received_at: inv.receivedAt,
   }))
 
+  // Factures déjà connues, pour ne notifier QUE les nouvelles.
+  const { data: existingRows } = await supabase
+    .from('inbound_invoices')
+    .select('deposit_id')
+    .eq('company_id', ctx.companyId)
+  const known = new Set((existingRows ?? []).map((r) => (r as { deposit_id: string }).deposit_id))
+
   // onConflict met à jour les métadonnées uniquement : local_status et
   // refusal_reason ne figurent pas dans le payload, ils sont donc préservés.
   const { error } = await supabase
@@ -332,6 +359,20 @@ export async function syncInbound(
     .upsert(rows, { onConflict: 'company_id,deposit_id' })
 
   if (error) return err(`Erreur de synchronisation des factures reçues: ${error.message}`)
+
+  // Notification best-effort : « vous avez reçu une facture » (nouvelles uniquement).
+  for (const inv of inbound) {
+    if (!known.has(inv.depositId)) {
+      await notifyInboundReceived(supabase, ctx.companyId, {
+        number: inv.number ?? null,
+        seller_name: inv.sellerName ?? null,
+        total_with_vat: inv.totalWithVat ?? null,
+        currency: inv.currency ?? null,
+        issue_date: inv.issueDate ?? null,
+      })
+    }
+  }
+
   return ok({ fetched: inbound.length, upserted: rows.length })
 }
 
@@ -380,5 +421,9 @@ export async function setInboundStatus(
     .single()
 
   if (error) return err(`Statut poussé à la PDP mais persistance locale en échec: ${error.message}`)
+
+  // Notification best-effort : facture reçue approuvée / refusée.
+  await notifyInboundDecision(supabase, ctx.companyId, updated as InboundInvoice)
+
   return ok(updated as InboundInvoice)
 }

@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { encryptSecret } from '@/lib/crypto'
 import { exchangeAuthCode, SUPER_PDP_BASE } from '@/lib/pdp'
+import { notifyPdpConnected } from '@/lib/notifications/events'
 
 function getOrigin(request: NextRequest): string {
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? request.nextUrl.host
@@ -81,6 +82,23 @@ export async function GET(request: NextRequest) {
       await supabase.from('user_settings').update(payload).eq('user_id', user.id)
     } else {
       await supabase.from('user_settings').insert({ user_id: user.id, ...payload })
+    }
+
+    // Notification best-effort : la PDP est raccordée.
+    const { data: comp } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (comp) {
+      const companyId = (comp as { id: string }).id
+      after(() =>
+        notifyPdpConnected(supabase, companyId, {
+          companyName: payload.pdp_company_name,
+          companyNumber: payload.pdp_company_number,
+          env: payload.pdp_env,
+        })
+      )
     }
 
     const res = settings('connected')

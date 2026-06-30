@@ -28,7 +28,10 @@ async function hubFetch(path: string, body: unknown): Promise<Response | null> {
 }
 
 // Crée/récupère l'org de l'app (idempotent) → org_id, ou null si non configuré/échec.
+// Mémoïsé par process : l'org est stable, inutile de rappeler /orgs à chaque emit.
+let cachedOrgId: string | null = null
 export async function ensureOrg(): Promise<string | null> {
+  if (cachedOrgId) return cachedOrgId
   try {
     const res = await hubFetch('/api/notifications/orgs', {
       external_id: ORG_EXTERNAL_ID,
@@ -40,7 +43,8 @@ export async function ensureOrg(): Promise<string | null> {
       return null
     }
     const data = (await res.json()) as { org_id?: string }
-    return data.org_id ?? null
+    cachedOrgId = data.org_id ?? null
+    return cachedOrgId
   } catch (e) {
     console.error('[hub] orgs en échec', e)
     return null

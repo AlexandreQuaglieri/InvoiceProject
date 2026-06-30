@@ -16,6 +16,7 @@ import { getCompany } from './company'
 import { getUserSettings, updateUserSettings } from './settings'
 import type { InvoiceWithRelations, InvoiceStatus, Client } from '@/types/database'
 import { walletSync, walletRemove } from '@/lib/wallet-sync'
+import { notifyInvoiceStatus } from '@/lib/notifications/events'
 
 export async function getInvoices(filters?: {
   status?: InvoiceStatus
@@ -341,6 +342,13 @@ export async function updateInvoiceStatusAction(
 
   if (updated) await walletSync('invoices', updated, company.user_id)
 
+  // Notification (best-effort, hors chemin critique) : prévient le propriétaire
+  // du compte du changement de statut (envoyé / payé / annulé).
+  if (fullInvoice) {
+    const inv = fullInvoice as InvoiceWithRelations
+    after(() => notifyInvoiceStatus(supabase, company.id, inv))
+  }
+
   // Conformité 2026 : déclare l'encaissement hors chemin critique (B2C →
   // b2c_payments, B2B transmise → event fr:212 « Encaissée »). STRICTEMENT via
   // le raccordement PDP de l'utilisateur (jamais le fallback éditeur : la
@@ -596,15 +604,23 @@ export async function markOverdueInvoices(): Promise<void> {
 
   const today = new Date().toISOString().split('T')[0]
 
-  const { error } = await supabase
+  // .select() renvoie UNIQUEMENT les factures qui viennent de basculer sent→overdue
+  // (les déjà-overdue ne matchent pas status='sent') → notification une seule fois.
+  const { data: nowOverdue, error } = await supabase
     .from('invoices')
     .update({ status: 'overdue' })
     .eq('company_id', company.id)
     .eq('status', 'sent')
     .lt('due_date', today)
+    .select('*, client:clients(*)')
 
   if (error) {
     console.error('[invoices] normalisation des factures en retard en échec', error)
+    return
+  }
+
+  for (const inv of (nowOverdue ?? []) as InvoiceWithRelations[]) {
+    after(() => notifyInvoiceStatus(supabase, company.id, inv))
   }
 }
 

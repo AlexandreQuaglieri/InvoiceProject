@@ -10,6 +10,8 @@ import type {
 } from '@/types/database'
 import { walletSync, walletRemove } from '@/lib/wallet-sync'
 import { getNextQuoteNumber } from '@/lib/services/core'
+import { after } from 'next/server'
+import { notifyQuoteStatus, notifyQuoteConverted } from '@/lib/notifications/events'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Résout l'utilisateur authentifié et son entreprise (scoping company_id, charte règle 5).
@@ -346,6 +348,9 @@ export async function updateQuoteStatus(
 
   // Refetch avec relations pour le write-through du store live.
   const fullQuote = await fetchQuoteWithRelations(supabase, id, ctx.companyId)
+
+  // Notification (best-effort) : envoyé / accepté / refusé / expiré.
+  if (fullQuote) after(() => notifyQuoteStatus(supabase, ctx.companyId, fullQuote))
   return { success: true, quote: fullQuote }
 }
 
@@ -505,5 +510,7 @@ export async function convertQuoteToInvoice(quoteId: string): Promise<{
     fetchQuoteWithRelations(supabase, quoteId, ctx.companyId),
   ])
 
+  // Notification (best-effort) : devis converti en facture.
+  if (fullQuote) after(() => notifyQuoteConverted(supabase, ctx.companyId, fullQuote, invoice.number))
   return { success: true, invoiceId: invoice.id, invoice: fullInvoice, quote: fullQuote }
 }
