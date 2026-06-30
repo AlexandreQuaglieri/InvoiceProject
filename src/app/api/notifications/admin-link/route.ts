@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { ensureOrg, registerSupportEvents, buildAdminLinkUrl } from '@/lib/notifications/hub'
+import { ensureOrg, registerEvents, APP_EVENTS, buildAdminLinkUrl } from '@/lib/notifications/hub'
 
 // Outil de configuration (une fois, connecté au hub) :
 //   GET /api/notifications/admin-link?app=<identifiant-de-ton-app>
-// → crée/récupère l'org (idempotent), déclare l'événement, et — si `app` est
-//   fourni (query ou NOTIFICATION_APP) — affiche un bouton « Devenir admin ».
+// → crée/récupère l'org (idempotent), déclare TOUT le catalogue d'events, et — si
+//   `app` est fourni (query ou NOTIFICATION_APP) — affiche un bouton « Devenir admin ».
 // Réservé à NOTIFICATION_ADMIN_EMAIL si défini.
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -35,15 +35,10 @@ export async function GET(request: Request) {
       (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string
     )
 
-  let eventsLine: string
-  if (app) {
-    const events = await registerSupportEvents(app)
-    eventsLine = events.ok
-      ? `✅ Événement déclaré <code>${esc(events.body)}</code>`
-      : `⚠️ Événement non déclaré (HTTP ${esc(String(events.status))}) : <code>${esc(events.body)}</code>`
-  } else {
-    eventsLine = `ℹ️ Ajoute <code>?app=…</code> ci-dessous pour déclarer l'événement.`
-  }
+  const events = await registerEvents(app)
+  const eventsLine = events.ok
+    ? `✅ Catalogue déclaré (${APP_EVENTS.length} événements) <code>${esc(events.body)}</code>`
+    : `⚠️ Déclaration en échec (HTTP ${esc(String(events.status))}) : <code>${esc(events.body)}</code>`
 
   const adminLink = app
     ? buildAdminLinkUrl({ app, orgId, appUserId: user.id, email: user.email ?? undefined })

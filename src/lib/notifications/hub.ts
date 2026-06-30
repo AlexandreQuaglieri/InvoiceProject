@@ -47,31 +47,254 @@ export async function ensureOrg(): Promise<string | null> {
   }
 }
 
-// Déclare les événements de l'app (idempotent). `app` = slug de l'app (requis par
-// /register, contrairement à /orgs qui le déduit de la clé). Renvoie un compte-rendu.
-export async function registerSupportEvents(app: string): Promise<{ ok: boolean; status: number; body: string }> {
+type HubEventDef = {
+  slug: string
+  label: string
+  category: 'billing' | 'member' | 'team' | 'shop' | 'system'
+  supported_channels: Array<'email' | 'discord_webhook' | 'discord_dm'>
+  audiences: string[]
+  description: string
+  default_active: boolean
+  payload_schema: Record<string, string>
+}
+
+const CH: HubEventDef['supported_channels'] = ['email', 'discord_webhook', 'discord_dm']
+
+// Catalogue complet des événements émis par Factur-IA, déclaré au hub (idempotent
+// par slug). category ∈ {billing, member, team, shop, system} ; canaux ∈
+// {email, discord_webhook, discord_dm}. Les clés de payload_schema deviennent les
+// variables {{...}} utilisables dans les templates (mail/Discord) côté hub.
+export const APP_EVENTS: HubEventDef[] = [
+  // — Système —
+  {
+    slug: SUPPORT_EVENT,
+    label: 'Nouveau message support',
+    category: 'system',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Un utilisateur a écrit via le bouton Assistance.',
+    default_active: true,
+    payload_schema: { subject: 'string', message: 'string', author_email: 'string', author_id: 'string' },
+  },
+  {
+    slug: 'facturia.pdp.connected',
+    label: 'Plateforme (PDP) raccordée',
+    category: 'system',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Le compte a raccordé sa société à la plateforme de dématérialisation.',
+    default_active: true,
+    payload_schema: { pdp_company_name: 'string', pdp_company_number: 'string', pdp_env: 'string' },
+  },
+
+  // — Factures —
+  {
+    slug: 'facturia.invoice.sent',
+    label: 'Facture envoyée',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Une facture a été finalisée / envoyée au client.',
+    default_active: true,
+    payload_schema: { number: 'string', total_ttc: 'number', client_name: 'string', client_email: 'string', due_date: 'string' },
+  },
+  {
+    slug: 'facturia.invoice.paid',
+    label: 'Facture payée',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Une facture a été encaissée (passée à « payée »).',
+    default_active: true,
+    payload_schema: { number: 'string', total_ttc: 'number', client_name: 'string', paid_at: 'string' },
+  },
+  {
+    slug: 'facturia.invoice.overdue',
+    label: 'Facture en retard',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Une facture envoyée a dépassé sa date d’échéance sans paiement.',
+    default_active: true,
+    payload_schema: { number: 'string', total_ttc: 'number', client_name: 'string', client_email: 'string', due_date: 'string' },
+  },
+  {
+    slug: 'facturia.invoice.cancelled',
+    label: 'Facture annulée',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Une facture a été annulée.',
+    default_active: true,
+    payload_schema: { number: 'string', total_ttc: 'number', client_name: 'string' },
+  },
+
+  // — Devis —
+  {
+    slug: 'facturia.quote.sent',
+    label: 'Devis envoyé',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Un devis a été envoyé au client.',
+    default_active: true,
+    payload_schema: { quote_number: 'string', total: 'number', client_name: 'string', client_email: 'string', validity_date: 'string' },
+  },
+  {
+    slug: 'facturia.quote.accepted',
+    label: 'Devis accepté',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Un devis a été accepté par le client.',
+    default_active: true,
+    payload_schema: { quote_number: 'string', total: 'number', client_name: 'string' },
+  },
+  {
+    slug: 'facturia.quote.rejected',
+    label: 'Devis refusé',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Un devis a été refusé par le client.',
+    default_active: true,
+    payload_schema: { quote_number: 'string', total: 'number', client_name: 'string' },
+  },
+  {
+    slug: 'facturia.quote.expired',
+    label: 'Devis expiré',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Un devis a dépassé sa date de validité.',
+    default_active: true,
+    payload_schema: { quote_number: 'string', total: 'number', client_name: 'string', validity_date: 'string' },
+  },
+  {
+    slug: 'facturia.quote.converted',
+    label: 'Devis converti en facture',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Un devis accepté a été converti en facture.',
+    default_active: true,
+    payload_schema: { quote_number: 'string', invoice_number: 'string', total: 'number' },
+  },
+
+  // — PDP / e-invoicing (sortant) —
+  {
+    slug: 'facturia.pdp.transmitted',
+    label: 'Facture transmise à la PDP',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Une facture a été déposée avec succès sur la plateforme (PDP).',
+    default_active: true,
+    payload_schema: { number: 'string', total_ttc: 'number', client_name: 'string', deposit_id: 'string', transmitted_at: 'string' },
+  },
+  {
+    slug: 'facturia.pdp.transmit_failed',
+    label: 'Échec de transmission PDP',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'La transmission d’une facture à la plateforme a échoué.',
+    default_active: true,
+    payload_schema: { number: 'string', error: 'string' },
+  },
+  {
+    slug: 'facturia.pdp.accepted',
+    label: 'Facture acceptée (PDP)',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Le client a approuvé la facture sur la plateforme (AFNOR fr:205).',
+    default_active: true,
+    payload_schema: { number: 'string', status_text: 'string', occurred_at: 'string', client_name: 'string' },
+  },
+  {
+    slug: 'facturia.pdp.refused',
+    label: 'Facture refusée (PDP)',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Le client a refusé la facture sur la plateforme (AFNOR fr:210).',
+    default_active: true,
+    payload_schema: { number: 'string', status_text: 'string', occurred_at: 'string', client_name: 'string' },
+  },
+  {
+    slug: 'facturia.pdp.collected',
+    label: 'Facture encaissée (PDP)',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Le paiement de la facture a été constaté sur la plateforme (AFNOR fr:212).',
+    default_active: true,
+    payload_schema: { number: 'string', total_ttc: 'number', occurred_at: 'string', client_name: 'string' },
+  },
+  {
+    slug: 'facturia.pdp.rejected',
+    label: 'Facture rejetée (PDP)',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'La facture a été rejetée par la plateforme (non conforme).',
+    default_active: true,
+    payload_schema: { number: 'string', status_text: 'string', occurred_at: 'string' },
+  },
+
+  // — Réception (e-invoicing entrant) —
+  {
+    slug: 'facturia.inbox.received',
+    label: 'Facture reçue',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Une facture fournisseur a été reçue via la plateforme.',
+    default_active: true,
+    payload_schema: { number: 'string', seller_name: 'string', total_with_vat: 'number', currency: 'string', issue_date: 'string' },
+  },
+  {
+    slug: 'facturia.inbox.approved',
+    label: 'Facture reçue approuvée',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Une facture fournisseur reçue a été approuvée.',
+    default_active: true,
+    payload_schema: { number: 'string', seller_name: 'string', total_with_vat: 'number' },
+  },
+  {
+    slug: 'facturia.inbox.refused',
+    label: 'Facture reçue refusée',
+    category: 'billing',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Une facture fournisseur reçue a été refusée (avec motif).',
+    default_active: true,
+    payload_schema: { number: 'string', seller_name: 'string', refusal_reason: 'string' },
+  },
+
+  // — Clients —
+  {
+    slug: 'facturia.client.created',
+    label: 'Nouveau client',
+    category: 'member',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: 'Un nouveau client a été créé.',
+    default_active: true,
+    payload_schema: { name: 'string', type: 'string', email: 'string' },
+  },
+]
+
+// Déclare TOUT le catalogue (idempotent par slug). `app` est désormais déduit de la
+// clé côté hub ; on l'envoie quand même s'il est connu (ignoré sinon).
+export async function registerEvents(app?: string): Promise<{ ok: boolean; status: number; body: string }> {
   try {
     const res = await hubFetch('/api/notifications/register', {
-      app,
-      events: [
-        {
-          slug: SUPPORT_EVENT,
-          label: 'Nouveau message support',
-          // category ∈ {billing, member, team, shop, system} (sinon l'admin ne l'affiche pas)
-          category: 'system',
-          // canaux ∈ {email, discord_webhook, discord_dm}
-          supported_channels: ['email', 'discord_webhook', 'discord_dm'],
-          audiences: ['admin'],
-          description: 'Un utilisateur a écrit via le bouton Assistance.',
-          default_active: true,
-          payload_schema: {
-            subject: 'string',
-            message: 'string',
-            author_email: 'string',
-            author_id: 'string',
-          },
-        },
-      ],
+      ...(app ? { app } : {}),
+      events: APP_EVENTS,
     })
     if (!res) return { ok: false, status: 0, body: 'Intégration non configurée' }
     const text = await res.text()
@@ -81,13 +304,11 @@ export async function registerSupportEvents(app: string): Promise<{ ok: boolean;
   }
 }
 
-// Auto-déclaration des events au démarrage de l'app (instrumentation). Lit le slug
-// dans NOTIFICATION_APP. Best-effort : aucune erreur ne remonte, juste un log.
-// → plus besoin de visiter une URL pour déclarer les events.
+// Auto-déclaration du catalogue au démarrage (instrumentation). Best-effort : ne
+// tourne que si le hub est configuré ; aucune erreur ne remonte, juste un log.
 export async function registerAppEvents(): Promise<void> {
-  const app = process.env.NOTIFICATION_APP
-  if (!app) return
-  const res = await registerSupportEvents(app)
+  if (!hubBase() || !process.env.NOTIFICATION_API_KEY) return
+  const res = await registerEvents(process.env.NOTIFICATION_APP)
   if (!res.ok) console.error('[hub] auto-déclaration des events échouée', res.status, res.body)
 }
 
