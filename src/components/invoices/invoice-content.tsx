@@ -300,6 +300,12 @@ export function InvoiceContent({ invoiceId, pdpConnected }: InvoiceContentProps)
             </CardHeader>
             <CardContent className="space-y-2">
               <DownloadPdfButton invoiceId={invoice.id} />
+              {invoice.status === 'draft' && (
+                <p className="text-xs text-muted-foreground">
+                  Finalisez la facture (bouton en haut de page) pour débloquer
+                  l&apos;envoi via la facturation électronique.
+                </p>
+              )}
               <TransmitPdpButton
                 invoiceId={invoice.id}
                 canTransmit={

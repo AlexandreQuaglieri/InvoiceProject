@@ -149,7 +149,7 @@
     "details": "Details",
     "items": "Invoice items",
     "view": "View",
-    "markAsSent": "Mark as sent",
+    "markAsSent": "Finalize invoice",
     "downloadPdf": "Download PDF"
   },
   "clients": {

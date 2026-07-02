@@ -149,7 +149,7 @@
     "details": "Informations",
     "items": "Lignes de facture",
     "view": "Voir",
-    "markAsSent": "Marquer comme envoyée",
+    "markAsSent": "Finaliser la facture",
     "downloadPdf": "Télécharger PDF"
   },
   "clients": {

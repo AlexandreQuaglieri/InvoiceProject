@@ -227,7 +227,7 @@ export function InvoicesTable() {
                           onClick={() => handleStatusChange(invoice, 'sent')}
                         >
                           <Send className="mr-2 h-4 w-4" />
-                          Marquer comme envoyée
+                          Finaliser la facture
                         </DropdownMenuItem>
                       )}
 

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
-import { Send, CheckCircle, XCircle, MoreHorizontal } from 'lucide-react'
+import { FileCheck, CheckCircle, XCircle, MoreHorizontal } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -80,14 +80,14 @@ export function InvoiceStatusActions({ invoice }: InvoiceStatusActionsProps) {
           onClick={() =>
             confirmStatusChange(
               'sent',
-              'Marquer comme envoyée ?',
-              "Cette action indique que la facture a été envoyée au client. Vous ne pourrez plus la modifier."
+              'Finaliser la facture ?',
+              "La facture devient définitive : elle ne pourra plus être modifiée, et les options d'envoi (facturation électronique via la PDP, Chorus Pro…) seront débloquées."
             )
           }
           disabled={isLoading}
         >
-          <Send className="mr-2 h-4 w-4" />
-          Marquer envoyée
+          <FileCheck className="mr-2 h-4 w-4" />
+          Finaliser la facture
         </Button>
 
         <AlertDialog
