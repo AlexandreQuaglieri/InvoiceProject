@@ -105,7 +105,7 @@
       "copied": "URL copied to clipboard",
       "copyError": "Could not copy the URL",
       "step2": "Add the connector in your assistant:",
-      "step2Sub": "Claude — Settings → Connectors · ChatGPT — Settings → Apps & connectors. Paste the URL, that's it — no token to enter.",
+      "step2Sub": "Claude — Settings → Connectors · ChatGPT — Settings → Apps & connectors (enable Developer mode first, under Advanced settings). Paste the URL, that's it — no token to enter.",
       "step3": "Sign in via OAuth with your Factur-IA account in the window that opens.",
       "step3Sub": "Secure access, limited to your account — revocable anytime.",
       "step4": "Ask your assistant, in plain language:",

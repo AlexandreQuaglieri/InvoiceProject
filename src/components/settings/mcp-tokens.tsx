@@ -120,23 +120,26 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Key className="h-5 w-5" />
-          Intégration Claude (MCP)
+          Intégration Claude &amp; ChatGPT (MCP)
         </CardTitle>
         <CardDescription>
-          Connectez votre compte à Claude pour gérer vos factures directement depuis Claude.ai
+          Pilotez vos factures, devis et clients depuis votre assistant : collez l&apos;URL du
+          connecteur, connectez-vous avec votre compte Factur-IA, c&apos;est tout.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Instructions */}
         <div className="rounded-lg bg-muted p-4 text-sm space-y-2">
-          <p className="font-medium">Comment connecter Claude à Factur-IA :</p>
+          <p className="font-medium">Comment connecter votre assistant à Factur-IA :</p>
           <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-            <li>Générez un token API ci-dessous</li>
+            <li>Copiez l&apos;URL du connecteur ci-dessous</li>
             <li>
-              Dans Claude.ai : Profil → Paramètres → Connecteurs → Ajouter un connecteur personnalisé
+              Claude : Paramètres → Connecteurs → Ajouter un connecteur personnalisé ·
+              ChatGPT : Paramètres → Apps et connecteurs → Créer (activez d&apos;abord le mode
+              développeur dans Paramètres avancés)
             </li>
-            <li>Collez l&apos;URL du serveur MCP</li>
-            <li>Utilisez votre token comme Bearer token</li>
+            <li>Collez l&apos;URL — votre assistant vous redirige vers Factur-IA pour vous connecter</li>
+            <li>Autorisez l&apos;accès : aucun token à saisir, vous retrouvez vos données</li>
           </ol>
           <div className="mt-3 flex items-center gap-2">
             <code className="flex-1 bg-background px-2 py-1 rounded text-xs break-all">
@@ -190,7 +193,12 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
         {/* Liste des tokens */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Vos tokens API ({tokens.length}/5)</h4>
+            <div>
+              <h4 className="text-sm font-medium">Option avancée : tokens API ({tokens.length}/5)</h4>
+              <p className="text-xs text-muted-foreground">
+                Pour les clients MCP sans OAuth (scripts, intégrations) : token à passer en Bearer.
+              </p>
+            </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" disabled={tokens.length >= 5}>
@@ -236,7 +244,7 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
 
           {tokens.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              Aucun token API. Créez-en un pour connecter Claude.
+              Aucun token API — la connexion Claude/ChatGPT ci-dessus n&apos;en a pas besoin.
             </p>
           ) : (
             <div className="space-y-2">

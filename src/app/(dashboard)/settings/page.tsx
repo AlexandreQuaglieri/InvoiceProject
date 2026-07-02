@@ -35,7 +35,7 @@ export default async function SettingsPage({
           <TabsTrigger value="invoicing">{t('settings.invoicing')}</TabsTrigger>
           <TabsTrigger value="einvoicing">Facturation élec.</TabsTrigger>
           <TabsTrigger value="api">{t('settings.api')}</TabsTrigger>
-          <TabsTrigger value="mcp">Claude MCP</TabsTrigger>
+          <TabsTrigger value="mcp">Claude &amp; ChatGPT</TabsTrigger>
           <TabsTrigger value="wallet">Data Wallet</TabsTrigger>
         </TabsList>
 

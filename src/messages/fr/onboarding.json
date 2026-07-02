@@ -105,7 +105,7 @@
       "copied": "URL copiée dans le presse-papiers",
       "copyError": "Impossible de copier l'URL",
       "step2": "Ajoutez le connecteur dans votre assistant :",
-      "step2Sub": "Claude — Paramètres → Connecteurs · ChatGPT — Paramètres → Apps & connecteurs. Collez l'URL, c'est tout — pas de token à saisir.",
+      "step2Sub": "Claude — Paramètres → Connecteurs · ChatGPT — Paramètres → Apps et connecteurs (activez d'abord le mode développeur dans Paramètres avancés). Collez l'URL, c'est tout — pas de token à saisir.",
       "step3": "Connectez-vous via OAuth avec votre compte Factur-IA dans la fenêtre qui s'ouvre.",
       "step3Sub": "Accès sécurisé, limité à votre compte — révocable à tout moment.",
       "step4": "Demandez à votre assistant, en langage naturel :",
