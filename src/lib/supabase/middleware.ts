@@ -37,9 +37,8 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Routes publiques (pas de redirection)
-  // '/mcp' exact : URL officielle du connecteur (réécrite vers /mcp/mcp), les clients
-  // MCP n'ont pas de session Supabase — sans ça, ChatGPT reçoit 307 → /login.
+  // Routes publiques (pas de redirection). '/mcp' exact : endpoint MCP officiel
+  // (src/app/mcp/route.ts), les clients MCP n'ont pas de session Supabase.
   const publicRoutes = ['/', '/login', '/signup', '/forgot-password', '/auth/callback', '/mcp']
   const publicPrefixes = ['/auth/', '/mcp/', '/oauth/', '/.well-known/', '/api/', '/legal/']
 
