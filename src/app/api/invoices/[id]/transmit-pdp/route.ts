@@ -65,6 +65,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       alreadyTransmitted: result.data.alreadyTransmitted,
     })
   } catch (error) {
+    // Erreur brute tracée AVANT le message convivial (sinon indiagnosticable en prod).
+    console.error('[transmit-pdp] échec de transmission', { invoiceId: id, userId: user.id }, error)
     if (isPdpAuthError(error)) {
       return NextResponse.json(
         {

@@ -294,7 +294,13 @@ export async function refreshAccessToken(params: {
 export function friendlyPdpError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error)
   if (raw.includes('ne correspond pas au vendeur') || raw.includes('does not match')) {
-    return "Le vendeur de la facture ne correspond pas à la société raccordée à la PDP. En test (sandbox), la société raccordée est fictive ; en production, raccordez votre société réelle (même SIRET que sur vos factures)."
+    return "Le vendeur de la facture ne correspond pas à la société raccordée à la PDP. Vérifiez que le SIREN de votre fiche entreprise est bien celui de la société connectée (Réglages → Facturation électronique), puis reconnectez si besoin."
+  }
+  if (raw.includes('missing buyer electronic address')) {
+    return "Impossible d'adresser la facture : renseignez le SIRET (ou le n° TVA) du client — il sert d'adresse dans l'annuaire de la facturation électronique."
+  }
+  if (raw.includes('receiver address does not exist')) {
+    return "Le destinataire n'est pas référencé dans l'annuaire de la facturation électronique. Vérifiez le SIRET du client ; s'il est correct, son entreprise n'est pas encore inscrite à l'annuaire (contactez-la ou envoyez la facture par un autre canal)."
   }
   // Récupère le message lisible renvoyé par la PDP ("message":"...").
   const m = raw.match(/"message":"([^"]+)"/)

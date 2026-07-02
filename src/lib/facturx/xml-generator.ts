@@ -18,6 +18,24 @@ function fmt(amount: number): string {
   return amount.toFixed(2)
 }
 
+// SIREN (9 chiffres) d'une partie : colonne dédiée, sinon préfixe du SIRET,
+// sinon extrait du n° TVA FR (FRkk + SIREN). C'est l'identifiant pivot de la
+// réforme : l'annuaire (0225:SIREN) et le contrôle vendeur des PDP comparent
+// LITTÉRALEMENT au SIREN — un SIRET 14 chiffres est rejeté.
+function toSiren(ids: {
+  siren?: string | null
+  siret?: string | null
+  vat?: string | null
+}): string | null {
+  const siren = (ids.siren ?? '').replace(/\s/g, '')
+  if (/^\d{9}$/.test(siren)) return siren
+  const siret = (ids.siret ?? '').replace(/\s/g, '')
+  if (/^\d{14}$/.test(siret)) return siret.slice(0, 9)
+  const vat = (ids.vat ?? '').replace(/\s/g, '').toUpperCase()
+  if (/^FR[0-9A-Z]{2}\d{9}$/.test(vat)) return vat.slice(4)
+  return null
+}
+
 // Convertit un nom de pays en code ISO 3166-1 alpha-2
 function toCountryCode(country: string): string {
   const map: Record<string, string> = {
@@ -104,6 +122,12 @@ export function generateFacturXXml(
 
   const sellerCountry = toCountryCode(company.country)
   const buyerCountry = toCountryCode(invoice.client.country)
+  const sellerSiren = toSiren({
+    siren: company.siren,
+    siret: company.siret,
+    vat: company.vat_number,
+  })
+  const buyerSiren = toSiren({ siret: invoice.client.siret, vat: invoice.client.vat_number })
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice
@@ -135,7 +159,11 @@ export function generateFacturXXml(
       <ram:SellerTradeParty>
         <ram:Name>${esc(company.name)}</ram:Name>
         <ram:SpecifiedLegalOrganization>
-          <ram:ID schemeID="0009">${esc(company.siret)}</ram:ID>
+          ${
+            sellerSiren
+              ? `<ram:ID schemeID="0002">${sellerSiren}</ram:ID>`
+              : `<ram:ID schemeID="0009">${esc(company.siret)}</ram:ID>`
+          }
         </ram:SpecifiedLegalOrganization>
         <ram:PostalTradeAddress>
           <ram:PostcodeCode>${esc(company.postal_code)}</ram:PostcodeCode>
@@ -143,7 +171,13 @@ export function generateFacturXXml(
           <ram:CityName>${esc(company.city)}</ram:CityName>
           <ram:CountryID>${sellerCountry}</ram:CountryID>
         </ram:PostalTradeAddress>
-        ${company.email ? `<ram:URIUniversalCommunication><ram:URIID schemeID="EM">${esc(company.email)}</ram:URIID></ram:URIUniversalCommunication>` : ''}
+        ${
+          sellerSiren
+            ? `<ram:URIUniversalCommunication><ram:URIID schemeID="0225">${sellerSiren}</ram:URIID></ram:URIUniversalCommunication>`
+            : company.email
+              ? `<ram:URIUniversalCommunication><ram:URIID schemeID="EM">${esc(company.email)}</ram:URIID></ram:URIUniversalCommunication>`
+              : ''
+        }
         ${
           company.vat_number
             ? `<ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">${esc(company.vat_number)}</ram:ID></ram:SpecifiedTaxRegistration>`
@@ -164,7 +198,13 @@ export function generateFacturXXml(
           <ram:CityName>${esc(invoice.client.city)}</ram:CityName>
           <ram:CountryID>${buyerCountry}</ram:CountryID>
         </ram:PostalTradeAddress>
-        ${invoice.client.email ? `<ram:URIUniversalCommunication><ram:URIID schemeID="EM">${esc(invoice.client.email)}</ram:URIID></ram:URIUniversalCommunication>` : ''}
+        ${
+          buyerSiren
+            ? `<ram:URIUniversalCommunication><ram:URIID schemeID="0225">${buyerSiren}</ram:URIID></ram:URIUniversalCommunication>`
+            : invoice.client.email
+              ? `<ram:URIUniversalCommunication><ram:URIID schemeID="EM">${esc(invoice.client.email)}</ram:URIID></ram:URIUniversalCommunication>`
+              : ''
+        }
         ${invoice.client.vat_number ? `<ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">${esc(invoice.client.vat_number)}</ram:ID></ram:SpecifiedTaxRegistration>` : ''}
       </ram:BuyerTradeParty>
     </ram:ApplicableHeaderTradeAgreement>
