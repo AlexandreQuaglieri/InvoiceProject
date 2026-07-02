@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Loader2, CheckCircle2 } from 'lucide-react'
+import { RefreshCw, Loader2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 import { statusInfo } from '@/lib/einvoicing/status'
 
 interface LifecycleEvent {
@@ -83,9 +83,23 @@ export function PdpLifecycle({ invoiceId }: { invoiceId: string }) {
               const label = info
                 ? t(`einvoicing.status.${info.labelKey}`)
                 : e.statusText || e.statusCode
+              // Icône selon le ton du statut : croix pour refusée/rejetée,
+              // triangle pour litige/suspendue, coche sinon.
+              const Icon =
+                info?.tone === 'destructive'
+                  ? XCircle
+                  : info?.tone === 'warning'
+                    ? AlertTriangle
+                    : CheckCircle2
+              const iconColor =
+                info?.tone === 'destructive'
+                  ? 'text-destructive'
+                  : info?.tone === 'warning'
+                    ? 'text-amber-500'
+                    : 'text-green-500'
               return (
                 <li key={i} className="flex gap-3 text-sm">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
+                  <Icon className={`mt-0.5 h-4 w-4 flex-shrink-0 ${iconColor}`} />
                   <div>
                     <p className="font-medium">{label}</p>
                     {info && e.statusText && (

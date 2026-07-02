@@ -103,7 +103,11 @@ export function createSuperPdpProvider(getToken: TokenProvider): PdpProvider {
         statusCode: e.status_code as string,
         statusText: e.status_text as string | undefined,
         occurredAt: e.created_at as string,
-        reason: (e.data as { reason?: string } | undefined)?.reason,
+        // Le motif (refus, litige…) arrive dans details[0].reason (constaté sur
+        // un fr:210 réel) ; data.reason gardé en repli (schéma event_data).
+        reason:
+          (e.details as Array<{ reason?: string }> | undefined)?.[0]?.reason ??
+          (e.data as { reason?: string } | undefined)?.reason,
       }))
     },
 
