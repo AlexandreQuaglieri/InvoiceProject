@@ -10,7 +10,7 @@ import { type DbClient, type Ctx, type ServiceResult, ok, err } from './core'
 import type { PdpProvider } from '@/lib/pdp/provider'
 import type { PdpB2cTransaction, PdpB2cPayment, PdpLifecycleEvent } from '@/lib/pdp/types'
 import { buildInvoiceFacturX } from '@/lib/facturx/build'
-import { PUSHABLE_CODES } from '@/lib/einvoicing/status'
+import { PUSHABLE_CODES, TECHNICAL_REJECTION_CODES } from '@/lib/einvoicing/status'
 import type { Company, InboundInvoice, InvoiceWithRelations } from '@/types/database'
 import {
   notifyPdpTransmitted,
@@ -56,7 +56,11 @@ export async function transmitInvoice(
     return err("Impossible de transmettre un brouillon. Finalisez la facture d'abord.")
   }
 
-  if (invoice.pdp_deposit_id) {
+  // Idempotence, SAUF rejet technique : la facture n'a jamais été délivrée
+  // (fr:213/ppf:rejected…) — on autorise un nouveau dépôt après correction.
+  const technicallyRejected =
+    invoice.pdp_status != null && TECHNICAL_REJECTION_CODES.has(invoice.pdp_status)
+  if (invoice.pdp_deposit_id && !technicallyRejected) {
     return ok({
       depositId: invoice.pdp_deposit_id,
       transmittedAt: invoice.pdp_transmitted_at ?? '',
@@ -75,9 +79,17 @@ export async function transmitInvoice(
   const result = await pdp.transmitInvoice({ facturX, invoiceNumber: invoice.number })
 
   // Persiste la référence de dépôt (le Realtime propage la mise à jour à l'UI).
+  // En cas de redépôt après rejet, l'ancien statut est purgé : le cycle de vie
+  // repart sur le nouveau dépôt.
   const { error: updateError } = await supabase
     .from('invoices')
-    .update({ pdp_deposit_id: result.depositId, pdp_transmitted_at: result.transmittedAt })
+    .update({
+      pdp_deposit_id: result.depositId,
+      pdp_transmitted_at: result.transmittedAt,
+      pdp_status: null,
+      pdp_status_text: null,
+      pdp_status_at: null,
+    })
     .eq('id', invoice.id)
     .eq('company_id', ctx.companyId)
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { ShieldCheck, Send, Loader2, CheckCircle2 } from 'lucide-react'
 import { useLiveInvoice } from '@/lib/realtime'
+import { TECHNICAL_REJECTION_CODES } from '@/lib/einvoicing/status'
 
 interface TransmitPdpButtonProps {
   invoiceId: string
@@ -15,9 +16,13 @@ interface TransmitPdpButtonProps {
 export function TransmitPdpButton({ invoiceId, canTransmit }: TransmitPdpButtonProps) {
   const t = useTranslations()
   // Lecture du store live (Realtime) : dès que pdp_deposit_id est posé côté
-  // serveur, le bouton se désactive sans aucune actualisation.
+  // serveur, le bouton se désactive sans aucune actualisation. Exception :
+  // rejet technique (fr:213/ppf:rejected…) — la facture n'a jamais été
+  // délivrée, on autorise le redépôt après correction.
   const invoice = useLiveInvoice(invoiceId)
-  const alreadyTransmitted = Boolean(invoice?.pdp_deposit_id)
+  const technicallyRejected =
+    invoice?.pdp_status != null && TECHNICAL_REJECTION_CODES.has(invoice.pdp_status)
+  const alreadyTransmitted = Boolean(invoice?.pdp_deposit_id) && !technicallyRejected
   const [validating, setValidating] = useState(false)
   const [transmitting, setTransmitting] = useState(false)
 
@@ -110,7 +115,9 @@ export function TransmitPdpButton({ invoiceId, canTransmit }: TransmitPdpButtonP
           )}
           {alreadyTransmitted
             ? t('einvoicing.transmittedLabel')
-            : 'Transmettre (PDP — facturation électronique)'}
+            : technicallyRejected
+              ? 'Retransmettre (PDP — après correction)'
+              : 'Transmettre (PDP — facturation électronique)'}
         </Button>
       )}
     </>

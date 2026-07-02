@@ -40,7 +40,24 @@ const STATUS_MAP: Record<string, EinvoicingStatusInfo> = {
   'fr:212': { labelKey: 'collected', tone: 'success', terminal: true },
   'fr:213': { labelKey: 'rejected', tone: 'destructive', terminal: true },
   'fr:501': { labelKey: 'rejected', tone: 'destructive', terminal: true },
+  // Événements PPF (relais du statut à l'administration) observés en prod.
+  'ppf:rejected': { labelKey: 'rejected', tone: 'destructive', terminal: true },
+  'ppf:rejected-ack': { labelKey: 'rejected', tone: 'destructive', terminal: true },
+  'ppf:refused': { labelKey: 'refused', tone: 'destructive', terminal: true },
+  'ppf:refused-ack': { labelKey: 'refused', tone: 'destructive', terminal: true },
 }
+
+// Rejets TECHNIQUES (plateforme/PPF) : contrairement au refus acheteur (fr:210),
+// la facture n'a jamais été délivrée — elle peut être corrigée puis REDÉPOSÉE
+// sous le même numéro.
+export const TECHNICAL_REJECTION_CODES: ReadonlySet<string> = new Set([
+  'fr:213',
+  'fr:501',
+  'api:invalid',
+  'api:rejected',
+  'ppf:rejected',
+  'ppf:rejected-ack',
+])
 
 // Codes AFNOR poussables par l'application (enum status_code_create de l'OpenAPI).
 export const PUSHABLE_CODES = {

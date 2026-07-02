@@ -106,19 +106,71 @@ export function generateFacturXXml(
     )
     .join('')
 
-  const vatSummary = Object.values(vatGroups)
+  // Remise globale — EN 16931 impose des montants de lignes BRUTS (BT-106 = Σ BT-131)
+  // et porte la remise en allowance de document (BT-92), ventilée par catégorie de
+  // TVA, sinon rejet BR-CO-10 à la validation. Tous les totaux d'en-tête sont donc
+  // recalculés ici à partir des lignes pour garantir la cohérence interne du XML.
+  const round2 = (n: number) => Math.round(n * 100) / 100
+  const lineTotal = round2(invoice.items.reduce((sum, item) => sum + item.total_ht, 0))
+  const discountValue = Number(invoice.discount_value ?? 0)
+  const discountTotal =
+    discountValue > 0
+      ? invoice.discount_type === 'percentage'
+        ? round2((lineTotal * discountValue) / 100)
+        : Math.min(round2(discountValue), lineTotal)
+      : 0
+
+  // Ventilation de la remise par groupe de TVA (au prorata des bases, le dernier
+  // groupe absorbe le reliquat d'arrondi) puis bases/taxes après remise.
+  const rawGroups = Object.values(vatGroups)
+  let allocated = 0
+  const groups = rawGroups.map((g, i) => {
+    const alloc =
+      i === rawGroups.length - 1
+        ? round2(discountTotal - allocated)
+        : round2((discountTotal * g.base) / (lineTotal || 1))
+    allocated = round2(allocated + alloc)
+    const basis = round2(g.base - alloc)
+    const tax = discountTotal > 0 ? round2((basis * g.rate) / 100) : round2(g.tax)
+    return { rate: g.rate, alloc, basis, tax }
+  })
+  const taxBasisTotal = round2(lineTotal - discountTotal)
+  const taxTotal = round2(groups.reduce((sum, g) => sum + g.tax, 0))
+  const grandTotal = round2(taxBasisTotal + taxTotal)
+
+  const vatSummary = groups
     .map(
       (g) => `
     <ram:ApplicableTradeTax>
       <ram:CalculatedAmount>${fmt(g.tax)}</ram:CalculatedAmount>
       <ram:TypeCode>VAT</ram:TypeCode>
       ${isFranchise ? '<ram:ExemptionReason>TVA non applicable, art. 293 B du CGI</ram:ExemptionReason>' : ''}
-      <ram:BasisAmount>${fmt(g.base)}</ram:BasisAmount>
+      <ram:BasisAmount>${fmt(g.basis)}</ram:BasisAmount>
       <ram:CategoryCode>${isFranchise ? 'E' : 'S'}</ram:CategoryCode>
       <ram:RateApplicablePercent>${g.rate}</ram:RateApplicablePercent>
     </ram:ApplicableTradeTax>`
     )
     .join('')
+
+  const allowances =
+    discountTotal > 0
+      ? groups
+          .filter((g) => g.alloc > 0)
+          .map(
+            (g) => `
+      <ram:SpecifiedTradeAllowanceCharge>
+        <ram:ChargeIndicator><udt:Indicator>false</udt:Indicator></ram:ChargeIndicator>
+        <ram:ActualAmount>${fmt(g.alloc)}</ram:ActualAmount>
+        <ram:Reason>Remise commerciale</ram:Reason>
+        <ram:CategoryTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>${isFranchise ? 'E' : 'S'}</ram:CategoryCode>
+          <ram:RateApplicablePercent>${g.rate}</ram:RateApplicablePercent>
+        </ram:CategoryTradeTax>
+      </ram:SpecifiedTradeAllowanceCharge>`
+          )
+          .join('')
+      : ''
 
   const sellerCountry = toCountryCode(company.country)
   const buyerCountry = toCountryCode(invoice.client.country)
@@ -150,6 +202,9 @@ export function generateFacturXXml(
       <udt:DateTimeString format="102">${formatDate(invoice.issue_date)}</udt:DateTimeString>
     </ram:IssueDateTime>
     ${invoice.notes ? `<ram:IncludedNote><ram:Content>${esc(invoice.notes)}</ram:Content></ram:IncludedNote>` : ''}
+    <ram:IncludedNote><ram:Content>Pas d'escompte pour paiement anticipé.</ram:Content><ram:SubjectCode>AAB</ram:SubjectCode></ram:IncludedNote>
+    <ram:IncludedNote><ram:Content>Indemnité forfaitaire pour frais de recouvrement en cas de retard de paiement : 40 €.</ram:Content><ram:SubjectCode>PMT</ram:SubjectCode></ram:IncludedNote>
+    <ram:IncludedNote><ram:Content>Pénalités de retard : trois fois le taux d'intérêt légal annuel.</ram:Content><ram:SubjectCode>PMD</ram:SubjectCode></ram:IncludedNote>
   </rsm:ExchangedDocument>
 
   <rsm:SupplyChainTradeTransaction>
@@ -224,6 +279,7 @@ export function generateFacturXXml(
           : ''
       }
       ${vatSummary}
+      ${allowances}
       <ram:SpecifiedTradePaymentTerms>
         ${invoice.payment_terms ? `<ram:Description>${esc(invoice.payment_terms)}</ram:Description>` : ''}
         <ram:DueDateDateTime>
@@ -231,11 +287,12 @@ export function generateFacturXXml(
         </ram:DueDateDateTime>
       </ram:SpecifiedTradePaymentTerms>
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
-        <ram:LineTotalAmount>${fmt(invoice.total_ht)}</ram:LineTotalAmount>
-        <ram:TaxBasisTotalAmount>${fmt(invoice.total_ht)}</ram:TaxBasisTotalAmount>
-        <ram:TaxTotalAmount currencyID="EUR">${fmt(invoice.total_vat)}</ram:TaxTotalAmount>
-        <ram:GrandTotalAmount>${fmt(invoice.total_ttc)}</ram:GrandTotalAmount>
-        <ram:DuePayableAmount>${fmt(invoice.total_ttc)}</ram:DuePayableAmount>
+        <ram:LineTotalAmount>${fmt(lineTotal)}</ram:LineTotalAmount>
+        ${discountTotal > 0 ? `<ram:AllowanceTotalAmount>${fmt(discountTotal)}</ram:AllowanceTotalAmount>` : ''}
+        <ram:TaxBasisTotalAmount>${fmt(taxBasisTotal)}</ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount currencyID="EUR">${fmt(taxTotal)}</ram:TaxTotalAmount>
+        <ram:GrandTotalAmount>${fmt(grandTotal)}</ram:GrandTotalAmount>
+        <ram:DuePayableAmount>${fmt(grandTotal)}</ram:DuePayableAmount>
       </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
     </ram:ApplicableHeaderTradeSettlement>
   </rsm:SupplyChainTradeTransaction>
