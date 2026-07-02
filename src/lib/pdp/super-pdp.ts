@@ -120,11 +120,27 @@ export function createSuperPdpProvider(getToken: TokenProvider): PdpProvider {
       })
     },
 
-    // GET /v1.beta/invoices?direction=in — factures entrantes (métadonnées).
+    // GET /v1.beta/invoices?direction=in — factures entrantes.
+    // La LISTE ne porte jamais `en_invoice` (constaté sur l'API v1.beta) : les
+    // métadonnées (numéro, vendeur, totaux) ne sont exposées que par le détail
+    // GET /invoices/{id} — on enrichit donc chaque facture en parallèle.
     async listInbound(): Promise<PdpInboundInvoice[]> {
       const res = await call(`${API}/invoices?direction=in`)
       const data = await res.json()
-      return ((data.data ?? []) as Array<Record<string, unknown>>).map((inv) => {
+      const overviews = (data.data ?? []) as Array<Record<string, unknown>>
+      const detailed = await Promise.all(
+        overviews.map(async (inv) => {
+          try {
+            const d = await call(`${API}/invoices/${inv.id}`)
+            return (await d.json()) as Record<string, unknown>
+          } catch (e) {
+            // Repli : la ligne reste synchronisée sans métadonnées (complétées au prochain sync).
+            console.error('[pdp] détail facture entrante en échec', { id: inv.id }, e)
+            return inv
+          }
+        })
+      )
+      return detailed.map((inv) => {
         const en = inv.en_invoice as
           | {
               number?: string
