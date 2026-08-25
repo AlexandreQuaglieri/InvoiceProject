@@ -4,6 +4,7 @@ import { Github, Receipt } from 'lucide-react'
 import { SARat } from '@/components/brand/street-art'
 
 const GITHUB_URL = 'https://github.com/AlexandreQuaglieri/InvoiceProject'
+const DOCS_URL = 'https://www.quatools.fr/outils/facturation/docs'
 
 /** Pied de page public — RSC pur. */
 export function SiteFooter() {
@@ -34,6 +35,14 @@ export function SiteFooter() {
                 {link.label}
               </Link>
             ))}
+            <a
+              href={DOCS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-sm underline-offset-[3px] transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {t('links.docs')}
+            </a>
             <a
               href={GITHUB_URL}
               target="_blank"
