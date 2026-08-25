@@ -81,7 +81,7 @@ export default function LandingPage() {
       <McpSection />
       <DoDontSection />
       <SectionDivider pigeon />
-      <ReformSection />
+      <ReformSection showPageLink />
       <StudioSection />
     </>
   )

@@ -1,9 +1,10 @@
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { Zap } from 'lucide-react'
 import { ReformQuiz } from '@/components/marketing/reform-quiz'
 
 /** Réforme 2026 sans jargon : 3 points + mythe + quiz interactif — RSC pur. */
-export function ReformSection() {
+export function ReformSection({ showPageLink = false }: { showPageLink?: boolean }) {
   const t = useTranslations('landing.reform')
 
   const strong = (chunks: React.ReactNode) => (
@@ -50,7 +51,17 @@ export function ReformSection() {
               </span>
             </p>
           </div>
-          <ReformQuiz />
+          <div>
+            <ReformQuiz />
+            {showPageLink && (
+              <Link
+                href="/suis-je-concerne-2026"
+                className="mt-3 inline-block rounded-sm text-[12.5px] text-muted-foreground underline underline-offset-[3px] transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {t('pageLink')}
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </section>

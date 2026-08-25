@@ -8,6 +8,7 @@ import { createHmac } from 'crypto'
 // Tout est INERTE si NOTIFICATION_HUB_URL / NOTIFICATION_API_KEY ne sont pas posées.
 
 export const SUPPORT_EVENT = 'facturia.support.message_created'
+export const LEAD_EVENT = 'facturia.lead.created'
 const ORG_EXTERNAL_ID = 'factur-ia'
 const ORG_NAME = 'Factur-IA'
 
@@ -105,6 +106,16 @@ export const APP_EVENTS: HubEventDef[] = [
     description: 'Un utilisateur a écrit via le bouton Assistance.',
     default_active: true,
     payload_schema: { subject: 'string', message: 'string', author_email: 'string', author_id: 'string' },
+  },
+  {
+    slug: LEAD_EVENT,
+    label: 'Nouveau lead (quiz réforme)',
+    category: 'system',
+    supported_channels: CH,
+    audiences: ['admin'],
+    description: "Un visiteur a laissé son email à l'issue du quiz « Suis-je concerné par 2026 ? ».",
+    default_active: true,
+    payload_schema: { email: 'string', quiz_who: 'string', quiz_billing: 'string', locale: 'string' },
   },
   {
     slug: 'facturia.pdp.connected',

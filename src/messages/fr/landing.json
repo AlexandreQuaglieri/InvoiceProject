@@ -177,7 +177,8 @@
       "point1": "À partir du <strong>1er septembre 2026</strong>, toutes les entreprises françaises doivent pouvoir <strong>recevoir</strong> des factures électroniques.",
       "point2": "Les grandes entreprises commencent à en <strong>émettre</strong> dès 2026 ; indépendants, TPE et PME suivent en <strong>septembre 2027</strong>.",
       "point3": "Le <strong>PDF par email ne suffira plus</strong> : chaque facture passe par une plateforme agréée, qui la transmet à votre client et à l'administration.",
-      "myth": "<strong>« Je ne facture pas la TVA, donc je ne suis pas concerné » — faux.</strong> La franchise de TVA (micro) ne vous exonère pas : la réforme vise tous les assujettis, même non redevables. C'est l'erreur la plus fréquente."
+      "myth": "<strong>« Je ne facture pas la TVA, donc je ne suis pas concerné » — faux.</strong> La franchise de TVA (micro) ne vous exonère pas : la réforme vise tous les assujettis, même non redevables. C'est l'erreur la plus fréquente.",
+      "pageLink": "Partager ce test : page dédiée →"
     },
     "quiz": {
       "label": "30 secondes chrono",
@@ -195,6 +196,16 @@
         "mix": "Les deux"
       },
       "reset": "Recommencer",
+      "capture": {
+        "title": "Recevez votre checklist 2026",
+        "text": "Votre verdict + les étapes concrètes pour être en règle, dans votre boîte mail. Rien d'autre, promis.",
+        "placeholder": "vous@entreprise.fr",
+        "submit": "Recevoir la checklist",
+        "sending": "Envoi…",
+        "success": "C'est noté ! La checklist arrive dans votre boîte mail.",
+        "error": "Impossible d'enregistrer votre email. Réessayez.",
+        "privacy": "Un seul email, pas de spam, supprimable sur simple demande."
+      },
       "verdict": {
         "indep_b2b": "<strong>Oui — réception en 2026, émission en 2027.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques — c'est le cas de toutes les entreprises françaises. Et à partir du 1er septembre 2027, vos factures B2B devront être émises au format électronique via une plateforme agréée. Le PDF par email ne suffira plus. Et oui, même en franchise de TVA (micro-entreprise) : vous êtes assujetti même sans la facturer, donc concerné.",
         "indep_b2c": "<strong>Oui, en deux temps.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques — c'est le cas de toutes les entreprises françaises. Vos ventes aux particuliers passeront par le e-reporting : vous déclarez les transactions, sans envoyer chaque facture. Émission électronique obligatoire en septembre 2027. Et oui, même en franchise de TVA (micro-entreprise) : vous êtes assujetti même sans la facturer, donc concerné.",

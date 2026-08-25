@@ -177,7 +177,8 @@
       "point1": "From <strong>September 1st, 2026</strong>, every French business must be able to <strong>receive</strong> electronic invoices.",
       "point2": "Large companies start <strong>issuing</strong> them in 2026; freelancers and SMBs follow in <strong>September 2027</strong>.",
       "point3": "The <strong>PDF by email will no longer be enough</strong>: every invoice goes through an accredited platform, which forwards it to your client and to the tax administration.",
-      "myth": "<strong>“I don't charge VAT, so I'm not affected” — wrong.</strong> The VAT franchise (micro) does not exempt you: the reform targets all VAT-liable businesses, even those not collecting it. It's the most common mistake."
+      "myth": "<strong>“I don't charge VAT, so I'm not affected” — wrong.</strong> The VAT franchise (micro) does not exempt you: the reform targets all VAT-liable businesses, even those not collecting it. It's the most common mistake.",
+      "pageLink": "Share this test: dedicated page →"
     },
     "quiz": {
       "label": "30 seconds flat",
@@ -195,6 +196,16 @@
         "mix": "Both"
       },
       "reset": "Start over",
+      "capture": {
+        "title": "Get your 2026 checklist",
+        "text": "Your verdict + the concrete steps to be compliant, in your inbox. Nothing else, promise.",
+        "placeholder": "you@company.com",
+        "submit": "Get the checklist",
+        "sending": "Sending…",
+        "success": "Done! The checklist is on its way to your inbox.",
+        "error": "Could not save your email. Please try again.",
+        "privacy": "One email, no spam, deletable on request."
+      },
       "verdict": {
         "indep_b2b": "<strong>Yes — receiving in 2026, issuing in 2027.</strong> From September 1st, 2026, you must be able to receive electronic invoices — that applies to every French business. And from September 1st, 2027, your B2B invoices must be issued electronically through an accredited platform. PDF by email will no longer be enough. And yes, even under the VAT franchise (micro-entreprise): you are VAT-liable even without charging it, so you are affected.",
         "indep_b2c": "<strong>Yes, in two steps.</strong> From September 1st, 2026, you must be able to receive electronic invoices — that applies to every French business. Your sales to consumers will go through e-reporting: you declare the transactions without sending each invoice. Electronic issuing becomes mandatory in September 2027. And yes, even under the VAT franchise (micro-entreprise): you are VAT-liable even without charging it, so you are affected.",

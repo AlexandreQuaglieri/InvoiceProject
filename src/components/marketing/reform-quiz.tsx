@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import posthog from 'posthog-js'
 import { cn } from '@/lib/utils'
+import { LeadCapture } from '@/components/marketing/lead-capture'
 
 /**
  * Quiz « Suis-je concerné ? » — état local pur, verdict 100 % dérivé des deux
@@ -19,6 +21,12 @@ export function ReformQuiz() {
   const t = useTranslations('landing.quiz')
   const [who, setWho] = useState<Who | null>(null)
   const [billing, setBilling] = useState<Billing | null>(null)
+
+  useEffect(() => {
+    if (who && billing && posthog.__loaded) {
+      posthog.capture('quiz_completed', { who, billing })
+    }
+  }, [who, billing])
 
   const optionClass = (selected: boolean) =>
     cn(
@@ -77,6 +85,8 @@ export function ReformQuiz() {
           </div>
         )}
       </div>
+
+      {who && billing && <LeadCapture quizWho={who} quizBilling={billing} />}
 
       {who && billing && (
         <button
