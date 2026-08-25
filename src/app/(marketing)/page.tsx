@@ -28,6 +28,7 @@ export const metadata: Metadata = {
     siteName: 'Factur-IA',
     type: 'website',
     locale: 'fr_FR',
+    images: ['/opengraph-image'],
   },
 }
 

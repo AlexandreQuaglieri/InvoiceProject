@@ -3,7 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware'
 
 // Pages 100 % publiques et identiques connecté/anonyme : on saute l'appel
 // Supabase (getUser réseau) pour un TTFB propre sur les pages SEO.
-const STATIC_PUBLIC = new Set(['/', '/robots.txt', '/sitemap.xml'])
+const STATIC_PUBLIC = new Set(['/', '/robots.txt', '/sitemap.xml', '/opengraph-image'])
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl

@@ -27,8 +27,12 @@ export const metadata: Metadata = {
   description:
     'Facturation française AI-first, gratuite et open source : Factur-X, ' +
     'facturation électronique 2026, réception fournisseurs, pilotable depuis Claude ou ChatGPT.',
+  openGraph: {
+    images: ['/opengraph-image'],
+  },
   twitter: {
     card: 'summary_large_image',
+    images: ['/opengraph-image'],
   },
 }
 
