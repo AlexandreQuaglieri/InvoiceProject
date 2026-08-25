@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { getBaseUrl } from '@/lib/base-url'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ThemeProvider } from '@/components/theme/theme-provider'
@@ -18,8 +19,17 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Factur-IA - Facturation intelligente',
-  description: "Créez vos factures facilement avec l'aide de l'IA",
+  metadataBase: new URL(getBaseUrl()),
+  title: {
+    default: 'Factur-IA — Facturation française conforme 2026',
+    template: '%s · Factur-IA',
+  },
+  description:
+    'Facturation française AI-first, gratuite et open source : Factur-X, ' +
+    'facturation électronique 2026, réception fournisseurs, pilotable depuis Claude ou ChatGPT.',
+  twitter: {
+    card: 'summary_large_image',
+  },
 }
 
 export default async function RootLayout({

@@ -7,6 +7,7 @@
     "cgu": {
       "title": "Conditions générales d'utilisation",
       "metaTitle": "CGU — Factur-IA",
+      "metaDescription": "Conditions générales d'utilisation de Factur-IA : service gratuit de facturation conforme e-invoicing 2026, données exportables à tout moment.",
       "updated": "10 juin 2026",
       "sections": [
         {
@@ -75,6 +76,7 @@
     "privacy": {
       "title": "Politique de confidentialité",
       "metaTitle": "Confidentialité — Factur-IA",
+      "metaDescription": "Politique de confidentialité de Factur-IA : données hébergées en Europe, cloisonnées par compte, jamais revendues, exportables à tout moment.",
       "updated": "10 juin 2026",
       "sections": [
         {
@@ -140,6 +142,7 @@
     "mentions": {
       "title": "Mentions légales",
       "metaTitle": "Mentions légales — Factur-IA",
+      "metaDescription": "Mentions légales du site Factur-IA, service de facturation édité par Quatools, studio indépendant français.",
       "updated": "10 juin 2026",
       "sections": [
         {

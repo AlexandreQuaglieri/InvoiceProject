@@ -6,7 +6,11 @@ import { fillLegalTokens } from '@/lib/legal-identity'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('legal.cgu')
-  return { title: t('metaTitle') }
+  return {
+    title: { absolute: t('metaTitle') },
+    description: t('metaDescription'),
+    alternates: { canonical: '/legal/cgu' },
+  }
 }
 
 export default async function CguPage() {

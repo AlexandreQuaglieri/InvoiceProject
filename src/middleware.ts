@@ -1,7 +1,15 @@
-import { type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
+// Pages 100 % publiques et identiques connecté/anonyme : on saute l'appel
+// Supabase (getUser réseau) pour un TTFB propre sur les pages SEO.
+const STATIC_PUBLIC = new Set(['/', '/robots.txt', '/sitemap.xml'])
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  if (STATIC_PUBLIC.has(pathname) || pathname.startsWith('/legal/')) {
+    return NextResponse.next()
+  }
   return await updateSession(request)
 }
 
