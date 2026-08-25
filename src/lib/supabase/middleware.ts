@@ -54,8 +54,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Pages d'entrée : un utilisateur déjà connecté est renvoyé au dashboard.
+  // La landing '/' reste consultable connecté (partage du lien, démo).
   // /auth/reset-password est volontairement exclu (session de récupération active).
-  const authPages = new Set(['/', '/login', '/signup', '/forgot-password'])
+  const authPages = new Set(['/login', '/signup', '/forgot-password'])
   if (user && authPages.has(pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'

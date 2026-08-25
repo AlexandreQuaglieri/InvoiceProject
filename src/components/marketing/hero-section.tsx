@@ -32,7 +32,7 @@ export function HeroSection() {
           </p>
           <div className="flex flex-wrap items-center gap-3.5">
             <Button asChild size="lg" className="h-12 px-7 text-[15px]">
-              <Link href="/login">
+              <Link href="/signup">
                 <Send aria-hidden="true" />
                 {t('ctaPrimary')}
               </Link>

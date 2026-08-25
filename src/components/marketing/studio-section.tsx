@@ -33,7 +33,7 @@ export function StudioSection() {
           </div>
           <div className="flex flex-col gap-3">
             <Button asChild size="lg" className="h-13 text-[15.5px]">
-              <Link href="/login">
+              <Link href="/signup">
                 <Send aria-hidden="true" />
                 {t('cta')}
               </Link>

@@ -44,7 +44,7 @@ export function SiteNav() {
           <LocaleToggle />
           <ThemeToggle />
           <Button asChild size="sm" className="ml-1.5">
-            <Link href="/login">{t('cta')}</Link>
+            <Link href="/signup">{t('cta')}</Link>
           </Button>
         </div>
       </div>
