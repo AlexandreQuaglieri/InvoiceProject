@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
+import { PostHogAnalytics } from '@/components/analytics/posthog-provider'
 import './globals.css'
 
 const geistSans = Geist({
@@ -42,6 +43,7 @@ export default async function RootLayout({
             {children}
             <Toaster />
           </NextIntlClientProvider>
+          <PostHogAnalytics />
         </ThemeProvider>
       </body>
     </html>
