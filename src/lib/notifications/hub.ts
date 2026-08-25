@@ -112,7 +112,8 @@ export const APP_EVENTS: HubEventDef[] = [
     label: 'Nouveau lead (quiz réforme)',
     category: 'system',
     supported_channels: CH,
-    audiences: ['admin'],
+    // member = le lead lui-même (envoi de la checklist), admin = notification interne.
+    audiences: ['admin', 'member'],
     description: "Un visiteur a laissé son email à l'issue du quiz « Suis-je concerné par 2026 ? ».",
     default_active: true,
     payload_schema: { email: 'string', quiz_who: 'string', quiz_billing: 'string', locale: 'string' },

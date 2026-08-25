@@ -26,9 +26,10 @@ export async function submitLead(input: LeadInput): Promise<{ success: boolean; 
     return { success: false, error: result.error }
   }
 
-  // Notification interne via le hub (best-effort, hors chemin critique).
+  // Émission hub (best-effort, hors chemin critique). Le destinataire « member »
+  // est le lead lui-même : c'est lui que le workflow checklist doit atteindre.
+  // La notification interne (admin) se configure côté hub (canal admin).
   const lead = parsed.data
-  const supportEmail = process.env.NOTIFICATION_SUPPORT_EMAIL
   after(async () => {
     try {
       const orgId = await ensureOrg()
@@ -36,7 +37,7 @@ export async function submitLead(input: LeadInput): Promise<{ success: boolean; 
       await emitHubEvent({
         event: LEAD_EVENT,
         orgId,
-        recipients: supportEmail ? [{ email: supportEmail, name: 'Factur-IA' }] : [],
+        recipients: [{ email: lead.email }],
         payload: {
           email: lead.email,
           quiz_who: lead.quizWho ?? null,
