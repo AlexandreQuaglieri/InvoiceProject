@@ -13,8 +13,8 @@ export function getBaseUrl(): string {
     return fromEnv.replace(/\/$/, '')
   }
 
-  // Domaine de production stable (comportement historique).
-  return 'https://invoice-project-lime.vercel.app'
+  // Domaine de production stable.
+  return 'https://facturation.quatools.fr'
 }
 
 // URL du connecteur MCP à coller dans Claude.ai / ChatGPT — source unique

@@ -87,7 +87,7 @@ lib/
 
 ## Déploiement
 
-Déployé sur Vercel (`https://invoice-project-lime.vercel.app`). Définir toutes les
+Déployé sur Vercel (`https://facturation.quatools.fr`). Définir toutes les
 variables d'environnement ci-dessus côté Vercel (prod + preview), en particulier
 `NEXT_PUBLIC_APP_URL` pour un domaine OAuth MCP stable.
 
