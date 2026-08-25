@@ -9,7 +9,7 @@ import {
   Users,
   Building2,
   Settings,
-  Receipt,
+  Send,
   ClipboardList,
   Sparkles,
   Inbox,
@@ -95,7 +95,7 @@ export function AppSidebar({ pdpConnected = false }: { pdpConnected?: boolean })
     <Sidebar>
       <SidebarHeader className="border-b px-6 py-4">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <Receipt className="h-6 w-6" />
+          <Send className="h-6 w-6" />
           <span className="font-bold text-lg">{tCommon('appName')}</span>
         </Link>
       </SidebarHeader>

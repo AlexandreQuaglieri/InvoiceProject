@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { Github, Receipt } from 'lucide-react'
+import { Github, Send } from 'lucide-react'
 import { SARat } from '@/components/brand/street-art'
 
 const GITHUB_URL = 'https://github.com/AlexandreQuaglieri/InvoiceProject'
@@ -21,7 +21,7 @@ export function SiteFooter() {
       <div className="mx-auto w-full max-w-6xl px-5 pb-12 pt-9 sm:px-7">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px] text-muted-foreground">
           <span className="flex items-center gap-2 text-[15px] font-bold text-foreground">
-            <Receipt className="size-[18px]" aria-hidden="true" />
+            <Send className="size-[18px]" aria-hidden="true" />
             {t('brand')}
           </span>
           <span>{t('copyright')}</span>

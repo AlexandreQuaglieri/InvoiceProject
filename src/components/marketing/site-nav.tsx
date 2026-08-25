@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { Receipt } from 'lucide-react'
+import { Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LocaleToggle } from '@/components/layout/locale-toggle'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
@@ -26,7 +26,7 @@ export function SiteNav() {
           href="/"
           className="flex shrink-0 items-center gap-2 text-[17px] font-bold tracking-tight"
         >
-          <Receipt className="size-5" aria-hidden="true" />
+          <Send className="size-5" aria-hidden="true" />
           {t('brand')}
         </Link>
         <div className="ml-2 hidden items-center gap-5 text-[13.5px] text-muted-foreground md:flex">
