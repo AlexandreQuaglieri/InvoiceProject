@@ -9,6 +9,7 @@ import { createHmac } from 'crypto'
 
 export const SUPPORT_EVENT = 'facturia.support.message_created'
 export const LEAD_EVENT = 'facturia.lead.created'
+export const WELCOME_EVENT = 'facturia.user.welcomed'
 const ORG_EXTERNAL_ID = 'factur-ia'
 const ORG_NAME = 'Factur-IA'
 
@@ -106,6 +107,16 @@ export const APP_EVENTS: HubEventDef[] = [
     description: 'Un utilisateur a écrit via le bouton Assistance.',
     default_active: true,
     payload_schema: { subject: 'string', message: 'string', author_email: 'string', author_id: 'string' },
+  },
+  {
+    slug: WELCOME_EVENT,
+    label: 'Bienvenue (nouveau compte)',
+    category: 'member',
+    supported_channels: CH,
+    audiences: ['member'],
+    description: 'Un nouveau compte vient d’être créé — email de bienvenue.',
+    default_active: true,
+    payload_schema: { email: 'string' },
   },
   {
     slug: LEAD_EVENT,

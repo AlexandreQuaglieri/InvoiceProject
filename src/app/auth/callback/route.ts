@@ -1,7 +1,9 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
+import { after } from 'next/server'
 import { cookies } from 'next/headers'
 import { sanitizeRedirect } from '@/lib/auth/redirect'
+import { sendWelcomeIfNew } from '@/lib/notifications/welcome'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -45,6 +47,11 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.session) {
+      // Bienvenue au premier passage d'un nouveau compte (déduplication
+      // et best-effort dans le helper, hors chemin critique).
+      const user = data.session.user
+      after(() => sendWelcomeIfNew(user))
+
       // Redirect OAuth MCP éventuel, sinon destination demandée — les deux
       // sanitisés à la même origine (jamais de redirection externe).
       const dest = sanitizeRedirect(searchParams.get('oauth_redirect'), origin, next)

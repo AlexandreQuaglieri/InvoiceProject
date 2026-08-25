@@ -1,7 +1,9 @@
 'use server'
 
+import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getRequestOrigin } from '@/lib/auth/origin'
+import { sendWelcomeIfNew } from '@/lib/notifications/welcome'
 import { sanitizeRedirect } from '@/lib/auth/redirect'
 import {
   credentialsSchema,
@@ -96,7 +98,13 @@ export async function signUpWithPassword(input: {
     return { ok: false, error: 'email_exists' }
   }
 
-  if (data.session) return { ok: true, redirect: next }
+  if (data.session) {
+    // Confirmations désactivées : le compte est créé et connecté sans passer
+    // par /auth/callback — on émet le bienvenue ici (dédupliqué, best-effort).
+    const user = data.user
+    if (user) after(() => sendWelcomeIfNew(user))
+    return { ok: true, redirect: next }
+  }
   return { ok: true, needsConfirmation: true }
 }
 
