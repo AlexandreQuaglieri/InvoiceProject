@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { Receipt } from 'lucide-react'
+import { Github, Receipt } from 'lucide-react'
 import { SARat } from '@/components/brand/street-art'
+
+const GITHUB_URL = 'https://github.com/AlexandreQuaglieri/InvoiceProject'
 
 /** Pied de page public — RSC pur. */
 export function SiteFooter() {
@@ -32,6 +34,15 @@ export function SiteFooter() {
                 {link.label}
               </Link>
             ))}
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-sm underline-offset-[3px] transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Github className="size-3.5" aria-hidden="true" />
+              {t('links.github')}
+            </a>
           </nav>
         </div>
         <p className="mt-3.5 max-w-[60ch] text-xs italic text-muted-foreground">{t('quip')}</p>

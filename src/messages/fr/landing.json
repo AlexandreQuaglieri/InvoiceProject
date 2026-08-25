@@ -208,9 +208,9 @@
       }
     },
     "studio": {
-      "eyebrow": "Gratuit · porté par Quatools, studio indépendant",
+      "eyebrow": "Gratuit · open source · porté par Quatools, studio indépendant",
       "title": "Gratuit. Mais pas illimité — et c'est volontaire.",
-      "body": "Factur-IA est développé par <strong>Quatools</strong>, un studio indépendant. Pas de levée de fonds, pas de croissance à tout prix : juste un service rapide et un <strong>vrai support humain</strong>.",
+      "body": "Factur-IA est développé par <strong>Quatools</strong>, un studio indépendant. Pas de levée de fonds, pas de croissance à tout prix : juste un service rapide et un <strong>vrai support humain</strong>. Et le code est <strong>open source</strong> : auditez-le, hébergez-le chez vous — ou laissez-moi m'en occuper.",
       "cta": "Créer mon compte gratuit",
       "note": "Sans carte bancaire · sans engagement · vos données restent en France."
     },
@@ -220,7 +220,8 @@
       "links": {
         "cgu": "CGU",
         "privacy": "Confidentialité",
-        "mentions": "Mentions légales"
+        "mentions": "Mentions légales",
+        "github": "Code source"
       },
       "quip": "Fait au clavier et à la bombe, à Paris. Aucun pigeon n'a été dérangé pendant le développement."
     }

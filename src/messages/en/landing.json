@@ -208,9 +208,9 @@
       }
     },
     "studio": {
-      "eyebrow": "Free · built by Quatools, an independent studio",
+      "eyebrow": "Free · open source · built by Quatools, an independent studio",
       "title": "Free. But not unlimited — and that's on purpose.",
-      "body": "Factur-IA is built by <strong>Quatools</strong>, an independent studio. No fundraising, no growth at all costs: just a fast service and <strong>real human support</strong>.",
+      "body": "Factur-IA is built by <strong>Quatools</strong>, an independent studio. No fundraising, no growth at all costs: just a fast service and <strong>real human support</strong>. And the code is <strong>open source</strong>: audit it, host it yourself — or let me handle it for you.",
       "cta": "Create my free account",
       "note": "No credit card · no commitment · your data stays in France."
     },
@@ -220,7 +220,8 @@
       "links": {
         "cgu": "Terms",
         "privacy": "Privacy",
-        "mentions": "Legal notice"
+        "mentions": "Legal notice",
+        "github": "Source code"
       },
       "quip": "Made with a keyboard and a spray can, in Paris. No pigeon was disturbed during development."
     }
