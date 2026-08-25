@@ -13,8 +13,9 @@ export function getBaseUrl(): string {
     return fromEnv.replace(/\/$/, '')
   }
 
-  // Domaine de production stable.
-  return 'https://facturation.quatools.fr'
+  // Sans NEXT_PUBLIC_APP_URL (dev local, self-host non configuré) : localhost.
+  // En production, la variable DOIT être définie — sinon OAuth et MCP pointeront ici.
+  return 'http://localhost:3000'
 }
 
 // URL du connecteur MCP à coller dans Claude.ai / ChatGPT — source unique

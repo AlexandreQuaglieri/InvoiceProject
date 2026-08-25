@@ -27,8 +27,8 @@ FORMAT JSON:
   "address": "12 rue Exemple",
   "postal_code": "75001",
   "city": "Paris",
-  "siret": "52018152000011",
-  "vat_number": "FR40520181520"
+  "siret": "12345678900014",
+  "vat_number": "FR12123456789"
 }
 
 Analyse le contenu et retourne le JSON:`
@@ -63,7 +63,7 @@ Analyse ce document et extrais les informations au format JSON strict.
 RÈGLES IMPORTANTES:
 1. Retourne UNIQUEMENT un objet JSON valide, sans texte avant ou après
 2. Si une information n'est pas trouvée, ne l'inclus pas (pas de null)
-3. Pour le SIREN: 9 chiffres (ex: 520181520)
+3. Pour le SIREN: 9 chiffres (ex: 123456789)
 4. Pour le SIRET: 14 chiffres = SIREN + NIC. Cherche-le dans la section « Établissement principal » / « siège » du Kbis (souvent libellé SIRET ou « N° d'identification de l'établissement »). Si non visible, ne pas l'inclure.
 5. "vat_number": le n° de TVA intracommunautaire (format FRxx + SIREN) s'il figure dans le document. Sinon ne pas l'inclure (il sera calculé automatiquement).
 6. La FORME JURIDIQUE est presque toujours présente sur un Kbis (« Forme juridique : ... ») — fais l'effort de la trouver et de la mapper vers les valeurs autorisées ci-dessous.
@@ -91,14 +91,14 @@ FORMAT JSON:
   "name": "NOM PRÉNOM ou Raison sociale",
   "trade_name": "Nom commercial si différent",
   "legal_form": "ei",
-  "siren": "520181520",
-  "siret": "52018152000011",
-  "vat_number": "FR40520181520",
-  "address": "161 Chemin de l'Estanet",
-  "postal_code": "30840",
-  "city": "Meynes",
+  "siren": "123456789",
+  "siret": "12345678900014",
+  "vat_number": "FR12123456789",
+  "address": "1 rue de l'Exemple",
+  "postal_code": "75001",
+  "city": "Paris",
   "capital": 10000,
-  "rcs": "Nîmes"
+  "rcs": "Paris"
 }
 
 Analyse le document et retourne le JSON:`

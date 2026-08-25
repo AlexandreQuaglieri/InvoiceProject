@@ -1,11 +1,11 @@
 // Synchronisation automatique des données vers le Data Wallet (Fluid Store).
 // Appelé depuis les server actions (création / mise à jour / suppression).
 // Best-effort et non bloquant : on ne casse jamais l'action utilisateur si le wallet est indisponible.
-const WALLET_URL = process.env.WALLET_URL || 'https://fluid-store-mcp.quaglieri-alexandre.workers.dev'
+const WALLET_URL = process.env.WALLET_URL || ''
 const WALLET_API_KEY = process.env.WALLET_API_KEY || ''
 
 async function ingest(body: Record<string, unknown>): Promise<void> {
-  if (!WALLET_API_KEY) return
+  if (!WALLET_API_KEY || !WALLET_URL) return
   try {
     const res = await fetch(`${WALLET_URL}/api/v1/ingest`, {
       method: 'POST',

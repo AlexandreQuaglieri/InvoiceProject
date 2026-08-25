@@ -11,8 +11,8 @@ import { syncWallet } from '@/actions/wallet'
 // Data Wallet (Fluid Store) — connexion de l'identité utilisateur au wallet.
 // La clé d'API (fsk_live_…) reste côté serveur (server action) : ici on ne fait que rediriger
 // vers le flux /connect du wallet (login Google -> liaison d'identité, pas de consentement en first-party).
-const WALLET_URL = process.env.NEXT_PUBLIC_WALLET_URL || 'https://fluid-store-mcp.quaglieri-alexandre.workers.dev'
-const WALLET_APP_ID = process.env.NEXT_PUBLIC_WALLET_APP_ID || 'facture-quatools-32cb35'
+const WALLET_URL = process.env.NEXT_PUBLIC_WALLET_URL || ''
+const WALLET_APP_ID = process.env.NEXT_PUBLIC_WALLET_APP_ID || ''
 const WALLET_SCOPES = 'profile:read,ai_context:read,documents:read'
 
 export function WalletConnect({ userId }: { userId: string }) {
@@ -45,6 +45,11 @@ export function WalletConnect({ userId }: { userId: string }) {
       `&member_owner_id=${encodeURIComponent(owner)}` +
       `&scopes=${encodeURIComponent(WALLET_SCOPES)}` +
       `&redirect_uri=${encodeURIComponent(redirect)}`
+  }
+
+  // Instance sans Data Wallet configuré (self-host) : la carte n'a pas lieu d'être.
+  if (!WALLET_URL || !WALLET_APP_ID) {
+    return null
   }
 
   async function handleSync() {
