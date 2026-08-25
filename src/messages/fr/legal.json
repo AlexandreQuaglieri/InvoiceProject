@@ -52,7 +52,7 @@
           "heading": "Article 6 — Propriété des données et du service",
           "paragraphs": [
             "Vous restez propriétaire de l'ensemble des données que vous saisissez ou importez dans le Service (clients, devis, factures, documents). Vous concédez à l'Éditeur une licence limitée, strictement nécessaire à l'exploitation technique du Service (hébergement, sauvegarde, traitement par IA, transmission aux plateformes agréées).",
-            "Vous pouvez exporter vos données à tout moment depuis l'application. La structure du Service, son code, sa marque et ses éléments graphiques restent la propriété exclusive de l'Éditeur."
+            "Vous pouvez exporter vos données à tout moment depuis l'application. Le code source du Service est publié sous licence libre AGPL-3.0 ; la marque et les éléments graphiques restent la propriété de l'Éditeur."
           ]
         },
         {
@@ -80,8 +80,8 @@
         {
           "heading": "Responsable de traitement",
           "paragraphs": [
-            "Le responsable du traitement des données personnelles est Alexandre Quaglieri, entrepreneur individuel exerçant sous le nom commercial Quatools, 161 chemin de l'Estanet, 30840 Meynes, France (SIREN 520 181 520).",
-            "Pour toute question relative à vos données personnelles : quaglieri.alexandre@gmail.com."
+            "Le responsable du traitement des données personnelles est {legalOwner}, entrepreneur individuel exerçant sous le nom commercial Quatools, {legalAddress} (SIREN {legalSiren}).",
+            "Pour toute question relative à vos données personnelles : {legalEmail}."
           ]
         },
         {
@@ -124,7 +124,7 @@
           "heading": "Vos droits",
           "paragraphs": [
             "Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de portabilité, de limitation et d'opposition sur vos données personnelles.",
-            "Pour exercer ces droits, contactez quaglieri.alexandre@gmail.com. Une réponse vous sera apportée dans un délai d'un mois.",
+            "Pour exercer ces droits, contactez {legalEmail}. Une réponse vous sera apportée dans un délai d'un mois.",
             "Si vous estimez que vos droits ne sont pas respectés, vous pouvez introduire une réclamation auprès de la CNIL (www.cnil.fr)."
           ]
         },
@@ -145,18 +145,18 @@
         {
           "heading": "Éditeur du site",
           "paragraphs": [
-            "Le site Factur-IA est édité par Alexandre Quaglieri, entrepreneur individuel, exerçant sous le nom commercial Quatools.",
+            "Le site Factur-IA est édité par {legalOwner}, entrepreneur individuel, exerçant sous le nom commercial Quatools.",
             "Activité : développement et maintenance de sites web et d'applications, conception d'outils numériques, conseil en marketing digital et communication, accompagnement de projets numériques et entrepreneuriaux, ainsi que formation à l'usage des outils digitaux et de l'intelligence artificielle (code APE 62.01Z — Programmation informatique).",
-            "SIREN : 520 181 520 — SIRET (siège) : 520 181 520 00039.",
-            "RCS : 520 181 520 R.C.S. Nîmes — N° TVA intracommunautaire : FR36520181520.",
-            "Siège : 161 chemin de l'Estanet, 30840 Meynes, France.",
-            "Contact : quaglieri.alexandre@gmail.com."
+            "SIREN : {legalSiren} — SIRET (siège) : {legalSiret}.",
+            "RCS : {legalRcs} — N° TVA intracommunautaire : {legalVat}.",
+            "Siège : {legalAddress}.",
+            "Contact : {legalEmail}."
           ]
         },
         {
           "heading": "Directeur de la publication",
           "paragraphs": [
-            "Le directeur de la publication est Alexandre Quaglieri."
+            "Le directeur de la publication est {legalOwner}."
           ]
         },
         {
@@ -169,7 +169,7 @@
         {
           "heading": "Propriété intellectuelle",
           "paragraphs": [
-            "L'ensemble des éléments du site (textes, graphismes, logo, pictogrammes, code) est la propriété exclusive de Quatools, sauf mention contraire. Toute reproduction non autorisée constitue une contrefaçon."
+            "Le code source du Service est publié sous licence libre AGPL-3.0. Les autres éléments du site (textes, graphismes, logo, pictogrammes, marques Factur-IA et Quatools) restent la propriété de l'Éditeur, sauf mention contraire ; toute reproduction non autorisée de ces éléments constitue une contrefaçon."
           ]
         }
       ]

@@ -2,6 +2,7 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { LegalArticle, type LegalSection } from '@/components/marketing/legal-article'
+import { fillLegalTokens } from '@/lib/legal-identity'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('legal.cgu')
@@ -10,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function CguPage() {
   const t = await getTranslations('legal')
-  const sections = t.raw('cgu.sections') as LegalSection[]
+  const sections = fillLegalTokens(t.raw('cgu.sections') as LegalSection[])
   const disclaimer = t.raw('common.disclaimer') as string
 
   return (
