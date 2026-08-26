@@ -2,7 +2,7 @@
   "onboarding": {
     "welcome": {
       "title": "Welcome 👋",
-      "subtitle": "3 steps to get ready: your company, 2026 e-invoicing, then your first client. Under 2 minutes — the assistant handles the rest."
+      "subtitle": "3 steps to get ready: your company, 2026 e-invoicing, then your first client. Under 2 minutes: the assistant handles the rest."
     },
     "stepper": {
       "label": "Setup progress",
@@ -16,7 +16,7 @@
     "headings": {
       "company": {
         "title": "Drop your registration document",
-        "subtitle": "Give me the name or SIREN, or drop a document — I'll find your company in the official registry and fill in the form."
+        "subtitle": "Give me the name or SIREN, or drop a document: I'll find your company in the official registry and fill in the form."
       },
       "einvoicing": {
         "title": "Enable electronic invoicing",
@@ -24,7 +24,7 @@
       },
       "client": {
         "title": "You're all set 🎉",
-        "subtitle": "Create your first client — or drive Factur-IA straight from your assistant (ChatGPT, Claude)."
+        "subtitle": "Create your first client, or drive Factur-IA straight from your assistant (ChatGPT, Claude)."
       }
     },
     "panel": {
@@ -32,12 +32,12 @@
     },
     "ai": {
       "title": {
-        "company": "With AI — drop or paste",
-        "client": "With AI — paste or import"
+        "company": "With AI: drop or paste",
+        "client": "With AI: paste or import"
       },
       "subtitle": {
-        "company": "Drop the document or paste its content — the assistant fills everything in.",
-        "client": "Paste the details or drop a document — a signed email is enough."
+        "company": "Drop the document or paste its content: the assistant fills everything in.",
+        "client": "Paste the details or drop a document: a signed email is enough."
       },
       "dropTitle": {
         "company": "Drop your registration document or any company file",
@@ -55,12 +55,12 @@
       "analyze": "Analyze",
       "searchCta": "Search",
       "searching": "Searching for your company…",
-      "searchingHint": "Searching the official registry — and the web if the name is approximate.",
-      "candidatesTitle": "Several companies match — pick yours:",
-      "candidatesNone": "None match — fill in manually",
+      "searchingHint": "Searching the official registry, and the web if the name is approximate.",
+      "candidatesTitle": "Several companies match, pick yours:",
+      "candidatesNone": "None match, fill in manually",
       "searchAgain": "Edit my search",
       "notFound": {
-        "message": "I couldn't find your company in the official registry (INSEE). If it's very recent, or if you have an official document (registration extract, SIRENE notice, Journal Officiel extract), drop it and I'll read it for you. Otherwise, complete the form below — I'll guide you.",
+        "message": "I couldn't find your company in the official registry (INSEE). If it's very recent, or if you have an official document (registration extract, SIRENE notice, Journal Officiel extract), drop it and I'll read it for you. Otherwise, complete the form below, I'll guide you.",
         "upload": "Upload an official document"
       },
       "analyzing": {
@@ -72,15 +72,15 @@
         "client": "Extracting name, email and address…"
       },
       "reviewBanner": {
-        "company": "Document analyzed — review then confirm.",
-        "client": "Details extracted — review then confirm."
+        "company": "Document analyzed: review then confirm.",
+        "client": "Details extracted: review then confirm."
       },
       "restart": "Start over",
       "manualFallback": "Fill in manually",
       "fileTooLarge": "File is too large (max 10 MB)",
       "fileType": "Unsupported format. Use PDF, PNG, JPG or WebP.",
       "extractError": "Analysis failed. Try again or fill in manually.",
-      "noItems": "No invoice line detected — specify the service and amount."
+      "noItems": "No invoice line detected: specify the service and amount."
     },
     "einvoicing": {
       "title": "Electronic invoicing (PDP)",
@@ -105,9 +105,9 @@
       "copied": "URL copied to clipboard",
       "copyError": "Could not copy the URL",
       "step2": "Add the connector in your assistant:",
-      "step2Sub": "Claude — Settings → Connectors · ChatGPT — Settings → Apps & connectors (enable Developer mode first, under Advanced settings). Paste the URL, that's it — no token to enter.",
+      "step2Sub": "Claude: Settings → Connectors · ChatGPT: Settings → Apps & connectors (enable Developer mode first, under Advanced settings). Paste the URL, that's it, no token to enter.",
       "step3": "Sign in via OAuth with your Factur-IA account in the window that opens.",
-      "step3Sub": "Secure access, limited to your account — revocable anytime.",
+      "step3Sub": "Secure access, limited to your account, revocable anytime.",
       "step4": "Ask your assistant, in plain language:",
       "ask": {
         "company": "\"Create my company in Factur-IA: Atelier Quatools, SAS, reg. no. 901 234 567 00018.\"",
@@ -117,8 +117,8 @@
     },
     "manual": {
       "title": {
-        "company": "Manually — company profile",
-        "client": "Manually — client profile"
+        "company": "Manually: company profile",
+        "client": "Manually: client profile"
       },
       "subtitle": "Fill in the fields, you can change everything later."
     },
@@ -161,7 +161,7 @@
         },
         "decide": {
           "title": "Decide for you",
-          "desc": "Your tax and social filings (VAT, social contributions) remain your responsibility — check before sending."
+          "desc": "Your tax and social filings (VAT, social contributions) remain your responsibility: check before sending."
         },
         "legal": {
           "title": "Guarantee the legal side",
@@ -175,7 +175,7 @@
       "note": "In short: Factur-IA saves you time, but replaces neither your accountant nor your judgment. You stay in control."
     },
     "reassure": {
-      "compliance": "<strong>2026 compliance</strong> — Factur-X & e-reporting ready",
+      "compliance": "<strong>2026 compliance</strong>: Factur-X & e-reporting ready",
       "data": "Encrypted data, <strong>hosted in France</strong>"
     },
     "completion": {

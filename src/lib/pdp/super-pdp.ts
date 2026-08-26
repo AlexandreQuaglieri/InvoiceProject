@@ -224,7 +224,7 @@ function clientCredentialsToken(clientId: string, clientSecret: string): TokenPr
       }),
     })
     if (!res.ok) {
-      throw new Error(`Super PDP — authentification échouée (${res.status}): ${await res.text()}`)
+      throw new Error(`Super PDP : authentification échouée (${res.status}): ${await res.text()}`)
     }
     const data = await res.json()
     const expiresIn = Number(data.expires_in ?? 1799)
@@ -269,7 +269,7 @@ async function oauthToken(body: Record<string, string>): Promise<OAuthTokenSet> 
     body: new URLSearchParams(body),
   })
   if (!res.ok) {
-    throw new Error(`Super PDP — jeton OAuth échoué (${res.status}): ${await res.text()}`)
+    throw new Error(`Super PDP : jeton OAuth échoué (${res.status}): ${await res.text()}`)
   }
   const data = await res.json()
   return {
@@ -317,7 +317,7 @@ export function friendlyPdpError(error: unknown): string {
     return "Le vendeur de la facture ne correspond pas à la société raccordée à la PDP. Vérifiez que le SIREN de votre fiche entreprise est bien celui de la société connectée (Réglages → Facturation électronique), puis reconnectez si besoin."
   }
   if (raw.includes('missing buyer electronic address')) {
-    return "Impossible d'adresser la facture : renseignez le SIRET (ou le n° TVA) du client — il sert d'adresse dans l'annuaire de la facturation électronique."
+    return "Impossible d'adresser la facture : renseignez le SIRET (ou le n° TVA) du client : il sert d'adresse dans l'annuaire de la facturation électronique."
   }
   if (raw.includes('receiver address does not exist')) {
     return "Le destinataire n'est pas référencé dans l'annuaire de la facturation électronique. Vérifiez le SIRET du client ; s'il est correct, son entreprise n'est pas encore inscrite à l'annuaire (contactez-la ou envoyez la facture par un autre canal)."

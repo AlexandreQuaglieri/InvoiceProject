@@ -138,7 +138,7 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
               ChatGPT : Paramètres → Apps et connecteurs → Créer (activez d&apos;abord le mode
               développeur dans Paramètres avancés)
             </li>
-            <li>Collez l&apos;URL — votre assistant vous redirige vers Factur-IA pour vous connecter</li>
+            <li>Collez l&apos;URL : votre assistant vous redirige vers Factur-IA pour vous connecter</li>
             <li>Autorisez l&apos;accès : aucun token à saisir, vous retrouvez vos données</li>
           </ol>
           <div className="mt-3 flex items-center gap-2">
@@ -244,7 +244,7 @@ export function MCPTokens({ tokens: initialTokens }: MCPTokensProps) {
 
           {tokens.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              Aucun token API — la connexion Claude/ChatGPT ci-dessus n&apos;en a pas besoin.
+              Aucun token API : la connexion Claude/ChatGPT ci-dessus n&apos;en a pas besoin.
             </p>
           ) : (
             <div className="space-y-2">

@@ -180,11 +180,11 @@
       "title": "I'll find it for you",
       "placeholder": "Client name or SIREN…",
       "cta": "Search",
-      "hint": "I find your client (even from an approximate name) and fetch address, SIRET, VAT — and sometimes email and phone.",
-      "candidatesTitle": "Several companies match — pick one:",
+      "hint": "I find your client (even from an approximate name) and fetch address, SIRET, VAT, and sometimes email and phone.",
+      "candidatesTitle": "Several companies match, pick one:",
       "back": "Back",
-      "filled": "Form pre-filled — review and add the client's email.",
-      "notFound": "Company not found — fill in the form below manually.",
+      "filled": "Form pre-filled: review and add the client's email.",
+      "notFound": "Company not found: fill in the form below manually.",
       "error": "Search failed. Please try again."
     }
   },

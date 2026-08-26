@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseUrl()),
   title: {
-    default: 'Factur-IA — Facturation française conforme 2026',
+    default: 'Factur-IA | Facturation française conforme 2026',
     template: '%s · Factur-IA',
   },
   description:

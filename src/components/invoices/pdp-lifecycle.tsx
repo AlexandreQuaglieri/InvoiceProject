@@ -107,7 +107,7 @@ export function PdpLifecycle({ invoiceId }: { invoiceId: string }) {
                     )}
                     <p className="text-xs text-muted-foreground">
                       {formatDate(e.occurredAt)}
-                      {e.reason ? ` — ${e.reason}` : ''}
+                      {e.reason ? ` : ${e.reason}` : ''}
                     </p>
                   </div>
                 </li>

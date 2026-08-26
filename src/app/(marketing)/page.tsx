@@ -8,7 +8,7 @@ import { DoDontSection } from '@/components/marketing/do-dont-section'
 import { ReformSection } from '@/components/marketing/reform-section'
 import { StudioSection } from '@/components/marketing/studio-section'
 
-const TITLE = "Factur-IA — La facturation qui s'écrit toute seule"
+const TITLE = "Factur-IA : la facturation qui s'écrit toute seule"
 const DESCRIPTION =
   'Décrivez votre prestation en une phrase : Factur-IA rédige la facture conforme, ' +
   'la transmet via la plateforme agréée et relance vos impayés. ' +

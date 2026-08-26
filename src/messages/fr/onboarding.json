@@ -2,7 +2,7 @@
   "onboarding": {
     "welcome": {
       "title": "Bienvenue 👋",
-      "subtitle": "3 étapes pour être prêt : votre entreprise, la facturation électronique 2026, puis votre premier client. Moins de 2 minutes — l'assistant s'occupe du reste."
+      "subtitle": "3 étapes pour être prêt : votre entreprise, la facturation électronique 2026, puis votre premier client. Moins de 2 minutes : l'assistant s'occupe du reste."
     },
     "stepper": {
       "label": "Progression de la configuration",
@@ -16,7 +16,7 @@
     "headings": {
       "company": {
         "title": "Déposez votre Kbis",
-        "subtitle": "Donnez-moi le nom ou le SIREN, ou déposez un document (Kbis, avis SIRENE, extrait du Journal Officiel) — je cherche votre entreprise et remplis la fiche."
+        "subtitle": "Donnez-moi le nom ou le SIREN, ou déposez un document (Kbis, avis SIRENE, extrait du Journal Officiel) : je cherche votre entreprise et remplis la fiche."
       },
       "einvoicing": {
         "title": "Activez la facturation électronique",
@@ -24,7 +24,7 @@
       },
       "client": {
         "title": "Vous êtes prêt 🎉",
-        "subtitle": "Créez votre premier client — ou pilotez Factur-IA directement depuis votre assistant (ChatGPT, Claude)."
+        "subtitle": "Créez votre premier client, ou pilotez Factur-IA directement depuis votre assistant (ChatGPT, Claude)."
       }
     },
     "panel": {
@@ -32,12 +32,12 @@
     },
     "ai": {
       "title": {
-        "company": "Avec l'IA — déposez ou collez",
-        "client": "Avec l'IA — coller ou importer"
+        "company": "Avec l'IA : déposez ou collez",
+        "client": "Avec l'IA : coller ou importer"
       },
       "subtitle": {
-        "company": "Déposez le document ou collez son contenu — l'assistant remplit tout.",
-        "client": "Collez les coordonnées ou déposez un document — un email signé suffit."
+        "company": "Déposez le document ou collez son contenu : l'assistant remplit tout.",
+        "client": "Collez les coordonnées ou déposez un document : un email signé suffit."
       },
       "dropTitle": {
         "company": "Déposez votre Kbis ou un document d'entreprise",
@@ -55,12 +55,12 @@
       "analyze": "Analyser",
       "searchCta": "Rechercher",
       "searching": "Recherche de votre entreprise…",
-      "searchingHint": "Je cherche dans l'annuaire officiel — et sur le web si le nom est approximatif.",
-      "candidatesTitle": "Plusieurs entreprises correspondent — choisissez la vôtre :",
-      "candidatesNone": "Aucune ne correspond — saisir à la main",
+      "searchingHint": "Je cherche dans l'annuaire officiel, et sur le web si le nom est approximatif.",
+      "candidatesTitle": "Plusieurs entreprises correspondent, choisissez la vôtre :",
+      "candidatesNone": "Aucune ne correspond, saisir à la main",
       "searchAgain": "Modifier ma recherche",
       "notFound": {
-        "message": "Je n'ai pas trouvé votre entreprise dans le répertoire officiel (INSEE). Si elle est très récente, ou si vous avez un document officiel (Kbis, avis SIRENE, extrait du Journal Officiel), déposez-le et je le lis pour vous. Sinon, complétez la fiche ci-dessous — je vous guide.",
+        "message": "Je n'ai pas trouvé votre entreprise dans le répertoire officiel (INSEE). Si elle est très récente, ou si vous avez un document officiel (Kbis, avis SIRENE, extrait du Journal Officiel), déposez-le et je le lis pour vous. Sinon, complétez la fiche ci-dessous, je vous guide.",
         "upload": "Déposer un document officiel"
       },
       "analyzing": {
@@ -72,15 +72,15 @@
         "client": "Extraction du nom, de l'email et de l'adresse…"
       },
       "reviewBanner": {
-        "company": "Document analysé — vérifiez puis validez.",
-        "client": "Coordonnées extraites — vérifiez puis validez."
+        "company": "Document analysé : vérifiez puis validez.",
+        "client": "Coordonnées extraites : vérifiez puis validez."
       },
       "restart": "Recommencer",
       "manualFallback": "Remplir à la main",
       "fileTooLarge": "Le fichier est trop volumineux (max 10 Mo)",
       "fileType": "Format non supporté. Utilisez PDF, PNG, JPG ou WebP.",
       "extractError": "L'analyse a échoué. Réessayez ou remplissez à la main.",
-      "noItems": "Aucune ligne de facture détectée — précisez la prestation et le montant."
+      "noItems": "Aucune ligne de facture détectée : précisez la prestation et le montant."
     },
     "einvoicing": {
       "title": "Facturation électronique (PDP)",
@@ -105,9 +105,9 @@
       "copied": "URL copiée dans le presse-papiers",
       "copyError": "Impossible de copier l'URL",
       "step2": "Ajoutez le connecteur dans votre assistant :",
-      "step2Sub": "Claude — Paramètres → Connecteurs · ChatGPT — Paramètres → Apps et connecteurs (activez d'abord le mode développeur dans Paramètres avancés). Collez l'URL, c'est tout — pas de token à saisir.",
+      "step2Sub": "Claude : Paramètres → Connecteurs · ChatGPT : Paramètres → Apps et connecteurs (activez d'abord le mode développeur dans Paramètres avancés). Collez l'URL, c'est tout, pas de token à saisir.",
       "step3": "Connectez-vous via OAuth avec votre compte Factur-IA dans la fenêtre qui s'ouvre.",
-      "step3Sub": "Accès sécurisé, limité à votre compte — révocable à tout moment.",
+      "step3Sub": "Accès sécurisé, limité à votre compte, révocable à tout moment.",
       "step4": "Demandez à votre assistant, en langage naturel :",
       "ask": {
         "company": "« Crée mon entreprise dans Factur-IA : Atelier Quatools, SAS, SIRET 901 234 567 00018. »",
@@ -117,8 +117,8 @@
     },
     "manual": {
       "title": {
-        "company": "Manuellement — fiche entreprise",
-        "client": "Manuellement — fiche client"
+        "company": "Manuellement : fiche entreprise",
+        "client": "Manuellement : fiche client"
       },
       "subtitle": "Remplissez les champs, vous pourrez tout modifier plus tard."
     },
@@ -161,7 +161,7 @@
         },
         "decide": {
           "title": "Décider à votre place",
-          "desc": "Vos déclarations fiscales et sociales (TVA, URSSAF) restent sous votre responsabilité — vérifiez avant d'envoyer."
+          "desc": "Vos déclarations fiscales et sociales (TVA, URSSAF) restent sous votre responsabilité : vérifiez avant d'envoyer."
         },
         "legal": {
           "title": "Garantir le juridique",
@@ -175,7 +175,7 @@
       "note": "En clair : Factur-IA vous fait gagner du temps, mais ne remplace ni votre expert-comptable ni votre jugement. Vous gardez la main."
     },
     "reassure": {
-      "compliance": "<strong>Conformité 2026</strong> — Factur-X & e-reporting prêts",
+      "compliance": "<strong>Conformité 2026</strong> : Factur-X & e-reporting prêts",
       "data": "Données chiffrées, <strong>hébergées en France</strong>"
     },
     "completion": {

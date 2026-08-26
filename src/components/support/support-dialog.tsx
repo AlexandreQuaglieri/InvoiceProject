@@ -33,7 +33,7 @@ export function SupportDialog() {
     try {
       const result = await sendSupportMessage({ subject, message })
       if (result.success) {
-        toast.success('Message envoyé — on vous répond au plus vite.')
+        toast.success('Message envoyé, on vous répond au plus vite.')
         setOpen(false)
         setSubject('')
         setMessage('')

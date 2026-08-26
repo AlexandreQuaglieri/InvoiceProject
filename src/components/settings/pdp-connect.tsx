@@ -47,7 +47,7 @@ export function PdpConnect({ connection: initialConnection }: { connection: PdpC
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               <div>
                 <p className="font-medium">
-                  Connecté{connection.companyName ? ` — ${connection.companyName}` : ''}
+                  Connecté{connection.companyName ? ` : ${connection.companyName}` : ''}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {connection.env === 'sandbox'
@@ -70,7 +70,7 @@ export function PdpConnect({ connection: initialConnection }: { connection: PdpC
             <p className="text-sm text-muted-foreground">
               Vous serez redirigé vers <span className="font-medium text-foreground">Super PDP</span>{' '}
               (superpdp.tech), notre plateforme agréée partenaire, pour connecter le compte de votre
-              société — puis ramené ici automatiquement.
+              société, puis ramené ici automatiquement.
             </p>
             <Button asChild>
               <a href="/api/pdp/connect">

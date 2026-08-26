@@ -13,10 +13,10 @@
     "hero": {
       "eyebrow": "Conforme 2026 · Gratuit · Sans jargon",
       "title": "La facturation qui s'écrit toute seule.",
-      "subtitle": "Décrivez votre prestation en une phrase — Factur-IA rédige la facture conforme, la transmet via la plateforme agréée, et relance quand on vous oublie. <strong>Vous gardez le dernier mot, toujours.</strong>",
+      "subtitle": "Décrivez votre prestation en une phrase : Factur-IA rédige la facture conforme, la transmet via la plateforme agréée, et relance quand on vous oublie. <strong>Vous gardez le dernier mot, toujours.</strong>",
       "ctaPrimary": "Créer mon compte gratuit",
       "ctaSecondary": "Suis-je concerné par 2026 ?",
-      "note": "<strong>Gratuit</strong> — sans CB, sans engagement."
+      "note": "<strong>Gratuit</strong> : sans CB, sans engagement."
     },
     "heroDemo": {
       "label": "Dites-le, simplement",
@@ -50,7 +50,7 @@
       },
       "examples": [
         {
-          "chip": "Refonte de logo — 2 400 €",
+          "chip": "Refonte de logo, 2 400 €",
           "text": "Facture pour Studio Méridien : refonte identité visuelle, 2 400 € HT",
           "clientName": "Studio Méridien",
           "clientL1": "8 quai de Valmy, 75010 Paris",
@@ -60,17 +60,17 @@
           "unitPrice": 2400
         },
         {
-          "chip": "Acompte 30 % — site vitrine",
+          "chip": "Acompte 30 %, site vitrine",
           "text": "Acompte de 30 % pour Maison Bélier sur le site vitrine, 1 200 € HT",
           "clientName": "Maison Bélier",
           "clientL1": "22 rue Oberkampf, 75011 Paris",
           "clientL2": "SIRET 852 901 444 00031",
-          "desc": "Acompte 30 % — site vitrine",
+          "desc": "Acompte 30 %, site vitrine",
           "qty": 1,
           "unitPrice": 1200
         },
         {
-          "chip": "Maintenance mensuelle — 450 €",
+          "chip": "Maintenance mensuelle, 450 €",
           "text": "Atelier Nord : maintenance mensuelle du site, 450 € HT",
           "clientName": "Atelier Nord",
           "clientL1": "4 rue des Arts, 59000 Lille",
@@ -84,12 +84,12 @@
     "methods": {
       "eyebrow": "Trois façons de facturer",
       "title": "Dites-le. C'est facturé.",
-      "subtitle": "Chacun sa méthode — toutes produisent la même facture Factur-X conforme, transmise via la plateforme agréée.",
+      "subtitle": "Chacun sa méthode : toutes produisent la même facture Factur-X conforme, transmise via la plateforme agréée.",
       "ai": {
         "title": "Avec l'IA",
         "badge": "Recommandé",
         "tag": "Pour ceux qui n'ont pas de temps à perdre.",
-        "body": "Une phrase, un email collé ou un PDF déposé — la facture se rédige toute seule. Vous vérifiez, vous validez."
+        "body": "Une phrase, un email collé ou un PDF déposé : la facture se rédige toute seule. Vous vérifiez, vous validez."
       },
       "mcp": {
         "title": "Via Claude ou ChatGPT",
@@ -105,8 +105,8 @@
     },
     "mcp": {
       "eyebrow": "Claim de catégorie",
-      "title": "Le premier outil de facturation pilotable depuis Claude — ou ChatGPT.",
-      "subtitle": "Grâce au protocole MCP, votre assistant IA devient votre assistant de facturation. Connexion sécurisée OAuth — il ne voit jamais votre mot de passe.",
+      "title": "Le premier outil de facturation pilotable depuis Claude, ou ChatGPT.",
+      "subtitle": "Grâce au protocole MCP, votre assistant IA devient votre assistant de facturation. Connexion sécurisée OAuth : il ne voit jamais votre mot de passe.",
       "steps": {
         "one": "Copiez l'URL du connecteur dans Claude, ChatGPT ou tout assistant compatible MCP.",
         "oneSub": "C'est tout, pas de token à gérer.",
@@ -119,9 +119,9 @@
       "compatNames": ["Claude", "ChatGPT", "Le Chat", "Copilot"],
       "compatSoon": "… et les suivants",
       "chat": {
-        "header": "claude.ai — conversation",
+        "header": "claude.ai · conversation",
         "user1": "Crée une facture de 2 400 € HT pour Studio Méridien, refonte d'identité visuelle.",
-        "ai1": "C'est fait ! La facture F-2026-007 (2 880 € TTC) est en brouillon dans Factur-IA — prête à être émise après votre validation.",
+        "ai1": "C'est fait ! La facture F-2026-007 (2 880 € TTC) est en brouillon dans Factur-IA, prête à être émise après votre validation.",
         "badge1": "facture créée",
         "user2": "Et relance Atelier Nord, leur facture est échue depuis 8 jours.",
         "ai2": "Relance courtoise envoyée à Atelier Nord pour la F-2026-003 (960 €).",
@@ -131,7 +131,7 @@
     "doDont": {
       "eyebrow": "Transparence totale",
       "title": "Ce qu'il fait. Et ce qu'il ne fera jamais.",
-      "subtitle": "Le marché promet beaucoup. Nous, on préfère être précis — ça évite les mauvaises surprises au 35ᵉ devis.",
+      "subtitle": "Le marché promet beaucoup. Nous, on préfère être précis : ça évite les mauvaises surprises au 35ᵉ devis.",
       "doesTitle": "Ce que Factur-IA fait pour vous",
       "dontsTitle": "Ce qu'il ne fait <em>pas</em>",
       "does": [
@@ -141,7 +141,7 @@
         },
         {
           "title": "Devis → facture en un clic",
-          "body": "Et les acomptes, les avoirs, les mentions légales — tout est géré."
+          "body": "Et les acomptes, les avoirs, les mentions légales : tout est géré."
         },
         {
           "title": "Relances automatiques",
@@ -155,7 +155,7 @@
       "donts": [
         {
           "title": "Tenir votre comptabilité",
-          "body": "Factur-IA n'est pas votre expert-comptable — il lui simplifie juste la vie."
+          "body": "Factur-IA n'est pas votre expert-comptable : il lui simplifie juste la vie."
         },
         {
           "title": "Décider à votre place",
@@ -177,7 +177,7 @@
       "point1": "À partir du <strong>1er septembre 2026</strong>, toutes les entreprises françaises doivent pouvoir <strong>recevoir</strong> des factures électroniques.",
       "point2": "Les grandes entreprises commencent à en <strong>émettre</strong> dès 2026 ; indépendants, TPE et PME suivent en <strong>septembre 2027</strong>.",
       "point3": "Le <strong>PDF par email ne suffira plus</strong> : chaque facture passe par une plateforme agréée, qui la transmet à votre client et à l'administration.",
-      "myth": "<strong>« Je ne facture pas la TVA, donc je ne suis pas concerné » — faux.</strong> La franchise de TVA (micro) ne vous exonère pas : la réforme vise tous les assujettis, même non redevables. C'est l'erreur la plus fréquente.",
+      "myth": "<strong>« Je ne facture pas la TVA, donc je ne suis pas concerné » : faux.</strong> La franchise de TVA (micro) ne vous exonère pas : la réforme vise tous les assujettis, même non redevables. C'est l'erreur la plus fréquente.",
       "pageLink": "Partager ce test : page dédiée →"
     },
     "quiz": {
@@ -207,27 +207,27 @@
         "privacy": "Un seul email, pas de spam, supprimable sur simple demande."
       },
       "verdict": {
-        "indep_b2b": "<strong>Oui — réception en 2026, émission en 2027.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques — c'est le cas de toutes les entreprises françaises. Et à partir du 1er septembre 2027, vos factures B2B devront être émises au format électronique via une plateforme agréée. Le PDF par email ne suffira plus. Et oui, même en franchise de TVA (micro-entreprise) : vous êtes assujetti même sans la facturer, donc concerné.",
-        "indep_b2c": "<strong>Oui, en deux temps.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques — c'est le cas de toutes les entreprises françaises. Vos ventes aux particuliers passeront par le e-reporting : vous déclarez les transactions, sans envoyer chaque facture. Émission électronique obligatoire en septembre 2027. Et oui, même en franchise de TVA (micro-entreprise) : vous êtes assujetti même sans la facturer, donc concerné.",
-        "indep_mix": "<strong>Oui — réception en 2026, émission en 2027.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques — c'est le cas de toutes les entreprises françaises. À partir du 1er septembre 2027, vos factures B2B devront être émises via une plateforme agréée, et vos ventes aux particuliers passeront par le e-reporting. Et oui, même en franchise de TVA (micro-entreprise) : vous êtes assujetti même sans la facturer, donc concerné.",
-        "tpe_b2b": "<strong>Oui — réception en 2026, émission en 2027.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques — c'est le cas de toutes les entreprises françaises. Et à partir du 1er septembre 2027, vos factures B2B devront être émises au format électronique via une plateforme agréée. Le PDF par email ne suffira plus.",
-        "tpe_b2c": "<strong>Oui, en deux temps.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques — c'est le cas de toutes les entreprises françaises. Vos ventes aux particuliers passeront par le e-reporting : vous déclarez les transactions, sans envoyer chaque facture. Émission électronique obligatoire en septembre 2027.",
-        "tpe_mix": "<strong>Oui — réception en 2026, émission en 2027.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques — c'est le cas de toutes les entreprises françaises. À partir du 1er septembre 2027, vos factures B2B devront être émises via une plateforme agréée, et vos ventes aux particuliers passeront par le e-reporting.",
-        "grande_b2b": "<strong>Oui, et dès 2026.</strong> Vous devrez émettre vos factures au format électronique dès le 1er septembre 2026. Dès cette date, vous devez aussi pouvoir recevoir des factures électroniques — c'est le cas de toutes les entreprises françaises.",
+        "indep_b2b": "<strong>Oui : réception en 2026, émission en 2027.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques : c'est le cas de toutes les entreprises françaises. Et à partir du 1er septembre 2027, vos factures B2B devront être émises au format électronique via une plateforme agréée. Le PDF par email ne suffira plus. Et oui, même en franchise de TVA (micro-entreprise) : vous êtes assujetti même sans la facturer, donc concerné.",
+        "indep_b2c": "<strong>Oui, en deux temps.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques : c'est le cas de toutes les entreprises françaises. Vos ventes aux particuliers passeront par le e-reporting : vous déclarez les transactions, sans envoyer chaque facture. Émission électronique obligatoire en septembre 2027. Et oui, même en franchise de TVA (micro-entreprise) : vous êtes assujetti même sans la facturer, donc concerné.",
+        "indep_mix": "<strong>Oui : réception en 2026, émission en 2027.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques : c'est le cas de toutes les entreprises françaises. À partir du 1er septembre 2027, vos factures B2B devront être émises via une plateforme agréée, et vos ventes aux particuliers passeront par le e-reporting. Et oui, même en franchise de TVA (micro-entreprise) : vous êtes assujetti même sans la facturer, donc concerné.",
+        "tpe_b2b": "<strong>Oui : réception en 2026, émission en 2027.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques : c'est le cas de toutes les entreprises françaises. Et à partir du 1er septembre 2027, vos factures B2B devront être émises au format électronique via une plateforme agréée. Le PDF par email ne suffira plus.",
+        "tpe_b2c": "<strong>Oui, en deux temps.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques : c'est le cas de toutes les entreprises françaises. Vos ventes aux particuliers passeront par le e-reporting : vous déclarez les transactions, sans envoyer chaque facture. Émission électronique obligatoire en septembre 2027.",
+        "tpe_mix": "<strong>Oui : réception en 2026, émission en 2027.</strong> Dès le 1er septembre 2026, vous devez pouvoir recevoir des factures électroniques : c'est le cas de toutes les entreprises françaises. À partir du 1er septembre 2027, vos factures B2B devront être émises via une plateforme agréée, et vos ventes aux particuliers passeront par le e-reporting.",
+        "grande_b2b": "<strong>Oui, et dès 2026.</strong> Vous devrez émettre vos factures au format électronique dès le 1er septembre 2026. Dès cette date, vous devez aussi pouvoir recevoir des factures électroniques : c'est le cas de toutes les entreprises françaises.",
         "grande_b2c": "<strong>Oui, et dès 2026.</strong> Vous devrez émettre vos factures électroniques dès le 1er septembre 2026, et vos ventes aux particuliers passeront par le e-reporting : vous déclarez les transactions à l'administration. Dès cette date, vous devez aussi pouvoir recevoir des factures électroniques.",
-        "grande_mix": "<strong>Oui, et dès 2026.</strong> Vous devrez émettre vos factures au format électronique dès le 1er septembre 2026 — B2B via plateforme agréée, ventes aux particuliers via e-reporting. Dès cette date, vous devez aussi pouvoir recevoir des factures électroniques."
+        "grande_mix": "<strong>Oui, et dès 2026.</strong> Vous devrez émettre vos factures au format électronique dès le 1er septembre 2026 : B2B via plateforme agréée, ventes aux particuliers via e-reporting. Dès cette date, vous devez aussi pouvoir recevoir des factures électroniques."
       }
     },
     "studio": {
       "eyebrow": "Gratuit · open source · porté par Quatools, studio indépendant",
-      "title": "Gratuit. Mais pas illimité — et c'est volontaire.",
-      "body": "Factur-IA est développé par <strong>Quatools</strong>, un studio indépendant. Pas de levée de fonds, pas de croissance à tout prix : juste un service rapide et un <strong>vrai support humain</strong>. Et le code est <strong>open source</strong> : auditez-le, hébergez-le chez vous — ou laissez-moi m'en occuper.",
+      "title": "Gratuit. Mais pas illimité, et c'est volontaire.",
+      "body": "Factur-IA est développé par <strong>Quatools</strong>, un studio indépendant. Pas de levée de fonds, pas de croissance à tout prix : juste un service rapide et un <strong>vrai support humain</strong>. Et le code est <strong>open source</strong> : auditez-le, hébergez-le chez vous, ou laissez-moi m'en occuper.",
       "cta": "Créer mon compte gratuit",
       "note": "Sans carte bancaire · sans engagement · vos données restent en France."
     },
     "footer": {
       "brand": "Factur-IA",
-      "copyright": "© 2026 Quatools — studio indépendant",
+      "copyright": "© 2026 Quatools, studio indépendant",
       "links": {
         "cgu": "CGU",
         "privacy": "Confidentialité",

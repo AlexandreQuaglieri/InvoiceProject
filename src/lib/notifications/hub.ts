@@ -114,7 +114,7 @@ export const APP_EVENTS: HubEventDef[] = [
     category: 'member',
     supported_channels: CH,
     audiences: ['member'],
-    description: 'Un nouveau compte vient d’être créé — email de bienvenue.',
+    description: 'Un nouveau compte vient d’être créé : email de bienvenue.',
     default_active: true,
     payload_schema: { email: 'string' },
   },

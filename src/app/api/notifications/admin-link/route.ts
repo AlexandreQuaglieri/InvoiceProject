@@ -46,7 +46,7 @@ export async function GET(request: Request) {
   const action = adminLink
     ? `<p style="margin-top:24px"><a href="${esc(adminLink)}" style="display:inline-block;background:#111;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600">Devenir admin de l'organisation →</a></p>
 <p style="color:#666;font-size:14px;margin-top:16px">Connecte-toi d'abord au hub (<a href="https://hub.quatools.fr">hub.quatools.fr</a>) dans cet onglet, puis clique. Lien valable 2&nbsp;min : recharge si besoin.</p>`
-    : `<p style="margin-top:24px;padding:14px 16px;border:1px dashed #bbb;border-radius:8px;background:#fafafa">Pour générer le lien admin, recharge cette page en ajoutant ton <b>identifiant d'app</b> :<br><code>?app=TON_IDENTIFIANT</code><br><span style="color:#666;font-size:14px">(l'identifiant que tu as donné à l'app dans l'Espace développeur — ce n'est pas un secret)</span></p>`
+    : `<p style="margin-top:24px;padding:14px 16px;border:1px dashed #bbb;border-radius:8px;background:#fafafa">Pour générer le lien admin, recharge cette page en ajoutant ton <b>identifiant d'app</b> :<br><code>?app=TON_IDENTIFIANT</code><br><span style="color:#666;font-size:14px">(l'identifiant que tu as donné à l'app dans l'Espace développeur, ce n'est pas un secret)</span></p>`
 
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Configuration des notifications</title></head>
 <body style="font-family:system-ui,sans-serif;max-width:660px;margin:48px auto;padding:0 16px;line-height:1.6;color:#111">

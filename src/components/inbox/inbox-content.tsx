@@ -242,15 +242,15 @@ export function InboxContent() {
                     <TableCell>{formatDate(row.received_at)}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span>{row.seller_name || '—'}</span>
+                        <span>{row.seller_name || '-'}</span>
                         {row.seller_vat && (
                           <span className="text-xs text-muted-foreground">{row.seller_vat}</span>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">{row.number || row.external_id || '—'}</TableCell>
+                    <TableCell className="font-medium">{row.number || row.external_id || '-'}</TableCell>
                     <TableCell className="text-right font-medium">
-                      {row.total_with_vat != null ? formatAmount(row.total_with_vat, row.currency) : '—'}
+                      {row.total_with_vat != null ? formatAmount(row.total_with_vat, row.currency) : '-'}
                     </TableCell>
                     <TableCell>{statusBadge(row)}</TableCell>
                     <TableCell className="text-right">
@@ -297,7 +297,7 @@ export function InboxContent() {
             <AlertDialogTitle>{t('approveDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('approveDialog.description', {
-                number: approveTarget?.number || approveTarget?.external_id || '—',
+                number: approveTarget?.number || approveTarget?.external_id || '-',
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -322,7 +322,7 @@ export function InboxContent() {
             <DialogTitle>{t('refuseDialog.title')}</DialogTitle>
             <DialogDescription>
               {t('refuseDialog.description', {
-                number: refuseTarget?.number || refuseTarget?.external_id || '—',
+                number: refuseTarget?.number || refuseTarget?.external_id || '-',
               })}
             </DialogDescription>
           </DialogHeader>

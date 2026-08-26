@@ -5,25 +5,25 @@ bugs, traductions, documentation, nouvelles fonctionnalités.
 
 ## Avant de commencer
 
-1. **Lisez [`CLAUDE.md`](CLAUDE.md)** — c'est le contrat d'architecture du projet
+1. **Lisez [`CLAUDE.md`](CLAUDE.md)** : c'est le contrat d'architecture du projet
    (source de vérité unique, Realtime + optimistic UI, frontières de couches,
    anti-patterns bannis). Toute contribution doit le respecter, qu'elle vienne
    d'un humain ou d'un agent IA.
 2. Pour une fonctionnalité nouvelle ou un changement structurant, **ouvrez une
-   issue d'abord** pour en discuter — cela évite le travail perdu.
+   issue d'abord** pour en discuter, cela évite le travail perdu.
 3. Installez le projet en local : voir la section *Installation (self-host)* du
    [README](README.md).
 
 ## Règles essentielles (résumé de CLAUDE.md)
 
-- **TypeScript strict, zéro `any`** — `npx tsc --noEmit` doit être vert.
-- **Toute écriture en base passe par `src/lib/services/`** — jamais de SQL ni de
+- **TypeScript strict, zéro `any`** : `npx tsc --noEmit` doit être vert.
+- **Toute écriture en base passe par `src/lib/services/`** : jamais de SQL ni de
   logique métier dans un composant ou un route handler.
-- **Validation Zod revalidée côté serveur** — on ne fait jamais confiance au client.
+- **Validation Zod revalidée côté serveur** : on ne fait jamais confiance au client.
 - **Réactivité sans rechargement** : mutations optimistes + Supabase Realtime.
   `window.location.reload()` est interdit.
 - **Tout texte utilisateur passe par next-intl** (`src/messages/fr` **et** `en`).
-- **Aucune couleur en dur** — tokens shadcn (`bg-background`, `text-muted-foreground`…),
+- **Aucune couleur en dur** : tokens shadcn (`bg-background`, `text-muted-foreground`…),
   dark mode et a11y (focus, aria) obligatoires.
 - **Aucune erreur avalée** : pas de `catch {}` muet, messages d'erreur lisibles.
 - **Migrations** : un fichier `supabase/migrations/YYYYMMDDHHMMSS_description.sql`

@@ -36,7 +36,7 @@ const FAQ_JSON_LD = {
       name: 'La facturation électronique 2026 concerne-t-elle les indépendants et micro-entrepreneurs ?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Oui. Depuis le 1er septembre 2026, toute entreprise française assujettie à la TVA doit pouvoir recevoir des factures électroniques, quelle que soit sa taille — micro-entrepreneurs compris. L’obligation d’émettre ses factures au format électronique s’étend aux TPE, PME et micro-entreprises au 1er septembre 2027.',
+        text: 'Oui. Depuis le 1er septembre 2026, toute entreprise française assujettie à la TVA doit pouvoir recevoir des factures électroniques, quelle que soit sa taille, micro-entrepreneurs compris. L’obligation d’émettre ses factures au format électronique s’étend aux TPE, PME et micro-entreprises au 1er septembre 2027.',
       },
     },
     {

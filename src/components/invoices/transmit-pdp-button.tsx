@@ -116,8 +116,8 @@ export function TransmitPdpButton({ invoiceId, canTransmit }: TransmitPdpButtonP
           {alreadyTransmitted
             ? t('einvoicing.transmittedLabel')
             : technicallyRejected
-              ? 'Retransmettre (PDP — après correction)'
-              : 'Transmettre (PDP — facturation électronique)'}
+              ? 'Retransmettre (PDP, après correction)'
+              : 'Transmettre (PDP, facturation électronique)'}
         </Button>
       )}
     </>

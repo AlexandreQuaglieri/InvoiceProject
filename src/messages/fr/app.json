@@ -180,11 +180,11 @@
       "title": "Je cherche pour vous",
       "placeholder": "Nom ou SIREN du client…",
       "cta": "Chercher",
-      "hint": "Je trouve votre client (même avec un nom approximatif) et récupère adresse, SIRET, TVA — et parfois l'email et le téléphone.",
-      "candidatesTitle": "Plusieurs entreprises correspondent — choisissez :",
+      "hint": "Je trouve votre client (même avec un nom approximatif) et récupère adresse, SIRET, TVA, et parfois l'email et le téléphone.",
+      "candidatesTitle": "Plusieurs entreprises correspondent, choisissez :",
       "back": "Retour",
-      "filled": "Fiche pré-remplie — vérifiez et ajoutez l'email du client.",
-      "notFound": "Entreprise introuvable — remplissez la fiche à la main ci-dessous.",
+      "filled": "Fiche pré-remplie : vérifiez et ajoutez l'email du client.",
+      "notFound": "Entreprise introuvable : remplissez la fiche à la main ci-dessous.",
       "error": "Recherche impossible. Réessayez."
     }
   },

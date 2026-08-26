@@ -75,7 +75,7 @@ export function ChorusProSettings({ initialValues, configured }: ChorusProSettin
     }
   }
 
-  const secretPlaceholder = configured ? '•••••••• (configuré — laisser vide pour conserver)' : '••••••••••••'
+  const secretPlaceholder = configured ? '•••••••• (configuré, laisser vide pour conserver)' : '••••••••••••'
 
   return (
     <Card>

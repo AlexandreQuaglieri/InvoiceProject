@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 // Carte OpenGraph/Twitter par défaut du site (générée au build).
-export const alt = "Factur-IA — La facturation qui s'écrit toute seule"
+export const alt = "Factur-IA : la facturation qui s'écrit toute seule"
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -39,7 +39,7 @@ export default function OpengraphImage() {
             La facturation qui s'écrit toute seule.
           </div>
           <div style={{ display: 'flex', fontSize: 34, color: '#d4d4d4', lineHeight: 1.35 }}>
-            Décrivez votre prestation en une phrase — la facture conforme part toute seule.
+            Décrivez votre prestation en une phrase : la facture conforme part toute seule.
           </div>
         </div>
         <div

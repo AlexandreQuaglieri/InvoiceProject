@@ -5,14 +5,14 @@ open source, conçu pour la réforme de la facturation électronique (2026-2027)
 Factur-X, transmission PDP, réception des factures fournisseurs, e-reporting.
 
 - 🌐 **Version hébergée (gratuite)** : [facturation.quatools.fr](https://facturation.quatools.fr)
-- 🏠 **Self-host** : installez-la chez vous — guide ci-dessous
+- 🏠 **Self-host** : installez-la chez vous, guide ci-dessous
 - 🔍 **Code auditable** : licence AGPL-3.0, aucune boîte noire
 
 Trois façons de piloter sa facturation :
 
 1. **Interface web** classique (dashboard, entreprise / clients / factures / devis)
-2. **Assistant intégré** — créer/modifier en langage naturel (« Crée une facture de 500 € pour Client X »)
-3. **Serveur MCP distant** — piloter sa facturation depuis Claude.ai, Claude Desktop ou ChatGPT
+2. **Assistant intégré** : créer/modifier en langage naturel (« Crée une facture de 500 € pour Client X »)
+3. **Serveur MCP distant** : piloter sa facturation depuis Claude.ai, Claude Desktop ou ChatGPT
 
 ## Fonctionnalités
 
@@ -33,7 +33,7 @@ Trois façons de piloter sa facturation :
 | Framework     | Next.js 16 (App Router, RSC, Server Actions) · React 19 · TypeScript strict |
 | UI            | Tailwind v4 · shadcn/ui (Radix) · next-themes · next-intl (FR/EN) |
 | Données / Auth | Supabase (Postgres + RLS + Auth + Storage + Realtime) |
-| IA            | `@anthropic-ai/sdk` — chat function-calling + extraction vision |
+| IA            | `@anthropic-ai/sdk` : chat function-calling + extraction vision |
 | MCP           | `mcp-handler` · `@modelcontextprotocol/sdk` · OAuth 2.1 |
 | E-invoicing   | Factur-X (XML CII EN 16931 + PDF/A-3 via `pdf-lib`) · PDP · Chorus Pro / PISTE |
 | PDF           | `@react-pdf/renderer` |
@@ -71,11 +71,11 @@ cp .env.example .env.local    # puis remplissez les valeurs
 Le fichier [`.env.example`](.env.example) documente toutes les variables, avec leur
 caractère requis ou optionnel. L'essentiel :
 
-- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — **requis**
-- `NEXT_PUBLIC_APP_URL` — **requis en production** (source de vérité OAuth/MCP)
-- `APP_ENCRYPTION_KEY` — requis dès qu'un utilisateur enregistre un secret (`openssl rand -base64 32`)
-- `LEGAL_*` — identité légale affichée sur les pages mentions légales / CGU / confidentialité
-- PDP, Chorus Pro, hub de notifications, Data Wallet — **optionnels** : chaque
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` : **requis**
+- `NEXT_PUBLIC_APP_URL` : **requis en production** (source de vérité OAuth/MCP)
+- `APP_ENCRYPTION_KEY` : requis dès qu'un utilisateur enregistre un secret (`openssl rand -base64 32`)
+- `LEGAL_*` : identité légale affichée sur les pages mentions légales / CGU / confidentialité
+- PDP, Chorus Pro, hub de notifications, Data Wallet sont **optionnels** : chaque
   intégration se désactive proprement si ses variables sont absentes
 
 ### 4. Lancer
@@ -102,7 +102,7 @@ app/
   oauth/*, .well-known/*   Flux OAuth 2.1 du connecteur MCP
 actions/              Server Actions (auth → Zod → service → revalidate)
 lib/
-  services/           Couche métier — SEULE porte d'écriture vers la base
+  services/           Couche métier : SEULE porte d'écriture vers la base
   facturx/            Génération XML CII + embarquement PDF/A-3 (Factur-X)
   pdp/                Abstraction PdpProvider + implémentation partenaire
   chorus-pro/         Client PISTE / Chorus Pro
@@ -113,13 +113,13 @@ lib/
 
 Les règles d'architecture détaillées (source de vérité unique, Realtime +
 optimistic, frontières de couches, Definition of Done) sont dans
-[`CLAUDE.md`](CLAUDE.md) — à lire avant de contribuer, voir aussi
+[`CLAUDE.md`](CLAUDE.md), à lire avant de contribuer, voir aussi
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Numérotation
 
 - **Factures** : `YYYYMMDD-NN` (`generateInvoiceNumber`, compteur `user_settings.invoice_next_number`)
-- **Devis** : `D-YYYY-NNN` — source de vérité unique partagée par l'app, le serveur MCP et l'assistant
+- **Devis** : `D-YYYY-NNN`, source de vérité unique partagée par l'app, le serveur MCP et l'assistant
 
 ## Serveur MCP
 

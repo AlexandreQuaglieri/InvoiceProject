@@ -6,19 +6,19 @@
     },
     "cgu": {
       "title": "Conditions générales d'utilisation",
-      "metaTitle": "CGU — Factur-IA",
+      "metaTitle": "CGU | Factur-IA",
       "metaDescription": "Conditions générales d'utilisation de Factur-IA : service gratuit de facturation conforme e-invoicing 2026, données exportables à tout moment.",
       "updated": "10 juin 2026",
       "sections": [
         {
-          "heading": "Article 1 — Objet",
+          "heading": "Article 1 : Objet",
           "paragraphs": [
             "Les présentes conditions générales d'utilisation (les « CGU ») encadrent l'accès et l'utilisation du service Factur-IA (le « Service »), une application de facturation assistée par intelligence artificielle, éditée par Quatools (l'« Éditeur »).",
             "La création d'un compte ou l'utilisation du Service emporte acceptation pleine et entière des présentes CGU. Si vous n'acceptez pas ces conditions, vous ne devez pas utiliser le Service."
           ]
         },
         {
-          "heading": "Article 2 — Compte et accès",
+          "heading": "Article 2 : Compte et accès",
           "paragraphs": [
             "L'accès au Service nécessite la création d'un compte via l'authentification Google (OAuth). Aucun mot de passe n'est stocké par l'Éditeur : l'authentification est déléguée à Google.",
             "Vous vous engagez à fournir des informations exactes et à jour, et à maintenir la confidentialité de l'accès à votre compte Google. Toute activité réalisée depuis votre compte est réputée effectuée par vous.",
@@ -26,7 +26,7 @@
           ]
         },
         {
-          "heading": "Article 3 — Description du service",
+          "heading": "Article 3 : Description du service",
           "paragraphs": [
             "Factur-IA permet notamment de créer et gérer des clients, devis et factures, de générer des factures au format Factur-X, de préparer leur transmission via une plateforme agréée dans le cadre de la réforme de la facturation électronique, et de bénéficier d'une assistance rédactionnelle par intelligence artificielle.",
             "Le Service est fourni « en l'état » et « selon disponibilité ». L'Éditeur s'efforce d'assurer une disponibilité continue mais ne garantit pas l'absence d'interruptions, d'erreurs ou de pertes de données. Les fonctionnalités peuvent évoluer, être ajoutées ou retirées à tout moment."
@@ -34,7 +34,7 @@
         },
         {
           "id": "cgv",
-          "heading": "Article 4 — Conditions de service",
+          "heading": "Article 4 : Conditions de service",
           "paragraphs": [
             "Le Service est actuellement proposé à titre gratuit, sans carte bancaire ni engagement. Cette gratuité ne constitue pas un droit acquis.",
             "L'Éditeur se réserve la possibilité de faire évoluer les conditions tarifaires du Service, notamment d'introduire des offres payantes, des limites d'usage ou des fonctionnalités premium. Toute évolution tarifaire sera annoncée aux utilisateurs avec un préavis raisonnable, et aucune somme ne sera prélevée sans souscription explicite de votre part.",
@@ -42,7 +42,7 @@
           ]
         },
         {
-          "heading": "Article 5 — Responsabilités et limites",
+          "heading": "Article 5 : Responsabilités et limites",
           "paragraphs": [
             "Factur-IA est un outil d'aide à la facturation. Il ne constitue ni un service d'expertise comptable, ni un conseil juridique ou fiscal, et ne remplace pas l'intervention d'un expert-comptable.",
             "Les contenus générés par l'intelligence artificielle sont des propositions : vous devez les vérifier avant validation. Vous restez seul responsable de l'exactitude de vos factures, de vos mentions légales, de vos déclarations fiscales et sociales et, plus généralement, du respect de vos obligations légales et réglementaires.",
@@ -50,14 +50,14 @@
           ]
         },
         {
-          "heading": "Article 6 — Propriété des données et du service",
+          "heading": "Article 6 : Propriété des données et du service",
           "paragraphs": [
             "Vous restez propriétaire de l'ensemble des données que vous saisissez ou importez dans le Service (clients, devis, factures, documents). Vous concédez à l'Éditeur une licence limitée, strictement nécessaire à l'exploitation technique du Service (hébergement, sauvegarde, traitement par IA, transmission aux plateformes agréées).",
             "Vous pouvez exporter vos données à tout moment depuis l'application. Le code source du Service est publié sous licence libre AGPL-3.0 ; la marque et les éléments graphiques restent la propriété de l'Éditeur."
           ]
         },
         {
-          "heading": "Article 7 — Résiliation",
+          "heading": "Article 7 : Résiliation",
           "paragraphs": [
             "Vous pouvez cesser d'utiliser le Service et demander la suppression de votre compte à tout moment, sans frais ni justification.",
             "L'Éditeur peut suspendre ou supprimer un compte en cas de violation des présentes CGU, d'usage frauduleux, abusif ou contraire à la loi, après notification sauf urgence. En cas de fermeture du Service, les utilisateurs seront prévenus avec un préavis raisonnable leur permettant d'exporter leurs données.",
@@ -65,7 +65,7 @@
           ]
         },
         {
-          "heading": "Article 8 — Droit applicable et litiges",
+          "heading": "Article 8 : Droit applicable et litiges",
           "paragraphs": [
             "Les présentes CGU sont régies par le droit français.",
             "En cas de litige, les parties s'efforceront de trouver une solution amiable avant toute action contentieuse. À défaut d'accord amiable, les tribunaux français seront seuls compétents, sous réserve des règles impératives de compétence applicables."
@@ -75,7 +75,7 @@
     },
     "privacy": {
       "title": "Politique de confidentialité",
-      "metaTitle": "Confidentialité — Factur-IA",
+      "metaTitle": "Confidentialité | Factur-IA",
       "metaDescription": "Politique de confidentialité de Factur-IA : données hébergées en Europe, cloisonnées par compte, jamais revendues, exportables à tout moment.",
       "updated": "10 juin 2026",
       "sections": [
@@ -106,11 +106,11 @@
         {
           "heading": "Sous-traitants et destinataires",
           "paragraphs": [
-            "Vercel Inc. — hébergement de l'application.",
-            "Supabase — base de données et authentification, données hébergées dans l'Union européenne.",
-            "Anthropic — traitement par intelligence artificielle des contenus que vous soumettez (messages, documents) afin de générer les réponses et documents demandés.",
-            "Google — authentification de votre compte (OAuth).",
-            "Super PDP — plateforme agréée pour la transmission et la réception des factures électroniques dans le cadre de la réforme 2026.",
+            "Vercel Inc. : hébergement de l'application.",
+            "Supabase : base de données et authentification, données hébergées dans l'Union européenne.",
+            "Anthropic : traitement par intelligence artificielle des contenus que vous soumettez (messages, documents) afin de générer les réponses et documents demandés.",
+            "Google : authentification de votre compte (OAuth).",
+            "Super PDP : plateforme agréée pour la transmission et la réception des factures électroniques dans le cadre de la réforme 2026.",
             "Ces prestataires n'accèdent aux données que dans la mesure nécessaire à leurs missions et sont encadrés par des accords conformes au RGPD. Aucune donnée n'est vendue ni cédée à des fins publicitaires."
           ]
         },
@@ -141,7 +141,7 @@
     },
     "mentions": {
       "title": "Mentions légales",
-      "metaTitle": "Mentions légales — Factur-IA",
+      "metaTitle": "Mentions légales | Factur-IA",
       "metaDescription": "Mentions légales du site Factur-IA, service de facturation édité par Quatools, studio indépendant français.",
       "updated": "10 juin 2026",
       "sections": [
@@ -149,9 +149,9 @@
           "heading": "Éditeur du site",
           "paragraphs": [
             "Le site Factur-IA est édité par {legalOwner}, entrepreneur individuel, exerçant sous le nom commercial Quatools.",
-            "Activité : développement et maintenance de sites web et d'applications, conception d'outils numériques, conseil en marketing digital et communication, accompagnement de projets numériques et entrepreneuriaux, ainsi que formation à l'usage des outils digitaux et de l'intelligence artificielle (code APE 62.01Z — Programmation informatique).",
-            "SIREN : {legalSiren} — SIRET (siège) : {legalSiret}.",
-            "RCS : {legalRcs} — N° TVA intracommunautaire : {legalVat}.",
+            "Activité : développement et maintenance de sites web et d'applications, conception d'outils numériques, conseil en marketing digital et communication, accompagnement de projets numériques et entrepreneuriaux, ainsi que formation à l'usage des outils digitaux et de l'intelligence artificielle (code APE 62.01Z, Programmation informatique).",
+            "SIREN : {legalSiren}. SIRET (siège) : {legalSiret}.",
+            "RCS : {legalRcs}. N° TVA intracommunautaire : {legalVat}.",
             "Siège : {legalAddress}.",
             "Contact : {legalEmail}."
           ]
@@ -165,8 +165,8 @@
         {
           "heading": "Hébergement",
           "paragraphs": [
-            "Application hébergée par Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis — vercel.com.",
-            "Base de données hébergée par Supabase, données stockées dans l'Union européenne — supabase.com."
+            "Application hébergée par Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis (vercel.com).",
+            "Base de données hébergée par Supabase, données stockées dans l'Union européenne (supabase.com)."
           ]
         },
         {
